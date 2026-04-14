@@ -18,7 +18,7 @@ const advantages = [
     icon: <Plane className="text-gold" size={32} />,
     title: "Vols Privilèges",
     description: "Des tarifs négociés sur les compagnies aériennes majeures et services de jets privés.",
-    image: "https://image.noelshack.com/fichiers/2026/16/2/1776185603-avion-800-1.png"
+    image: "https://image.noelshack.com/fichiers/2026/16/2/1776186682-photo-1436491865332-7a61a109cc05.jpg"
   },
   {
     icon: <ShoppingBag className="text-gold" size={32} />,
