@@ -219,9 +219,7 @@ const clientFeedbackScreenshots = [
 
 // YouTube Shorts video list to display
 const youtubeShortsList = [
-  { id: "Ci9qsFuKIfs", title: "Expérience VIP" },
-  { id: "dhn2VjPKG0k", title: "Palaces de Rêve" },
-  { id: "URi91i7mY6s", title: "Services Sur-Mesure" }
+  { id: "dhn2VjPKG0k", title: "Palaces de Rêve" }
 ];
 
 interface LuxuryHotelsPageProps {
@@ -792,40 +790,20 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
             <span className="text-gold tracking-[0.4em] uppercase text-xs font-bold mb-3 block">Récits d'Excellence</span>
             <h2 className="text-3xl md:text-4xl font-serif mb-4 text-white">Moments d'Exception</h2>
             <p className="text-blue-100/80 font-light text-sm">
-              Faites glisser pour vous immerger dans les séjours exclusifs et privilégiés de notre clientèle.
+              Découvrez l'atmosphère unique de cet établissement hors du commun.
             </p>
           </div>
 
-          <div className="max-w-5xl mx-auto px-4 relative">
-            {/* Slider Navigation Arrows */}
-            <div className="absolute top-1/2 -left-3 -translate-y-1/2 z-20 hidden md:block">
-              <button 
-                onClick={() => scrollVideoSlider("left")}
-                className="p-3 bg-white hover:bg-gold text-slate-800 hover:text-white rounded-full border border-slate-200 shadow-md hover:scale-105 transition-all cursor-pointer flex items-center justify-center"
-              >
-                <MoveLeft size={16} />
-              </button>
-            </div>
-            
-            <div className="absolute top-1/2 -right-3 -translate-y-1/2 z-20 hidden md:block">
-              <button 
-                onClick={() => scrollVideoSlider("right")}
-                className="p-3 bg-white hover:bg-gold text-slate-800 hover:text-white rounded-full border border-slate-200 shadow-md hover:scale-105 transition-all cursor-pointer flex items-center justify-center"
-              >
-                <MoveRight size={16} />
-              </button>
-            </div>
-
-            {/* Main horizontal scrolling container */}
+          <div className="max-w-5xl mx-auto px-4 relative flex justify-center">
+            {/* Main horizontal scrolling container / centered video container */}
             <div 
               ref={videoSliderRef}
-              className="flex gap-6 overflow-x-auto pb-8 pt-2 px-1 scroll-smooth snap-x snap-mandatory scrollbar-none"
-              style={{ scrollSnapType: "x mandatory" }}
+              className="flex justify-center pb-8 pt-2 px-1"
             >
               {youtubeShortsList.map((video) => (
                 <div 
                   key={video.id}
-                  className="w-[280px] md:w-[310px] h-[520px] shrink-0 rounded-[2.2rem] bg-slate-950 border border-slate-200/80 shadow-lg relative overflow-hidden group hover:border-gold hover:shadow-[0_15px_35px_rgba(212,175,55,0.12)] transition-all duration-300 snap-center"
+                  className="w-[280px] md:w-[310px] h-[520px] shrink-0 rounded-[2.2rem] bg-slate-950 border border-slate-200/80 shadow-lg relative overflow-hidden group hover:border-gold hover:shadow-[0_15px_35px_rgba(212,175,55,0.12)] transition-all duration-300"
                 >
                   <div className="absolute inset-0 overflow-hidden rounded-[2.2rem] bg-black">
                     <iframe
@@ -859,16 +837,6 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-            
-            {/* Visual slider scroll indicators for mobile touch */}
-            <div className="flex justify-center gap-1.5 mt-3 md:hidden">
-              {youtubeShortsList.map((_, idx) => (
-                <div 
-                  key={idx}
-                  className="w-1.5 h-1.5 rounded-full bg-slate-200"
-                />
               ))}
             </div>
           </div>
