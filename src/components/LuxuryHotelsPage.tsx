@@ -449,7 +449,7 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
   };
 
   return (
-    <div className="pt-24 pb-16 bg-white text-slate-900 relative z-10 w-full">
+    <div className="pt-24 pb-16 bg-[#10224a] text-white relative z-10 w-full">
       {/* Dynamic continuous animation style injection */}
       <style>{`
         @keyframes scrollLeftContinuous {
@@ -472,7 +472,7 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
         <div className="flex items-center gap-4 mb-10">
           <button 
             onClick={onBack}
-            className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 border border-slate-200/60 hover:border-gold hover:text-gold text-slate-800 transition-all rounded-full text-xs font-bold uppercase tracking-widest cursor-pointer"
+            className="flex items-center gap-2 px-5 py-2.5 bg-white/10 border border-white/20 hover:border-gold hover:text-gold text-white transition-all rounded-full text-xs font-bold uppercase tracking-widest cursor-pointer"
           >
             <ArrowLeft size={16} /> Retour à l'accueil
           </button>
@@ -494,7 +494,7 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="rounded-[2.5rem] p-8 md:p-10 mb-20 shadow-[0_20px_50px_rgba(0,0,0,0.06)] relative border border-slate-100 bg-slate-50/80 backdrop-blur-2xl"
+          className="rounded-[2.5rem] p-8 md:p-10 mb-20 shadow-2xl relative border border-slate-200 bg-white text-slate-900"
         >
           {/* Decorative design accents */}
           <div className="absolute top-0 right-10 transform -translate-y-1/2 p-4 bg-gold rounded-full shadow-lg shadow-gold/20 hidden md:flex items-center justify-center">
@@ -692,8 +692,8 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
         {/* 2. Slow scrolling auto-carousels of luxury hotel promotional offers */}
         <div className="mb-24 relative overflow-hidden">
           <div className="max-w-3xl mx-auto text-center mb-10 px-4">
-            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-slate-800">Offres du moment</h2>
-            <p className="text-slate-500 font-light text-sm">
+            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-white">Offres du moment</h2>
+            <p className="text-blue-100/80 font-light text-sm">
               Une sélection prestigieuse d'escapades avec avantages financiers exclusifs réservés aux membres de notre réseau.
             </p>
           </div>
@@ -705,7 +705,7 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
               {[...hotelOffers, ...hotelOffers].map((offer, idx) => (
                 <div 
                   key={`${offer.id}-${idx}`}
-                  className="w-[320px] md:w-[380px] bg-slate-50 border border-slate-200/60 rounded-3xl p-6 mx-4 shrink-0 transition-all select-none flex flex-col h-[520px] hover:border-gold hover:shadow-[0_12px_40px_rgba(212,175,55,0.08)] group"
+                  className="w-[320px] md:w-[380px] bg-white border border-slate-200/60 rounded-3xl p-6 mx-4 shrink-0 transition-all select-none flex flex-col h-[520px] hover:border-gold hover:shadow-[0_12px_40px_rgba(212,175,55,0.08)] group text-slate-900"
                 >
                   <div className="h-56 overflow-hidden rounded-2xl relative mb-5 shrink-0">
                     <img
@@ -737,7 +737,7 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
                       </div>
                       <button
                         onClick={() => setSelectedOffer(offer)}
-                        className="px-4 py-2 bg-slate-200/60 group-hover:bg-gold hover:!bg-slate-950 text-slate-800 group-hover:text-white font-bold text-[10px] tracking-widest uppercase rounded-full transition-all duration-300 cursor-pointer"
+                        className="px-4 py-2 bg-slate-100 group-hover:bg-gold hover:!bg-slate-950 text-slate-850 group-hover:text-white font-bold text-[10px] tracking-widest uppercase rounded-full transition-all duration-300 cursor-pointer"
                       >
                         Voir les détails
                       </button>
@@ -753,8 +753,8 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
         <div className="mb-24 relative overflow-hidden">
           <div className="max-w-3xl mx-auto text-center mb-10 px-4">
             <span className="text-gold tracking-[0.4em] uppercase text-xs font-bold mb-3 block">Conversations réelles</span>
-            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-slate-800">Vos Messages & Retours</h2>
-            <p className="text-slate-500 font-light text-sm">
+            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-white font-serif">Vos Messages & Retours</h2>
+            <p className="text-blue-100/80 font-light text-sm">
               Quelques retours authentiques partagés fièrement par nos membres privilégiés à la suite de leurs escapades.
             </p>
           </div>
@@ -790,8 +790,8 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
         <div className="mb-24 relative overflow-hidden">
           <div className="max-w-3xl mx-auto text-center mb-8 px-4">
             <span className="text-gold tracking-[0.4em] uppercase text-xs font-bold mb-3 block">Récits d'Excellence</span>
-            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-slate-800">Moments d'Exception</h2>
-            <p className="text-slate-500 font-light text-sm">
+            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-white">Moments d'Exception</h2>
+            <p className="text-blue-100/80 font-light text-sm">
               Faites glisser pour vous immerger dans les séjours exclusifs et privilégiés de notre clientèle.
             </p>
           </div>
