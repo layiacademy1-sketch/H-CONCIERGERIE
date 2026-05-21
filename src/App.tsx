@@ -3,7 +3,6 @@ import Hero from "./components/Hero";
 import Advantages from "./components/Advantages";
 import About from "./components/About";
 import FinalCTA from "./components/FinalCTA";
-import VideoCarousel from "./components/VideoCarousel";
 import Preloader from "./components/Preloader";
 import LuxuryHotelsPage from "./components/LuxuryHotelsPage";
 import { motion, useScroll, useSpring, AnimatePresence } from "motion/react";
@@ -55,7 +54,6 @@ export default function App() {
                 setView("hotels");
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }} />
-              <VideoCarousel />
               <About />
               <FinalCTA />
             </motion.div>
