@@ -217,6 +217,13 @@ const clientFeedbackScreenshots = [
   "https://image.noelshack.com/fichiers/2026/21/5/1779401897-chatgpt-image-22-mai-2026-00-15-56.jpg"
 ];
 
+// YouTube Shorts video list to display
+const youtubeShortsList = [
+  { id: "Ci9qsFuKIfs", title: "Expérience VIP" },
+  { id: "dhn2VjPKG0k", title: "Palaces de Rêve" },
+  { id: "URi91i7mY6s", title: "Services Sur-Mesure" }
+];
+
 interface LuxuryHotelsPageProps {
   onBack: () => void;
 }
@@ -241,6 +248,17 @@ export default function LuxuryHotelsPage({ onBack }: LuxuryHotelsPageProps) {
   const [hoverDate, setHoverDate] = useState<Date | null>(null);
   
   const calendarRef = useRef<HTMLDivElement>(null);
+  const videoSliderRef = useRef<HTMLDivElement>(null);
+
+  const scrollVideoSlider = (direction: "left" | "right") => {
+    if (videoSliderRef.current) {
+      const scrollAmount = 320; // card size + offset
+      videoSliderRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth"
+      });
+    }
+  };
 
   // Video control states for testimonials
   const [mutedVideos, setMutedVideos] = useState<Record<number, boolean>>({
@@ -768,75 +786,95 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
           </div>
         </div>
 
-        {/* 3. "Retours clients" Testimonial section with mock luxury dynamic video loops */}
-        <div className="mb-24 bg-slate-50/80 border border-slate-200/60 rounded-[3rem] p-10 md:p-14 shadow-[0_15px_60px_-15px_rgba(0,0,0,0.03)] relative z-10">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-gold tracking-[0.4em] uppercase text-xs font-bold mb-4 block">Découvrez Vos Privilèges</span>
-            <h2 className="text-3xl md:text-5xl font-serif text-slate-800">Retours & Expériences Clients</h2>
-            <p className="text-slate-500 font-light text-sm mt-3">
-              Découvrez la vision unique d'un séjour d'exception racontée par nos membres privilégiés.
+        {/* Real video shorts slider section */}
+        <div className="mb-24 relative overflow-hidden">
+          <div className="max-w-3xl mx-auto text-center mb-8 px-4">
+            <span className="text-gold tracking-[0.4em] uppercase text-xs font-bold mb-3 block">Récits d'Excellence</span>
+            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-slate-800">Moments d'Exception</h2>
+            <p className="text-slate-500 font-light text-sm">
+              Faites glisser pour vous immerger dans les séjours exclusifs et privilégiés de notre clientèle.
             </p>
           </div>
 
-          <div className="max-w-3xl mx-auto">
-            {(() => {
-              const t = clientTestimonials[0];
-              return (
-                <div 
-                  key={t.id}
-                  className="bg-white rounded-2xl overflow-hidden flex flex-col md:flex-row border border-slate-200/60 shadow-lg hover:border-gold/50 transition-all duration-300"
-                >
-                  {/* Looping Ambient video mock with testimonials card */}
-                  <div className="h-60 md:h-auto md:w-1/2 relative overflow-hidden bg-black shrink-0 min-h-[300px]">
-                    <video 
-                      src={t.videoUrl} 
-                      className="w-full h-full object-cover opacity-60 absolute inset-0"
-                      autoPlay
-                      loop
-                      playsInline
-                      muted={mutedVideos[t.id]}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-slate-950/70 via-transparent to-transparent" />
-                    
-                    {/* Floating Video Audio toggle button */}
-                    <button 
-                      onClick={() => toggleMute(t.id)}
-                      className="absolute top-4 right-4 p-2 bg-slate-900/60 hover:bg-gold text-white hover:text-slate-900 rounded-full backdrop-blur-md border border-white/10 transition-colors z-20 cursor-pointer"
-                    >
-                      {mutedVideos[t.id] ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                    </button>
+          <div className="max-w-5xl mx-auto px-4 relative">
+            {/* Slider Navigation Arrows */}
+            <div className="absolute top-1/2 -left-3 -translate-y-1/2 z-20 hidden md:block">
+              <button 
+                onClick={() => scrollVideoSlider("left")}
+                className="p-3 bg-white hover:bg-gold text-slate-800 hover:text-white rounded-full border border-slate-200 shadow-md hover:scale-105 transition-all cursor-pointer flex items-center justify-center"
+              >
+                <MoveLeft size={16} />
+              </button>
+            </div>
+            
+            <div className="absolute top-1/2 -right-3 -translate-y-1/2 z-20 hidden md:block">
+              <button 
+                onClick={() => scrollVideoSlider("right")}
+                className="p-3 bg-white hover:bg-gold text-slate-800 hover:text-white rounded-full border border-slate-200 shadow-md hover:scale-105 transition-all cursor-pointer flex items-center justify-center"
+              >
+                <MoveRight size={16} />
+              </button>
+            </div>
 
-                    <div className="absolute bottom-4 left-4 z-10">
-                      <span className="text-xs font-bold text-white px-2.5 py-1 bg-gold rounded-md text-slate-900 shadow-lg">
-                        VLOG DU SÉJOUR
-                      </span>
-                    </div>
+            {/* Main horizontal scrolling container */}
+            <div 
+              ref={videoSliderRef}
+              className="flex gap-6 overflow-x-auto pb-8 pt-2 px-1 scroll-smooth snap-x snap-mandatory scrollbar-none"
+              style={{ scrollSnapType: "x mandatory" }}
+            >
+              {youtubeShortsList.map((video) => (
+                <div 
+                  key={video.id}
+                  className="w-[280px] md:w-[310px] h-[520px] shrink-0 rounded-[2.2rem] bg-slate-950 border border-slate-200/80 shadow-lg relative overflow-hidden group hover:border-gold hover:shadow-[0_15px_35px_rgba(212,175,55,0.12)] transition-all duration-300 snap-center"
+                >
+                  <div className="absolute inset-0 overflow-hidden rounded-[2.2rem] bg-black">
+                    <iframe
+                      title={video.title}
+                      src={`https://www.youtube.com/embed/${video.id}?autoplay=0&mute=1&loop=1&playlist=${video.id}&controls=1&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&playsinline=1&fs=0&disablekb=1&enablejsapi=1`}
+                      className="absolute w-full h-[620px] top-[-50px] left-0 pointer-events-auto border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      referrerPolicy="no-referrer"
+                    />
                   </div>
 
-                  <div className="p-8 flex-grow flex flex-col justify-between bg-white text-slate-850">
-                    <div>
-                      {/* Client star rating */}
-                      <div className="flex gap-1 mb-4 select-none">
-                        {[...Array(t.rating)].map((_, index) => (
-                          <span key={index} className="text-gold font-bold">★</span>
-                        ))}
-                      </div>
+                  {/* Gradient overlays to soften boundaries */}
+                  <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
+                  <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
 
-                      <p className="text-slate-700 italic font-light text-sm md:text-base leading-relaxed mb-6">
-                        "{t.comment}"
-                      </p>
+                  {/* Top VIP Badge */}
+                  <div className="absolute top-4 left-4 z-10 pointer-events-none flex items-center gap-1.5 px-3 py-1 bg-gold/90 backdrop-blur-md rounded-full text-white text-[10px] font-bold uppercase tracking-wider text-slate-950 shadow-md shadow-gold/20">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                    En direct
+                  </div>
+
+                  {/* Bottom Luxury Title Bar Info */}
+                  <div className="absolute bottom-4 left-4 right-4 bg-slate-950/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 flex justify-between items-center pointer-events-none z-10">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gold uppercase tracking-widest font-black">Escapade</span>
+                      <span className="text-white text-xs font-serif font-bold mt-0.5">{video.title}</span>
                     </div>
-
-                    <div className="border-t border-slate-100 pt-4">
-                      <h5 className="text-slate-800 font-bold font-sans text-sm">{t.clientName}</h5>
-                      <p className="text-gold text-[10px] uppercase tracking-widest font-black leading-normal mt-0.5">{t.role}</p>
+                    <div className="px-2.5 py-1 bg-gold text-slate-950 font-black text-[9px] uppercase tracking-wider rounded-lg shadow-sm">
+                      VOIR
                     </div>
                   </div>
                 </div>
-              );
-            })()}
+              ))}
+            </div>
+            
+            {/* Visual slider scroll indicators for mobile touch */}
+            <div className="flex justify-center gap-1.5 mt-3 md:hidden">
+              {youtubeShortsList.map((_, idx) => (
+                <div 
+                  key={idx}
+                  className="w-1.5 h-1.5 rounded-full bg-slate-200"
+                />
+              ))}
+            </div>
           </div>
         </div>
+
+
 
       </div>
 
