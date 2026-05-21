@@ -5,11 +5,13 @@ import About from "./components/About";
 import FinalCTA from "./components/FinalCTA";
 import VideoCarousel from "./components/VideoCarousel";
 import Preloader from "./components/Preloader";
+import LuxuryHotelsPage from "./components/LuxuryHotelsPage";
 import { motion, useScroll, useSpring, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const [view, setView] = useState<"home" | "hotels">("home");
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -36,14 +38,42 @@ export default function App() {
         style={{ scaleX }}
       />
 
-      <Header />
+      <Header view={view} setView={setView} />
       
-      <main>
-        <Hero />
-        <Advantages />
-        <VideoCarousel />
-        <About />
-        <FinalCTA />
+      <main className="overflow-x-hidden">
+        <AnimatePresence mode="wait">
+          {view === "home" ? (
+            <motion.div
+              key="home"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+            >
+              <Hero />
+              <Advantages onExploreHotels={() => {
+                setView("hotels");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }} />
+              <VideoCarousel />
+              <About />
+              <FinalCTA />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="hotels"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+            >
+              <LuxuryHotelsPage onBack={() => {
+                setView("home");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

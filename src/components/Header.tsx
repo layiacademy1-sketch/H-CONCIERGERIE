@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 import { Menu, X, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 
-export default function Header() {
+export default function Header({ view, setView }: { view?: string; setView?: (view: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -32,7 +32,13 @@ export default function Header() {
           animate={{ opacity: 1, x: 0 }}
           className="flex items-center gap-2"
         >
-          <span className="text-2xl font-serif font-bold tracking-widest text-gold-gradient">
+          <span 
+            onClick={() => {
+              setView?.("home");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="text-2xl font-serif font-bold tracking-widest text-gold-gradient cursor-pointer select-none"
+          >
             H-CONCIERGERIE
           </span>
         </motion.div>
@@ -43,6 +49,7 @@ export default function Header() {
             <motion.a
               key={link.name}
               href={link.href}
+              onClick={() => setView?.("home")}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
@@ -70,7 +77,10 @@ export default function Header() {
             <a
               key={link.name}
               href={link.href}
-              onClick={() => setIsOpen(false)}
+              onClick={() => {
+                setView?.("home");
+                setIsOpen(false);
+              }}
               className="text-lg font-serif tracking-wide hover:text-gold transition-colors"
             >
               {link.name}

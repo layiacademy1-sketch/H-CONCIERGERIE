@@ -28,7 +28,7 @@ const advantages = [
   }
 ];
 
-export default function Advantages() {
+export default function Advantages({ onExploreHotels }: { onExploreHotels?: () => void }) {
   return (
     <section id="avantages" className="py-24 bg-luxury-gray relative overflow-hidden">
       <div className="container mx-auto px-6">
@@ -87,14 +87,23 @@ export default function Advantages() {
                   {adv.description}
                 </p>
                 <div className="mt-auto">
-                  <a 
-                    href="https://wa.me/33774067388"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center px-6 py-3 bg-gold text-luxury-black text-xs tracking-widest uppercase font-bold rounded-full hover:bg-white transition-all duration-300 group/btn"
-                  >
-                    En savoir plus
-                  </a>
+                  {adv.title === "Hôtels de luxe" && onExploreHotels ? (
+                    <button 
+                      onClick={onExploreHotels}
+                      className="inline-flex items-center justify-center px-6 py-3 bg-gold text-luxury-black text-xs tracking-widest uppercase font-bold rounded-full hover:bg-white transition-all duration-300 cursor-pointer w-full text-center"
+                    >
+                      En savoir plus
+                    </button>
+                  ) : (
+                    <a 
+                      href="https://wa.me/33774067388"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center px-6 py-3 bg-gold text-luxury-black text-xs tracking-widest uppercase font-bold rounded-full hover:bg-white transition-all duration-300 group/btn w-full text-center"
+                    >
+                      En savoir plus
+                    </a>
+                  )}
                 </div>
               </div>
             </motion.div>
