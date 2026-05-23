@@ -15,10 +15,31 @@ export default function Header({ view, setView }: { view?: string; setView?: (vi
   }, []);
 
   const navLinks = [
-    { name: "Accueil", href: "#" },
-    { name: "Avantages", href: "#avantages" },
-    { name: "À propos", href: "#propos" },
+    { name: "Accueil", href: "#", action: "home" },
+    { name: "Hôtels de luxe", href: "#", action: "hotels" },
+    { name: "Location de voiture", href: "#", action: "cars" },
+    { name: "Avantages", href: "#avantages", action: "home" },
+    { name: "À propos", href: "#propos", action: "home" },
   ];
+
+  const handleLinkClick = (link: { name: string; href: string; action: string }) => {
+    setIsOpen(false);
+    if (setView) {
+      setView(link.action);
+      if (link.action !== "home") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else if (link.href !== "#") {
+        setTimeout(() => {
+          const element = document.querySelector(link.href);
+          if (element) {
+            element.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 150);
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+  };
 
   return (
     <header
@@ -44,27 +65,30 @@ export default function Header({ view, setView }: { view?: string; setView?: (vi
         </motion.div>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden xl:flex items-center gap-8">
           {navLinks.map((link, i) => (
-            <motion.a
+            <motion.button
               key={link.name}
-              href={link.href}
-              onClick={() => setView?.("home")}
+              onClick={() => handleLinkClick(link)}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className={`text-sm font-medium tracking-widest uppercase transition-colors duration-300 ${
-                scrolled ? "text-slate-800 hover:text-gold" : "text-white/90 hover:text-gold"
+              transition={{ delay: i * 0.05 }}
+              className={`text-xs font-bold tracking-widest uppercase transition-colors duration-300 cursor-pointer ${
+                view === link.action && link.href === "#"
+                  ? "text-gold"
+                  : scrolled 
+                    ? "text-slate-800 hover:text-gold" 
+                    : "text-white/90 hover:text-gold"
               }`}
             >
               {link.name}
-            </motion.a>
+            </motion.button>
           ))}
         </nav>
 
         {/* Mobile Toggle */}
         <button 
-          className={`md:hidden transition-colors duration-300 ${
+          className={`xl:hidden transition-colors duration-300 ${
             scrolled ? "text-slate-800" : "text-white"
           }`} 
           onClick={() => setIsOpen(!isOpen)}
@@ -78,20 +102,18 @@ export default function Header({ view, setView }: { view?: string; setView?: (vi
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-full left-0 w-full bg-white border-t border-slate-100 py-8 px-6 md:hidden flex flex-col gap-6 shadow-2xl"
+          className="absolute top-full left-0 w-full bg-white border-t border-slate-100 py-8 px-6 xl:hidden flex flex-col gap-6 shadow-2xl"
         >
           {navLinks.map((link) => (
-            <a
+            <button
               key={link.name}
-              href={link.href}
-              onClick={() => {
-                setView?.("home");
-                setIsOpen(false);
-              }}
-              className="text-lg font-serif tracking-wide text-slate-800 hover:text-gold transition-colors"
+              onClick={() => handleLinkClick(link)}
+              className={`text-lg font-serif tracking-wide text-left transition-colors cursor-pointer py-1 ${
+                view === link.action && link.href === "#" ? "text-gold font-bold" : "text-slate-800 hover:text-gold"
+              }`}
             >
               {link.name}
-            </a>
+            </button>
           ))}
         </motion.div>
       )}

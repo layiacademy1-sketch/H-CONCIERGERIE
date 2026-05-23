@@ -26,6 +26,10 @@ interface HotelOffer {
   rating: number;
   services: string[];
   conditions: string[];
+  discount: string;
+  oldPrice: string;
+  nights: string;
+  viewers: number;
 }
 
 interface Testimonial {
@@ -47,7 +51,7 @@ const hotelOffers: HotelOffer[] = [
     description: "Une nuit somptueuse dans un joyau de l'hôtellerie française avec accueil VIP et petit-déjeuner michelin.",
     longDescription: "Vivez l'excellence à la parisienne. Le Bristol Paris propose une expérience d'habitation digne des rois, combinant élégance classique, haute gastronomie, et un service d'une attention inégalée en plein cœur du Faubourg Saint-Honoré.",
     image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=1200",
-    price: "À partir de 1 250 €",
+    price: "890 €",
     rating: 5,
     services: [
       "Accueil personnalisé avec Champagne de prestige & Macarons artisanaux",
@@ -60,7 +64,11 @@ const hotelOffers: HotelOffer[] = [
       "Offre valable pour des séjours de 2 nuits minimum",
       "Annulation flexible sans frais jusqu'à 7 jours avant l'arrivée",
       "Sujet à des restrictions de dates spécifiques en haute saison"
-    ]
+    ],
+    discount: "-57%",
+    oldPrice: "2100 €",
+    nights: "3 nuits",
+    viewers: 7
   },
   {
     id: 2,
@@ -70,7 +78,7 @@ const hotelOffers: HotelOffer[] = [
     description: "Une villa sur pilotis d'exception avec piscine privée suspendue au-dessus de l'océan Indien.",
     longDescription: "Une retraite insulaire ultime où les eaux turquoise rencontrent le sable blanc le plus pur. Votre villa privée sur pilotis offre une intimité totale, des couchers de soleil incomparables, et les soins holistiques du spa mondialement primé.",
     image: "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&q=80&w=1200",
-    price: "Sur demande",
+    price: "1250 €",
     rating: 5,
     services: [
       "Villa privée sur pilotis de 150m² avec accès direct à la mer pour baignade privée",
@@ -83,30 +91,11 @@ const hotelOffers: HotelOffer[] = [
       "Tarifs négociés exclusifs H-CONCIERGERIE sur demande écrite",
       "Réservation conseillée au moins 30 jours à l'avance",
       "Séjour minimum conseillé de 5 nuits pour bénéficier des tarifs préférentiels"
-    ]
-  },
-  {
-    id: 3,
-    name: "Zénitude Urbaine & Panorama",
-    hotel: "Aman Tokyo",
-    location: "Tokyo, Japon",
-    description: "Un temple de tranquillité dominant la skyline tokyoïte avec vue imprenable sur le Mont Fuji.",
-    longDescription: "Mélange parfait de tradition japonaise minimaliste et de design contemporain audacieux. Perché au-dessus du quartier de Otemachi, l'Aman Tokyo offre de grands volumes épurés, des bains traditionnels furo, et un calme absolu dominant la mégapole.",
-    image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&q=80&w=1200",
-    price: "À partir de 950 €",
-    rating: 5,
-    services: [
-      "Chambre Deluxe King size (70m²) avec baignoire traditionnelle en bois furo",
-      "Cérémonie du thé privée menée par un maître de thé japonais de renom",
-      "Accès complet au spa urbain de 2 500m² et son bassin de nage chauffé",
-      "Cocktail Signature offert au bar avec panorama nocturne spectaculaire",
-      "Transfert de départ en limousine privée vers l'aéroport d'Haneda ou Narita"
     ],
-    conditions: [
-      "Surclassement selon disponibilité au moment de l'enregistrement",
-      "Annulation gratuite jusqu'à 72h avant le séjour",
-      "Offre exclusive réservée aux membres actifs du club"
-    ]
+    discount: "-68%",
+    oldPrice: "3900 €",
+    nights: "5 nuits",
+    viewers: 11
   },
   {
     id: 4,
@@ -116,7 +105,7 @@ const hotelOffers: HotelOffer[] = [
     description: "Résidence historique d'exception nichée au cœur d'un parc botanique privé en bord de lac.",
     longDescription: "Chef-d'œuvre de la Renaissance, la Villa d'Este incarne la quintessence du chic italien. Ses jardins magnifiques, sa célèbre piscine flottante et ses intérieurs richement décorés de soies et d'œuvres d'art vous invitent à la Dolce Vita dans sa forme la plus noble.",
     image: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&q=80&w=1200",
-    price: "À partir de 1 100 €",
+    price: "620 €",
     rating: 5,
     services: [
       "Séjour en chambre Double Prestige avec terrasse privative offrant vue lac panoramique",
@@ -129,7 +118,11 @@ const hotelOffers: HotelOffer[] = [
       "Séjour minimum de 3 nuits requis pendant les mois de juillet et août",
       "Pétition de réservation requise au moins 14 jours avant",
       "Taxe de séjour historique non comprise dans le prix de l'offre"
-    ]
+    ],
+    discount: "-67%",
+    oldPrice: "1900 €",
+    nights: "3 nuits",
+    viewers: 6
   },
   {
     id: 5,
@@ -139,7 +132,7 @@ const hotelOffers: HotelOffer[] = [
     description: "Une expérience ultra-luxe inégalée dans la suite de l'icône architecturale en forme de voile.",
     longDescription: "Seul hôtel au monde souvent qualifié de 7 étoiles, le Burj Al Arab s'élève sur sa propre île artificielle. Sa silhouette emblématique abrite des suites s'étendant sur deux étages, l'utilisation exclusive d'or 24 carats dans les décors, et une île-terrasse privée d'exception.",
     image: "https://images.unsplash.com/photo-1517840901100-8179e982acb7?auto=format&fit=crop&q=80&w=1200",
-    price: "Sur demande",
+    price: "1150 €",
     rating: 5,
     services: [
       "Suite Royale en duplex de 170m² avec escalier en colimaçon en marbre précieux",
@@ -152,7 +145,11 @@ const hotelOffers: HotelOffer[] = [
       "Réservations sujettes à validation budgétaire stricte",
       "Dépôt de garantie requis à la confirmation de séjour",
       "Départ tardif garanti jusqu'à 16:00 pour tous les membres de H-CONCIERGERIE"
-    ]
+    ],
+    discount: "-72%",
+    oldPrice: "4200 €",
+    nights: "4 nuits",
+    viewers: 9
   },
   {
     id: 6,
@@ -162,7 +159,7 @@ const hotelOffers: HotelOffer[] = [
     description: "Un domaine architectural d'exception fondu au cœur des paysages sauvages et secrets des canyons.",
     longDescription: "Niché dans le décor grandiose du désert de l'Utah, l'Amangiri s'intègre avec une discrétion magistrale aux formations géologiques millénaires. Ses lignes de béton brut teinté de sable s'organisent autour d'une piscine iconique encadrée par une falaise monumentale.",
     image: "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&q=80&w=1200",
-    price: "À partir de 1 800 €",
+    price: "980 €",
     rating: 5,
     services: [
       "Suite Désert d'exception avec terrasse extérieure, cheminée au feu de bois et lit de repos aérien",
@@ -175,7 +172,11 @@ const hotelOffers: HotelOffer[] = [
       "Offre valable hors vacances scolaires américaines",
       "Pré-paiement total non remboursable à la confirmation de réservation",
       "Accès privilégié aux hébergements en formule villa complète sur demande spéciale"
-    ]
+    ],
+    discount: "-71%",
+    oldPrice: "3400 €",
+    nights: "3 nuits",
+    viewers: 5
   }
 ];
 
@@ -223,11 +224,6 @@ const clientFeedbackScreenshots = [
   "https://image.noelshack.com/fichiers/2026/21/5/1779401897-chatgpt-image-22-mai-2026-00-16-07.png",
   "https://image.noelshack.com/fichiers/2026/21/5/1779401897-chatgpt-image-22-mai-2026-00-16-02.png",
   "https://image.noelshack.com/fichiers/2026/21/5/1779401897-chatgpt-image-22-mai-2026-00-15-56.jpg"
-];
-
-// YouTube Shorts video list to display
-const youtubeShortsList = [
-  { id: "dhn2VjPKG0k", title: "Palaces de Rêve" }
 ];
 
 interface GlobalCity {
@@ -327,6 +323,47 @@ const globalCities: GlobalCity[] = [
   { name: "Abou Dabi", country: "Émirats Arabes Unis", flag: "🇦🇪" }
 ];
 
+// Practical live countdown timer precisely matching image styled tags 
+function FlashTimer({ id }: { id: number }) {
+  // Seed distinct initial timer states based on ID to look diverse & highly authentic
+  const initialSeconds = 3600 * 24 * (id % 2 === 0 ? 2 : 1) + 3600 * (id % 12 + 2) + 60 * (id % 45 + 10) + 45;
+  const [secondsLeft, setSecondsLeft] = useState(initialSeconds);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => (prev > 0 ? prev - 1 : initialSeconds));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [id]);
+
+  const days = Math.floor(secondsLeft / (3600 * 24));
+  const hours = Math.floor((secondsLeft % (3600 * 24)) / 3600);
+  const minutes = Math.floor((secondsLeft % 3600) / 60);
+  const seconds = secondsLeft % 60;
+
+  const pad = (num: number) => String(num).padStart(2, "0");
+
+  return (
+    <div className="flex items-center gap-1 shrink-0 font-sans">
+      <span className="text-slate-400 text-xs mr-1">🕒</span>
+      {days > 0 && (
+        <span className="bg-rose-50 border border-rose-100 rounded-md text-[#e31c25] font-extrabold px-1.5 py-0.5 text-[11px] select-none">
+          {pad(days)}j
+        </span>
+      )}
+      <span className="bg-rose-50 border border-rose-100 rounded-md text-[#e31c25] font-extrabold px-1.5 py-0.5 text-[11px] select-none">
+        {pad(hours)}h
+      </span>
+      <span className="bg-rose-50 border border-rose-100 rounded-md text-[#e31c25] font-extrabold px-1.5 py-0.5 text-[11px] select-none">
+        {pad(minutes)}m
+      </span>
+      <span className="bg-rose-50 border border-rose-100 rounded-md text-[#e31c25] font-extrabold px-1.5 py-0.5 text-[11px] select-none">
+        {pad(seconds)}s
+      </span>
+    </div>
+  );
+}
+
 interface LuxuryHotelsPageProps {
   onBack: () => void;
 }
@@ -336,6 +373,74 @@ export default function LuxuryHotelsPage({ onBack }: LuxuryHotelsPageProps) {
   const [selectedOffer, setSelectedOffer] = useState<HotelOffer | null>(null);
   const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
   const [activeFeedbackLightboxIndex, setActiveFeedbackLightboxIndex] = useState<number | null>(null);
+  
+  // Slider navigation ref
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const scrollSlider = (direction: "left" | "right") => {
+    if (sliderRef.current) {
+      const scrollAmount = 370 + 32; // card width + margin gap
+      if (direction === "left") {
+        sliderRef.current.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+      } else {
+        sliderRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+      }
+    }
+  };
+
+  // Automatic slow scrolling effect for Flash Offers
+  const [isSliderHovered, setIsSliderHovered] = useState(false);
+  const scrollPosRef = useRef(0);
+
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    // Initialize position ref with actual current scroll position
+    scrollPosRef.current = slider.scrollLeft;
+
+    let prevTime = performance.now();
+    let animationFrameId: number;
+
+    const autoScrollSpeed = 0.11; // pixels per millisecond (~110px per second)
+
+    const animate = (time: number) => {
+      const delta = time - prevTime;
+      prevTime = time;
+
+      if (!isSliderHovered && slider) {
+        // Increment position to the right (translates content left)
+        scrollPosRef.current += autoScrollSpeed * delta;
+
+        const oneThird = slider.scrollWidth / 3;
+        // Seamless loop wrapping math
+        if (oneThird > 0 && scrollPosRef.current >= oneThird * 2) {
+          scrollPosRef.current -= oneThird;
+        }
+
+        slider.scrollLeft = Math.round(scrollPosRef.current);
+      } else if (slider) {
+        // Keep our internal position ref synced with manual user scroll/interaction
+        scrollPosRef.current = slider.scrollLeft;
+      }
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [isSliderHovered]);
+
+  const handleSliderScroll = () => {
+    if (sliderRef.current && isSliderHovered) {
+      scrollPosRef.current = sliderRef.current.scrollLeft;
+    }
+  };
+  
+  // Wishlist / favorites state
+  const [favorites, setFavorites] = useState<Record<number, boolean>>({});
+  const toggleFavorite = (id: number) => {
+    setFavorites((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // Form search states
   const [destination, setDestination] = useState("");
@@ -442,24 +547,6 @@ export default function LuxuryHotelsPage({ onBack }: LuxuryHotelsPageProps) {
   
   const calendarRef = useRef<HTMLDivElement>(null);
   const destinationRef = useRef<HTMLDivElement>(null);
-  const videoSliderRef = useRef<HTMLDivElement>(null);
-
-  const scrollVideoSlider = (direction: "left" | "right") => {
-    if (videoSliderRef.current) {
-      const scrollAmount = 320; // card size + offset
-      videoSliderRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth"
-      });
-    }
-  };
-
-  // Video control states for testimonials
-  const [mutedVideos, setMutedVideos] = useState<Record<number, boolean>>({
-    1: true,
-    2: true,
-    3: true
-  });
 
   // Handle clicking outside calendar and destination suggestions to close them
   useEffect(() => {
@@ -616,14 +703,6 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
     window.open(whatsAppUrl, "_blank", "noopener,noreferrer");
   };
 
-  // Toggle audio on testimonial videos
-  const toggleMute = (id: number) => {
-    setMutedVideos(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
-
   // Lightbox cyclic controls
   const handleLightboxNav = (direction: number) => {
     if (activeLightboxIndex === null) return;
@@ -659,6 +738,13 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
         }
         .continuous-scroller-left:hover {
           animation-play-state: paused;
+        }
+        .scrollbar-none::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-none {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
 
@@ -960,56 +1046,142 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
         {/* 2. Slow scrolling auto-carousels of luxury hotel promotional offers */}
         <div className="mb-24 relative overflow-hidden">
           <div className="max-w-3xl mx-auto text-center mb-10 px-4">
-            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-slate-800">Offres du moment</h2>
+            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-slate-900 font-bold">Offres flash</h2>
             <p className="text-slate-500 font-light text-sm">
-              Une sélection prestigieuse d'escapades avec avantages financiers exclusifs réservés aux membres de notre réseau.
+              Découvrez nos offres éclair exclusives à durée de validité limitée. Des avantages d'exception négociés directement auprès des plus beaux palais du monde.
             </p>
           </div>
+ 
+          <div 
+            className="relative w-full px-4 md:px-14 group/slider"
+            onMouseEnter={() => setIsSliderHovered(true)}
+            onMouseLeave={() => setIsSliderHovered(false)}
+          >
+            {/* Arrow Button Left */}
+            <button
+              onClick={() => scrollSlider("left")}
+              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 bg-white/95 hover:bg-[#e31c25] hover:text-white border border-slate-200/80 shadow-lg w-11 h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center text-slate-850 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              aria-label="Défiler à gauche"
+            >
+              <MoveLeft size={18} className="stroke-[2.5px]" />
+            </button>
 
-          <div className="relative w-full overflow-hidden mask-gradient-x">
-            {/* The infinite continuous horizontal scrolling viewport */}
-            <div className="continuous-scroller-left">
-              {/* Duplicate map to achieve clean endless loop seamless scroll */}
-              {[...hotelOffers, ...hotelOffers].map((offer, idx) => (
+            {/* Arrow Button Right */}
+            <button
+              onClick={() => scrollSlider("right")}
+              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 bg-white/95 hover:bg-[#e31c25] hover:text-white border border-slate-200/80 shadow-lg w-11 h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center text-slate-850 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+              aria-label="Défiler à droite"
+            >
+              <MoveRight size={18} className="stroke-[2.5px]" />
+            </button>
+
+            {/* Interactive horizontal snap slide viewport */}
+            <div 
+              ref={sliderRef}
+              onScroll={handleSliderScroll}
+              className="flex overflow-x-auto gap-8 scroll-smooth scrollbar-none py-4 px-2 md:px-6 snap-x snap-mandatory"
+            >
+              {/* Multiplying the list as [...hotelOffers, ...hotelOffers, ...hotelOffers] to achieve seamless endless looping scrolling */}
+              {[...hotelOffers, ...hotelOffers, ...hotelOffers].map((offer, idx) => (
                 <div 
                   key={`${offer.id}-${idx}`}
-                  className="w-[320px] md:w-[380px] bg-white border border-slate-200/60 rounded-3xl p-6 mx-4 shrink-0 transition-all select-none flex flex-col h-[520px] hover:border-gold hover:shadow-[0_12px_40px_rgba(212,175,55,0.08)] group text-slate-900"
+                  className="w-[290px] sm:w-[325px] md:w-[370px] bg-white border border-slate-200 rounded-[2.2rem] p-4 shrink-0 transition-all select-none flex flex-col h-[600px] shadow-[0_15px_45px_rgba(0,0,0,0.03)] hover:shadow-2xl hover:border-red-500/30 group text-slate-900 snap-start"
                 >
-                  <div className="h-56 overflow-hidden rounded-2xl relative mb-5 shrink-0">
+                  {/* Top image section going edge-to-edge relative to internal padding */}
+                  <div className="h-56 overflow-hidden rounded-[1.6rem] relative shrink-0">
                     <img
                       src={offer.image}
                       alt={offer.hotel}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="absolute top-4 left-4 px-3 py-1 bg-slate-900/80 backdrop-blur-md rounded-full text-[10px] text-gold uppercase tracking-widest font-black">
-                      {offer.location}
+                    
+                    {/* -81% Discount Badge */}
+                    <div className="absolute top-4 left-4 bg-[#e31c25] text-white font-extrabold text-[13px] tracking-tight px-3 py-1.5 rounded-[12px] shadow-md select-none">
+                      {offer.discount}
                     </div>
+
+                    {/* ★ 5 Rating Star Badge */}
+                    <div className="absolute top-4 right-4 bg-slate-950/75 backdrop-blur-md text-white font-bold text-xs px-2.5 py-1 rounded-[12px] flex items-center gap-1 select-none shadow-md">
+                      <span className="text-amber-400">★</span>
+                      <span>{offer.rating}</span>
+                    </div>
+
+                    {/* Heart Option Toggle Button (Simulating interactive wishlist) */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(offer.id);
+                      }}
+                      className="absolute bottom-4 right-4 bg-white hover:bg-slate-100 active:scale-95 transition-all w-10 h-10 rounded-full flex items-center justify-center shadow-lg cursor-pointer text-slate-950 z-10"
+                    >
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        viewBox="0 0 24 24" 
+                        fill={favorites[offer.id] ? "#e31c25" : "none"} 
+                        stroke={favorites[offer.id] ? "#e31c25" : "currentColor"} 
+                        strokeWidth="2" 
+                        className="w-5 h-5 transition-colors"
+                      >
+                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                      </svg>
+                    </button>
                   </div>
 
-                  <div className="flex-grow flex flex-col">
-                    <span className="text-[10px] uppercase font-bold text-amber-700 tracking-widest mb-1.5 block">
-                      {offer.hotel}
-                    </span>
-                    <h4 className="text-xl font-serif text-slate-800 mb-2 leading-tight">
-                      {offer.name}
-                    </h4>
-                    <p className="text-slate-500 text-xs font-light leading-relaxed mb-6 flex-grow overflow-hidden text-ellipsis line-clamp-3">
-                      {offer.description}
-                    </p>
+                  {/* Body Content Info */}
+                  <div className="p-1 flex-grow flex flex-col mt-4">
                     
-                    <div className="mt-auto border-t border-slate-200/60 pt-4 flex items-center justify-between gap-2 shrink-0">
-                      <div>
-                        <span className="text-[9px] uppercase tracking-widest text-slate-400 block">Tarif Estimatif</span>
-                        <span className="text-sm font-serif text-gold-dark font-bold">{offer.price}</span>
-                      </div>
-                      <button
-                        onClick={() => setSelectedOffer(offer)}
-                        className="px-4 py-2 bg-slate-100 group-hover:bg-gold hover:!bg-slate-950 text-slate-850 group-hover:text-white font-bold text-[10px] tracking-widest uppercase rounded-full transition-all duration-300 cursor-pointer"
-                      >
-                        Voir les détails
-                      </button>
+                    {/* Brand Label and Countdown Timer row */}
+                    <div className="flex items-center justify-between gap-1 mb-2.5">
+                      <span className="text-[11px] uppercase font-black text-[#1a2e5c] tracking-wider select-none">
+                        OFFRE ÉCLAIR
+                      </span>
+                      {/* Live Ticking Countdown */}
+                      <FlashTimer id={offer.id} />
                     </div>
+
+                    {/* Urgency indicator: ● 👁 X regardent */}
+                    <div className="bg-[#fff8f2] border border-[#fde3cf] text-[#d97706] font-bold flex items-center gap-2 px-3 py-2 rounded-xl text-xs w-full mb-3.5 select-none">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                      </span>
+                      <Eye size={12} className="text-orange-500 shrink-0" />
+                      <span className="text-[11px] leading-none shrink-0">{offer.viewers} regardent</span>
+                    </div>
+
+                    {/* Headline Detail */}
+                    <h4 className="text-xl font-serif font-black text-slate-950 leading-tight tracking-wide line-clamp-1">
+                      {offer.hotel}
+                    </h4>
+                    <p className="text-xs text-slate-500 font-medium mt-1 mb-4 select-none self-start">
+                      {offer.location}
+                    </p>
+
+                    {/* Price representation */}
+                    <div className="mt-auto border-t border-slate-100 pt-3 pb-3">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-[#e31c25] font-serif font-black text-3xl shrink-0">
+                          {offer.price}
+                        </span>
+                        <span className="line-through text-slate-400 font-light text-sm">
+                          {offer.oldPrice}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-semibold text-slate-400 block mt-1 select-none">
+                        {offer.nights}
+                      </span>
+                    </div>
+
+                    {/* Gorgeous Red Button matches the image beautifully */}
+                    <button
+                      onClick={() => setSelectedOffer(offer)}
+                      className="bg-[#e31c25] hover:bg-[#b8141b] active:scale-[0.98] text-white text-xs tracking-wider uppercase font-extrabold py-3.5 px-4 rounded-[1.2rem] flex items-center justify-center gap-2 transition-all duration-300 w-full shadow-lg shadow-red-500/15 cursor-pointer"
+                    >
+                      <span>Voir les détails</span>
+                      <ChevronRight size={14} className="stroke-[3px]" />
+                    </button>
+
                   </div>
                 </div>
               ))}
@@ -1053,66 +1225,6 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
             </div>
           </div>
         </div>
-
-        {/* Real video shorts slider section */}
-        <div className="mb-24 relative overflow-hidden">
-          <div className="max-w-3xl mx-auto text-center mb-8 px-4">
-            <span className="text-gold tracking-[0.4em] uppercase text-xs font-bold mb-3 block">Récits d'Excellence</span>
-            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-slate-800">Moments d'Exception</h2>
-            <p className="text-slate-500 font-light text-sm">
-              Découvrez l'atmosphère unique de cet établissement hors du commun.
-            </p>
-          </div>
-
-          <div className="max-w-5xl mx-auto px-4 relative flex justify-center">
-            {/* Main horizontal scrolling container / centered video container */}
-            <div 
-              ref={videoSliderRef}
-              className="flex justify-center pb-8 pt-2 px-1"
-            >
-              {youtubeShortsList.map((video) => (
-                <div 
-                  key={video.id}
-                  className="w-[280px] md:w-[310px] h-[520px] shrink-0 rounded-[2.2rem] bg-slate-950 border border-slate-200/80 shadow-lg relative overflow-hidden group hover:border-gold hover:shadow-[0_15px_35px_rgba(212,175,55,0.12)] transition-all duration-300"
-                >
-                  <div className="absolute inset-0 overflow-hidden rounded-[2.2rem] bg-black">
-                    <iframe
-                      title={video.title}
-                      src={`https://www.youtube.com/embed/${video.id}?autoplay=0&mute=1&loop=1&playlist=${video.id}&controls=1&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&playsinline=1&fs=0&disablekb=1&enablejsapi=1`}
-                      className="absolute w-full h-[620px] top-[-50px] left-0 pointer-events-auto border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-
-                  {/* Gradient overlays to soften boundaries */}
-                  <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/20 to-transparent pointer-events-none" />
-                  <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent pointer-events-none" />
-
-                  {/* Top VIP Badge */}
-                  <div className="absolute top-4 left-4 z-10 pointer-events-none flex items-center gap-1.5 px-3 py-1 bg-gold/90 backdrop-blur-md rounded-full text-white text-[10px] font-bold uppercase tracking-wider text-slate-950 shadow-md shadow-gold/20">
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                    En direct
-                  </div>
-
-                  {/* Bottom Luxury Title Bar Info */}
-                  <div className="absolute bottom-4 left-4 right-4 bg-slate-950/90 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 flex justify-between items-center pointer-events-none z-10">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-gold uppercase tracking-widest font-black">Escapade</span>
-                      <span className="text-white text-xs font-serif font-bold mt-0.5">{video.title}</span>
-                    </div>
-                    <div className="px-2.5 py-1 bg-gold text-slate-950 font-black text-[9px] uppercase tracking-wider rounded-lg shadow-sm">
-                      VOIR
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-
 
       </div>
 

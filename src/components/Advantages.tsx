@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { Hotel, Car, Plane, ShoppingBag, Headphones } from "lucide-react";
+import { Hotel, Car, Plane, ShoppingBag } from "lucide-react";
 
 const advantages = [
   {
@@ -28,7 +28,7 @@ const advantages = [
   }
 ];
 
-export default function Advantages({ onExploreHotels }: { onExploreHotels?: () => void }) {
+export default function Advantages({ onExploreHotels, onExploreCars }: { onExploreHotels?: () => void; onExploreCars?: () => void }) {
   return (
     <section id="avantages" className="py-24 bg-slate-50/70 relative overflow-hidden">
       <div className="container mx-auto px-6">
@@ -90,6 +90,13 @@ export default function Advantages({ onExploreHotels }: { onExploreHotels?: () =
                   {adv.title === "Hôtels de luxe" && onExploreHotels ? (
                     <button 
                       onClick={onExploreHotels}
+                      className="inline-flex items-center justify-center px-6 py-3 bg-gold text-slate-950 text-xs tracking-widest uppercase font-bold rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer w-full text-center"
+                    >
+                      En savoir plus
+                    </button>
+                  ) : adv.title === "Location de voiture" && onExploreCars ? (
+                    <button 
+                      onClick={onExploreCars}
                       className="inline-flex items-center justify-center px-6 py-3 bg-gold text-slate-950 text-xs tracking-widest uppercase font-bold rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer w-full text-center"
                     >
                       En savoir plus

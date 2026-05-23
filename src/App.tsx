@@ -5,12 +5,13 @@ import About from "./components/About";
 import FinalCTA from "./components/FinalCTA";
 import Preloader from "./components/Preloader";
 import LuxuryHotelsPage from "./components/LuxuryHotelsPage";
+import CarRentalPage from "./components/CarRentalPage";
 import { motion, useScroll, useSpring, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const [view, setView] = useState<"home" | "hotels">("home");
+  const [view, setView] = useState<"home" | "hotels" | "cars">("home");
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -50,14 +51,20 @@ export default function App() {
               transition={{ duration: 0.5, ease: "easeInOut" }}
             >
               <Hero />
-              <Advantages onExploreHotels={() => {
-                setView("hotels");
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }} />
+              <Advantages 
+                onExploreHotels={() => {
+                  setView("hotels");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }} 
+                onExploreCars={() => {
+                  setView("cars");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+              />
               <About />
               <FinalCTA />
             </motion.div>
-          ) : (
+          ) : view === "hotels" ? (
             <motion.div
               key="hotels"
               initial={{ opacity: 0, scale: 0.98 }}
@@ -66,6 +73,19 @@ export default function App() {
               transition={{ duration: 0.5, ease: "easeInOut" }}
             >
               <LuxuryHotelsPage onBack={() => {
+                setView("home");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="cars"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+            >
+              <CarRentalPage onBack={() => {
                 setView("home");
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }} />
