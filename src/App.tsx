@@ -19,6 +19,27 @@ export default function App() {
     restDelta: 0.001
   });
 
+  // Handle initial view resolution from URL ?view= query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const initialView = params.get("view");
+    if (initialView === "hotels" || initialView === "cars") {
+      setView(initialView);
+    }
+  }, []);
+
+  // Update URL search parameters when view state changes
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (view === "home") {
+      params.delete("view");
+    } else {
+      params.set("view", view);
+    }
+    const newRelativePathQuery = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    window.history.replaceState(null, '', newRelativePathQuery);
+  }, [view]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
