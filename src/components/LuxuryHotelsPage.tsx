@@ -2,10 +2,18 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   ArrowLeft, Search, Calendar, Users, Euro, MapPin, Navigation, 
-  X, Check, ChevronRight, Play, Volume2, VolumeX, Eye, Maximize2, MoveLeft, MoveRight
+  X, Check, ChevronRight, Play, Volume2, VolumeX, Eye, Maximize2, MoveLeft, MoveRight,
+  Loader2
 } from "lucide-react";
 
 // Types
+interface ApiCitySuggestion {
+  name: string;
+  country: string;
+  flag: string;
+  state?: string;
+  fullName: string;
+}
 interface HotelOffer {
   id: number;
   name: string;
@@ -222,6 +230,103 @@ const youtubeShortsList = [
   { id: "dhn2VjPKG0k", title: "Palaces de Rêve" }
 ];
 
+interface GlobalCity {
+  name: string;
+  country: string;
+  flag: string;
+}
+
+const globalCities: GlobalCity[] = [
+  { name: "Paris", country: "France", flag: "🇫🇷" },
+  { name: "Saint-Tropez", country: "France", flag: "🇫🇷" },
+  { name: "Cannes", country: "France", flag: "🇫🇷" },
+  { name: "Monaco", country: "Monaco", flag: "🇲🇨" },
+  { name: "Nice", country: "France", flag: "🇫🇷" },
+  { name: "Marseille", country: "France", flag: "🇫🇷" },
+  { name: "Lyon", country: "France", flag: "🇫🇷" },
+  { name: "Bordeaux", country: "France", flag: "🇫🇷" },
+  { name: "Chamonix", country: "France", flag: "🇫🇷" },
+  { name: "Courchevel", country: "France", flag: "🇫🇷" },
+  { name: "Megève", country: "France", flag: "🇫🇷" },
+  { name: "Saint-Jean-Cap-Ferrat", country: "France", flag: "🇫🇷" },
+  { name: "Cap d'Antibes", country: "France", flag: "🇫🇷" },
+  { name: "Maldives", country: "Maldives", flag: "🇲🇻" },
+  { name: "Dubaï", country: "Émirats Arabes Unis", flag: "🇦🇪" },
+  { name: "Bora Bora", country: "Polynésie Française", flag: "🇵🇫" },
+  { name: "Bali", country: "Indonésie", flag: "🇮🇩" },
+  { name: "Phuket", country: "Thaïlande", flag: "🇹🇭" },
+  { name: "Koh Samui", country: "Thaïlande", flag: "🇹🇭" },
+  { name: "Bangkok", country: "Thaïlande", flag: "🇹🇭" },
+  { name: "Mykonos", country: "Grèce", flag: "🇬🇷" },
+  { name: "Santorin", country: "Grèce", flag: "🇬🇷" },
+  { name: "Ibiza", country: "Espagne", flag: "🇪🇸" },
+  { name: "Majorque", country: "Espagne", flag: "🇪🇸" },
+  { name: "Barcelone", country: "Espagne", flag: "🇪🇸" },
+  { name: "Madrid", country: "Espagne", flag: "🇪🇸" },
+  { name: "Séville", country: "Espagne", flag: "🇪🇸" },
+  { name: "Londres", country: "Royaume-Uni", flag: "🇬🇧" },
+  { name: "New York", country: "États-Unis", flag: "🇺🇸" },
+  { name: "Los Angeles", country: "États-Unis", flag: "🇺🇸" },
+  { name: "Miami", country: "États-Unis", flag: "🇺🇸" },
+  { name: "Las Vegas", country: "États-Unis", flag: "🇺🇸" },
+  { name: "Hawaii", country: "États-Unis", flag: "🇺🇸" },
+  { name: "Aspen", country: "États-Unis", flag: "🇺🇸" },
+  { name: "Tokyo", country: "Japon", flag: "🇯🇵" },
+  { name: "Kyoto", country: "Japon", flag: "🇯🇵" },
+  { name: "Rome", country: "Italie", flag: "🇮🇹" },
+  { name: "Venise", country: "Italie", flag: "🇮🇹" },
+  { name: "Florence", country: "Italie", flag: "🇮🇹" },
+  { name: "Milan", country: "Italie", flag: "🇮🇹" },
+  { name: "Capri", country: "Italie", flag: "🇮🇹" },
+  { name: "Amalfi", country: "Italie", flag: "🇮🇹" },
+  { name: "Portofino", country: "Italie", flag: "🇮🇹" },
+  { name: "Genève", country: "Suisse", flag: "🇨🇭" },
+  { name: "Zurich", country: "Suisse", flag: "🇨🇭" },
+  { name: "Gstaad", country: "Suisse", flag: "🇨🇭" },
+  { name: "Zermatt", country: "Suisse", flag: "🇨🇭" },
+  { name: "Saint-Moritz", country: "Suisse", flag: "🇨🇭" },
+  { name: "Bruxelles", country: "Belgique", flag: "🇧🇪" },
+  { name: "Amsterdam", country: "Pays-Bas", flag: "🇳🇱" },
+  { name: "Lisbonne", country: "Portugal", flag: "🇵🇹" },
+  { name: "Porto", country: "Portugal", flag: "🇵🇹" },
+  { name: "Marrakech", country: "Maroc", flag: "🇲🇦" },
+  { name: "Casablanca", country: "Maroc", flag: "🇲🇦" },
+  { name: "Le Caire", country: "Égypte", flag: "🇪🇬" },
+  { name: "Seychelles", country: "Seychelles", flag: "🇸🇨" },
+  { name: "Île Maurice", country: "Île Maurice", flag: "🇲🇺" },
+  { name: "Zanzibar", country: "Tanzanie", flag: "🇹🇿" },
+  { name: "Le Cap", country: "Afrique du Sud", flag: "🇿🇦" },
+  { name: "Singapour", country: "Singapour", flag: "🇸🇬" },
+  { name: "Hong Kong", country: "Hong Kong", flag: "🇭🇰" },
+  { name: "Séoul", country: "Corée du Sud", flag: "🇰🇷" },
+  { name: "Sydney", country: "Australie", flag: "🇦🇺" },
+  { name: "Melbourne", country: "Australie", flag: "🇦🇺" },
+  { name: "Auckland", country: "Nouvelle-Zélande", flag: "🇳🇿" },
+  { name: "Saint-Barthélemy", country: "Saint-Barth", flag: "🇫🇷" },
+  { name: "Nassau", country: "Bahamas", flag: "🇧🇸" },
+  { name: "Cancún", country: "Mexique", flag: "🇲🇽" },
+  { name: "Tulum", country: "Mexique", flag: "🇲🇽" },
+  { name: "Punta Cana", country: "République Dominicaine", flag: "🇩🇴" },
+  { name: "Rio de Janeiro", country: "Brésil", flag: "🇧🇷" },
+  { name: "Buenos Aires", country: "Argentine", flag: "🇦🇷" },
+  { name: "Carthagène", country: "Colombie", flag: "🇨🇴" },
+  { name: "Istanbul", country: "Turquie", flag: "🇹🇷" },
+  { name: "Vienne", country: "Autriche", flag: "🇦🇹" },
+  { name: "Prague", country: "République Tchèque", flag: "🇨🇿" },
+  { name: "Munich", country: "Allemagne", flag: "🇩🇪" },
+  { name: "Athènes", country: "Grèce", flag: "🇬🇷" },
+  { name: "Budapest", country: "Hongrie", flag: "🇭🇺" },
+  { name: "Copenhague", country: "Danemark", flag: "🇩🇰" },
+  { name: "Oslo", country: "Norvège", flag: "🇳🇴" },
+  { name: "Stockholm", country: "Suède", flag: "🇸🇪" },
+  { name: "Reykjavik", country: "Islande", flag: "🇮🇸" },
+  { name: "Toronto", country: "Canada", flag: "🇨🇦" },
+  { name: "Montréal", country: "Canada", flag: "🇨🇦" },
+  { name: "Doha", country: "Qatar", flag: "🇶🇦" },
+  { name: "Mascate", country: "Oman", flag: "🇴🇲" },
+  { name: "Abou Dabi", country: "Émirats Arabes Unis", flag: "🇦🇪" }
+];
+
 interface LuxuryHotelsPageProps {
   onBack: () => void;
 }
@@ -233,10 +338,100 @@ export default function LuxuryHotelsPage({ onBack }: LuxuryHotelsPageProps) {
   const [activeFeedbackLightboxIndex, setActiveFeedbackLightboxIndex] = useState<number | null>(null);
 
   // Form search states
-  const [departureCity, setDepartureCity] = useState("");
   const [destination, setDestination] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [guests, setGuests] = useState("2");
   const [maxBudget, setMaxBudget] = useState("");
+  const [apiSuggestions, setApiSuggestions] = useState<ApiCitySuggestion[]>([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+
+  // Debounced Osm Autocomplete API
+  useEffect(() => {
+    if (destination.trim().length < 2) {
+      setApiSuggestions([]);
+      setIsLoadingSuggestions(false);
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(destination)}&format=json&addressdetails=1&limit=10&accept-language=fr`,
+          {
+            headers: {
+              "Accept": "application/json"
+            }
+          }
+        );
+        if (!response.ok) throw new Error("API response error");
+        const data = await response.json();
+        
+        const parsedSuggestions: ApiCitySuggestion[] = [];
+        const seen = new Set<string>();
+
+        for (const item of data) {
+          const addr = item.address;
+          if (!addr) continue;
+
+          // Prefer town, city, village, etc. fallback to main name or province
+          const cityName = addr.city || addr.town || addr.village || addr.municipality || addr.hamlet || addr.suburb || addr.island || addr.state_district || item.name;
+          const country = addr.country;
+          
+          if (!cityName || !country) continue;
+          
+          const countryCode = addr.country_code ? addr.country_code.toUpperCase() : "";
+          
+          // Generate emoji flag dynamically from ISO code
+          let flag = "📍";
+          if (countryCode) {
+            const codePoints = countryCode
+              .split("")
+              .map((char: string) => 127397 + char.charCodeAt(0));
+            try {
+              flag = String.fromCodePoint(...codePoints);
+            } catch (e) {
+              flag = "📍";
+            }
+          }
+          
+          const state = addr.state || addr.region || addr.county || undefined;
+          const formattedState = state && state.toLowerCase() !== cityName.toLowerCase() ? state : undefined;
+          
+          const uniqueKey = `${cityName.toLowerCase()}-${(formattedState || "").toLowerCase()}-${country.toLowerCase()}`;
+          if (seen.has(uniqueKey)) continue;
+          seen.add(uniqueKey);
+
+          parsedSuggestions.push({
+            name: cityName,
+            country: country,
+            flag: flag,
+            state: formattedState,
+            fullName: `${cityName}${formattedState ? `, ${formattedState}` : ""}, ${country}`
+          });
+        }
+
+        setApiSuggestions(parsedSuggestions);
+      } catch (error) {
+        console.error("Error fetching city suggestions:", error);
+        // Robust fallback using our local luxurious cities catalog
+        const term = destination.toLowerCase();
+        const localMatches = globalCities
+          .filter(c => c.name.toLowerCase().includes(term) || c.country.toLowerCase().includes(term))
+          .map(c => ({
+            name: c.name,
+            country: c.country,
+            flag: c.flag,
+            fullName: `${c.name}, ${c.country}`
+          }));
+        setApiSuggestions(localMatches);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [destination]);
   
   // Date Picker States
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -246,6 +441,7 @@ export default function LuxuryHotelsPage({ onBack }: LuxuryHotelsPageProps) {
   const [hoverDate, setHoverDate] = useState<Date | null>(null);
   
   const calendarRef = useRef<HTMLDivElement>(null);
+  const destinationRef = useRef<HTMLDivElement>(null);
   const videoSliderRef = useRef<HTMLDivElement>(null);
 
   const scrollVideoSlider = (direction: "left" | "right") => {
@@ -265,11 +461,14 @@ export default function LuxuryHotelsPage({ onBack }: LuxuryHotelsPageProps) {
     3: true
   });
 
-  // Handle clicking outside calendar to close it
+  // Handle clicking outside calendar and destination suggestions to close them
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
         setIsCalendarOpen(false);
+      }
+      if (destinationRef.current && !destinationRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -396,7 +595,6 @@ export default function LuxuryHotelsPage({ onBack }: LuxuryHotelsPageProps) {
     
     // WhatsApp prefilled template
     const message = `Bonjour, je souhaite une recherche d’hôtel de luxe.
-Ville de départ : ${departureCity || "Non spécifié"}
 Destination : ${destination || "Non spécifié"}
 Nombre de personnes : ${guests || "Non spécifié"}
 Budget maximum : ${maxBudget ? maxBudget + "€" : "Non spécifié"}
@@ -447,7 +645,7 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
   };
 
   return (
-    <div className="pt-24 pb-16 bg-[#10224a] text-white relative z-10 w-full">
+    <div className="pt-24 pb-16 bg-white text-slate-900 relative z-10 w-full">
       {/* Dynamic continuous animation style injection */}
       <style>{`
         @keyframes scrollLeftContinuous {
@@ -470,7 +668,7 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
         <div className="flex items-center gap-4 mb-10">
           <button 
             onClick={onBack}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white/10 border border-white/20 hover:border-gold hover:text-gold text-white transition-all rounded-full text-xs font-bold uppercase tracking-widest cursor-pointer"
+            className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 border border-slate-200/60 hover:border-gold hover:text-gold text-slate-800 transition-all rounded-full text-xs font-bold uppercase tracking-widest cursor-pointer"
           >
             <ArrowLeft size={16} /> Retour à l'accueil
           </button>
@@ -503,27 +701,10 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
             Trouver un hôtel d'exception
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             
-            {/* Ville de départ */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] uppercase font-bold tracking-widest text-amber-700 flex items-center gap-1.5">
-                <Navigation size={12} /> Ville de départ
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Paris, Genève, Bruxelles..."
-                  value={departureCity}
-                  onChange={(e) => setDepartureCity(e.target.value)}
-                  className="w-full bg-white border border-slate-200 focus:border-gold outline-none px-4 py-3.5 pl-10 rounded-xl text-sm text-slate-900 placeholder-slate-400/90 transition-all"
-                />
-                <MapPin className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gold w-4 h-4" />
-              </div>
-            </div>
-
-            {/* Destination */}
-            <div className="flex flex-col gap-2">
+            {/* Destination with Autocomplete */}
+            <div className="flex flex-col gap-2 relative" ref={destinationRef}>
               <label className="text-[10px] uppercase font-bold tracking-widest text-amber-700 flex items-center gap-1.5">
                 <MapPin size={12} /> Destination souhaitée
               </label>
@@ -532,11 +713,100 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
                   type="text"
                   placeholder="Maldives, Dubaï, Saint-Tropez..."
                   value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  className="w-full bg-white border border-slate-200 focus:border-gold outline-none px-4 py-3.5 pl-10 rounded-xl text-sm text-slate-900 placeholder-slate-400/90 transition-all"
+                  onChange={(e) => {
+                    setDestination(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  className="w-full bg-white border border-slate-200 focus:border-gold outline-none px-4 py-3.5 pl-10 pr-10 rounded-xl text-sm text-slate-900 placeholder-slate-400/90 transition-all"
                 />
-                <MapPin className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gold w-4 h-4 animate-pulse" />
+                <MapPin className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gold w-4 h-4" />
+                {isLoadingSuggestions && (
+                  <Loader2 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gold w-4 h-4 animate-spin" />
+                )}
               </div>
+
+              {/* Suggestions Dropdown */}
+              <AnimatePresence>
+                {showSuggestions && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 5 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full left-0 right-0 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl max-h-72 overflow-y-auto mt-1 scrollbar-thin"
+                  >
+                    {destination.trim().length > 0 ? (
+                      destination.trim().length < 2 ? (
+                        <div className="px-4 py-4 text-center text-slate-400 text-xs">
+                          Entrez au moins 2 caractères...
+                        </div>
+                      ) : apiSuggestions.length > 0 ? (
+                        apiSuggestions.map((city, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => {
+                              setDestination(city.fullName);
+                              setShowSuggestions(false);
+                            }}
+                            className="px-4 py-3 hover:bg-slate-50 flex items-center justify-between cursor-pointer border-b border-slate-100 last:border-b-0 transition-all text-xs"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl select-none" role="img" aria-label={city.country}>
+                                {city.flag}
+                              </span>
+                              <div className="flex flex-col">
+                                <span className="text-slate-950 font-bold text-sm">
+                                  {city.name}
+                                </span>
+                                {city.state && (
+                                  <span className="text-[11px] text-slate-500 font-medium">
+                                    {city.state}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-100 px-2 py-1 rounded-md shrink-0">
+                              {city.country}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        !isLoadingSuggestions && (
+                          <div className="px-4 py-4 text-center text-slate-400 text-xs">
+                            Aucune destination trouvée
+                          </div>
+                        )
+                      )
+                    ) : (
+                      <div className="px-3 py-2 text-[10px] uppercase font-bold tracking-widest text-slate-400 border-b border-slate-100 bg-slate-50/50">
+                        Destinations Populaires
+                      </div>
+                    )}
+                    {destination.trim().length === 0 &&
+                      globalCities.slice(0, 7).map((city, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => {
+                            setDestination(`${city.name}, ${city.country}`);
+                            setShowSuggestions(false);
+                          }}
+                          className="px-4 py-3 hover:bg-slate-50 flex items-center justify-between cursor-pointer border-b border-slate-100 last:border-b-0 transition-all text-xs"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl select-none" role="img" aria-label={city.country}>
+                              {city.flag}
+                            </span>
+                            <span className="text-slate-950 font-semibold text-sm">{city.name}</span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider bg-slate-100 px-2 py-1 rounded-md shrink-0">
+                            {city.country}
+                          </span>
+                        </div>
+                      ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Dates (Interactive Calendar Trigger) */}
@@ -690,8 +960,8 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
         {/* 2. Slow scrolling auto-carousels of luxury hotel promotional offers */}
         <div className="mb-24 relative overflow-hidden">
           <div className="max-w-3xl mx-auto text-center mb-10 px-4">
-            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-white">Offres du moment</h2>
-            <p className="text-blue-100/80 font-light text-sm">
+            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-slate-800">Offres du moment</h2>
+            <p className="text-slate-500 font-light text-sm">
               Une sélection prestigieuse d'escapades avec avantages financiers exclusifs réservés aux membres de notre réseau.
             </p>
           </div>
@@ -751,8 +1021,8 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
         <div className="mb-24 relative overflow-hidden">
           <div className="max-w-3xl mx-auto text-center mb-10 px-4">
             <span className="text-gold tracking-[0.4em] uppercase text-xs font-bold mb-3 block">Conversations réelles</span>
-            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-white font-serif">Vos Messages & Retours</h2>
-            <p className="text-blue-100/80 font-light text-sm">
+            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-slate-800">Vos Messages & Retours</h2>
+            <p className="text-slate-500 font-light text-sm">
               Quelques retours authentiques partagés fièrement par nos membres privilégiés à la suite de leurs escapades.
             </p>
           </div>
@@ -788,8 +1058,8 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
         <div className="mb-24 relative overflow-hidden">
           <div className="max-w-3xl mx-auto text-center mb-8 px-4">
             <span className="text-gold tracking-[0.4em] uppercase text-xs font-bold mb-3 block">Récits d'Excellence</span>
-            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-white">Moments d'Exception</h2>
-            <p className="text-blue-100/80 font-light text-sm">
+            <h2 className="text-3xl md:text-4xl font-serif mb-4 text-slate-800">Moments d'Exception</h2>
+            <p className="text-slate-500 font-light text-sm">
               Découvrez l'atmosphère unique de cet établissement hors du commun.
             </p>
           </div>

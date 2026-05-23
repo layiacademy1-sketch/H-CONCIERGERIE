@@ -23,6 +23,7 @@ export default function Hero() {
         <div className="absolute inset-0 bg-gradient-to-t from-luxury-black via-transparent to-luxury-black/40" />
       </div>
 
+
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-6xl mx-auto flex flex-col items-center text-center">
           {/* Excellence + Logo */}

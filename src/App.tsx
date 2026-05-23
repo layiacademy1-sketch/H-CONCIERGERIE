@@ -26,7 +26,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-luxury-black selection:bg-gold selection:text-luxury-black">
+    <div className="relative min-h-screen bg-white selection:bg-gold selection:text-slate-900">
       <AnimatePresence>
         {isLoading && <Preloader />}
       </AnimatePresence>

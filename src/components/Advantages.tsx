@@ -30,7 +30,7 @@ const advantages = [
 
 export default function Advantages({ onExploreHotels }: { onExploreHotels?: () => void }) {
   return (
-    <section id="avantages" className="py-24 bg-luxury-gray relative overflow-hidden">
+    <section id="avantages" className="py-24 bg-slate-50/70 relative overflow-hidden">
       <div className="container mx-auto px-6">
         <div className="text-center max-w-3xl mx-auto mb-20">
           <motion.span
@@ -43,7 +43,7 @@ export default function Advantages({ onExploreHotels }: { onExploreHotels?: () =
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-serif mb-6"
+            className="text-4xl md:text-5xl font-serif mb-6 text-slate-900"
           >
             L'Excellence dans chaque détail
           </motion.h2>
@@ -51,7 +51,7 @@ export default function Advantages({ onExploreHotels }: { onExploreHotels?: () =
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-white/60 font-light leading-relaxed"
+            className="text-slate-600 font-light leading-relaxed"
           >
             H-CONCIERGERIE redéfinit les standards du service haut de gamme. En tant que membre, vous bénéficiez d'un accès privilégié à un réseau mondial de partenaires d'exception.
           </motion.p>
@@ -65,7 +65,7 @@ export default function Advantages({ onExploreHotels }: { onExploreHotels?: () =
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -10 }}
-              className="group glass-card rounded-3xl overflow-hidden flex flex-col h-full"
+              className="group bg-white border border-slate-100/80 rounded-3xl overflow-hidden flex flex-col h-full shadow-[0_15px_45px_rgba(0,0,0,0.03)] hover:shadow-2xl hover:border-gold/30 transition-all duration-300"
             >
               <div className="h-64 overflow-hidden relative">
                 <img
@@ -74,23 +74,23 @@ export default function Advantages({ onExploreHotels }: { onExploreHotels?: () =
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute inset-0 bg-luxury-black/40 group-hover:bg-luxury-black/20 transition-colors" />
-                <div className="absolute top-6 left-6 p-3 bg-luxury-black/60 backdrop-blur-md rounded-xl">
+                <div className="absolute inset-0 bg-slate-900/40 group-hover:bg-slate-900/20 transition-colors" />
+                <div className="absolute top-6 left-6 p-3 bg-slate-950/70 backdrop-blur-md rounded-xl">
                   {adv.icon}
                 </div>
               </div>
               <div className="p-8 flex-grow flex flex-col">
-                <h3 className="text-2xl font-serif mb-4 group-hover:text-gold transition-colors">
+                <h3 className="text-2xl font-serif mb-4 text-slate-800 group-hover:text-gold transition-colors">
                   {adv.title}
                 </h3>
-                <p className="text-white/60 font-light leading-relaxed mb-6">
+                <p className="text-slate-600 font-light leading-relaxed mb-6">
                   {adv.description}
                 </p>
                 <div className="mt-auto">
                   {adv.title === "Hôtels de luxe" && onExploreHotels ? (
                     <button 
                       onClick={onExploreHotels}
-                      className="inline-flex items-center justify-center px-6 py-3 bg-gold text-luxury-black text-xs tracking-widest uppercase font-bold rounded-full hover:bg-white transition-all duration-300 cursor-pointer w-full text-center"
+                      className="inline-flex items-center justify-center px-6 py-3 bg-gold text-slate-950 text-xs tracking-widest uppercase font-bold rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer w-full text-center"
                     >
                       En savoir plus
                     </button>
@@ -99,7 +99,7 @@ export default function Advantages({ onExploreHotels }: { onExploreHotels?: () =
                       href="https://wa.me/33774067388"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center px-6 py-3 bg-gold text-luxury-black text-xs tracking-widest uppercase font-bold rounded-full hover:bg-white transition-all duration-300 group/btn w-full text-center"
+                      className="inline-flex items-center justify-center px-6 py-3 bg-gold text-slate-950 text-xs tracking-widest uppercase font-bold rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300 group/btn w-full text-center"
                     >
                       En savoir plus
                     </a>

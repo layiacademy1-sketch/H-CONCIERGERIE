@@ -23,7 +23,7 @@ export default function Header({ view, setView }: { view?: string; setView?: (vi
   return (
     <header
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
-        scrolled ? "bg-luxury-black/90 backdrop-blur-lg py-4 shadow-2xl" : "bg-transparent py-6"
+        scrolled ? "bg-white/95 backdrop-blur-lg py-4 border-b border-slate-100 shadow-md" : "bg-transparent py-6"
       }`}
     >
       <div className="container mx-auto px-6 flex justify-between items-center">
@@ -53,7 +53,9 @@ export default function Header({ view, setView }: { view?: string; setView?: (vi
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="text-sm font-medium tracking-widest uppercase hover:text-gold transition-colors duration-300"
+              className={`text-sm font-medium tracking-widest uppercase transition-colors duration-300 ${
+                scrolled ? "text-slate-800 hover:text-gold" : "text-white/90 hover:text-gold"
+              }`}
             >
               {link.name}
             </motion.a>
@@ -61,7 +63,12 @@ export default function Header({ view, setView }: { view?: string; setView?: (vi
         </nav>
 
         {/* Mobile Toggle */}
-        <button className="md:hidden text-white" onClick={() => setIsOpen(!isOpen)}>
+        <button 
+          className={`md:hidden transition-colors duration-300 ${
+            scrolled ? "text-slate-800" : "text-white"
+          }`} 
+          onClick={() => setIsOpen(!isOpen)}
+        >
           {isOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
@@ -71,7 +78,7 @@ export default function Header({ view, setView }: { view?: string; setView?: (vi
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-full left-0 w-full bg-luxury-gray border-t border-white/10 py-8 px-6 md:hidden flex flex-col gap-6 shadow-2xl"
+          className="absolute top-full left-0 w-full bg-white border-t border-slate-100 py-8 px-6 md:hidden flex flex-col gap-6 shadow-2xl"
         >
           {navLinks.map((link) => (
             <a
@@ -81,7 +88,7 @@ export default function Header({ view, setView }: { view?: string; setView?: (vi
                 setView?.("home");
                 setIsOpen(false);
               }}
-              className="text-lg font-serif tracking-wide hover:text-gold transition-colors"
+              className="text-lg font-serif tracking-wide text-slate-800 hover:text-gold transition-colors"
             >
               {link.name}
             </a>
