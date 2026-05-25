@@ -228,6 +228,33 @@ const hotelOffers: HotelOffer[] = [
     viewers: 28,
     flashPeriod: "21 juin - 28 juin",
     externalUrl: "https://all.accor.com/hotel/3569/index.fr.shtml"
+  },
+  {
+    id: 13,
+    name: "Fairmont Rio de Janeiro Copacabana 5 étoiles",
+    hotel: "Fairmont Rio de Janeiro Copacabana",
+    location: "Rio de Janeiro, Brésil",
+    description: "Une icône de prestige offrant une vue panoramique imprenable sur la célèbre plage de Copacabana.",
+    longDescription: "Au Fairmont Rio de Janeiro Copacabana, profitez d'une expérience unique et incomparable pendant votre séjour d'affaires ou de loisirs. Profitez des services du spa, du sauna, des massages et du salon de beauté du Fairmont SPA, ainsi que de la piscine à débordement pour vous ressourcer. Hôtel de luxe avec café, bar à cocktails, délicieux restaurant de fruits de mer, salles de réunion et d'événements, ainsi qu'une magnifique vue panoramique sur Rio de Janeiro.",
+    image: "https://image.noelshack.com/fichiers/2026/22/1/1779717319-1988-ho-00-p-2048x1536.jpg",
+    images: [
+      "https://image.noelshack.com/fichiers/2026/22/1/1779717319-1988-ho-00-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779717321-1988-ho-01-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779717325-1988-ho-03-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779717330-1988-ho-08-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779717332-1988-ro-00-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779717334-1988-ro-04-p-2048x1536.jpg"
+    ],
+    price: "1463 €",
+    rating: 5,
+    services: [],
+    conditions: [],
+    discount: "-45%",
+    oldPrice: "2660 €",
+    nights: "7 nuits | 2 adultes",
+    viewers: 24,
+    flashPeriod: "20 juin - 27 juin",
+    externalUrl: "https://all.accor.com/hotel/1988/index.fr.shtml"
   }
 ];
 
