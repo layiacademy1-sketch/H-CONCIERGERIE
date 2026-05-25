@@ -200,6 +200,34 @@ const hotelOffers: HotelOffer[] = [
     viewers: 28,
     flashPeriod: "26 juin - 3 juil.",
     externalUrl: "https://all.accor.com/hotel/B1W0/index.fr.shtml"
+  },
+  {
+    id: 12,
+    name: "Sofitel Marrakech Palais Impérial & Spa 5 étoiles",
+    hotel: "Sofitel Marrakech Palais Impérial & Spa",
+    location: "Marrakech, Maroc",
+    description: "Un espace de calme et de volupté au milieu d'un somptueux jardin face aux montagnes de l'Atlas.",
+    longDescription: "Conçu dans un style contemporain, l'hôtel 5 étoiles Sofitel Marrakech Palais Impérial & Spa est un espace de calme et de volupté au milieu d'un somptueux jardin avec vue sur les montagnes de l'Atlas. Ressourcez votre corps et votre esprit dans ce luxueux havre de paix à quelques pas de la Médina. Ce bel établissement vous promet des moments de détente dans ses piscines extérieures, son spa, sa salle de fitness, ses restaurants gastronomiques et ses bars. Un moment unique au coeur de la ville Ocre.",
+    image: "https://image.noelshack.com/fichiers/2026/22/1/1779711916-3569-ho-00-p-2048x1536.jpg",
+    images: [
+      "https://image.noelshack.com/fichiers/2026/22/1/1779711916-3569-ho-00-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779711918-3569-ho-01-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779711920-3569-ho-02-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779711923-3569-ho-03-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779711925-3569-ho-04-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779711927-3569-ho-05-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779711929-3569-ho-08-p-2048x1536.jpg"
+    ],
+    price: "953 €",
+    rating: 5,
+    services: [],
+    conditions: [],
+    discount: "-49%",
+    oldPrice: "1886 €",
+    nights: "7 nuits | 2 adultes",
+    viewers: 28,
+    flashPeriod: "21 juin - 28 juin",
+    externalUrl: "https://all.accor.com/hotel/3569/index.fr.shtml"
   }
 ];
 
