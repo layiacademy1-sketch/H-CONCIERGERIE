@@ -48,11 +48,11 @@ interface Testimonial {
 const hotelOffers: HotelOffer[] = [
   {
     id: 6,
-    name: "Pullman Tokyo Hotel 5 étoiles",
-    hotel: "Pullman Tokyo",
+    name: "Fairmont Tokyo 5 étoiles",
+    hotel: "Fairmont Tokyo",
     location: "Minato-ku, Tokyo, Japon",
-    description: "Un havre de paix contemporain alliant l'élégance de la marque Pullman au raffinement japonais, offrant des vues imprenables sur Tokyo.",
-    longDescription: `Hôtel international pour les voyageurs hyper-connectés\n\nQue vous voyagiez pour affaires ou loisirs, le Pullman Tokyo Tamachi répond aux attentes des voyageurs exigeants dans cette métropole emblématique. Situé à Tamachi, avec des transports à quelques minutes, il offre un accès facile à la ville. Son design mêle art et culture japonaise contemporains, faisant de l'hôtel une base idéale pour courts ou longs séjours. Vivez Tokyo autrement au Pullman Tokyo.\n\nLe Pullman Tokyo Tamachi est un hôtel avec bar sur le toit situé à Tamachi, un quartier doté de canaux et l'un des principaux quartiers d'affaires de la ville. Il offre un accès direct à la gare de Tamachi via une passerelle intérieure au 2e étage.\n\nTokyo est facile à visiter. Elle est traversée par un réseau de trains et de métros. Prenez la ligne JR Yamanote à la gare de Tamachi accessible depuis l'hôtel pour rejoindre tout point de la ville. Ou connectez-vous au métro de Tokyo via la station Mita.`,
+    description: "Un havre de paix contemporain alliant l'élégance de la marque Fairmont au raffinement japonais, offrant des vues imprenables sur Tokyo.",
+    longDescription: `Un voyage captivant dans le ciel, alliant l'énergie de la ville à la sérénité de la baie. Expériences sur-mesure, hébergements pittoresques et moments de détente au spa. 217 chambres et suites, une piscine à débordement et de cinq restaurants pour créer des souvenirs inoubliables. Célébrez vos mariages et événements dans nos superbes espaces événementiels ou profitez de l'intimité du Fairmont Gold Lounge. Découvrez un héritage d'excellence\n\nÀ 6 minutes à pied de JR et de la gare de Tokyo Hamamatsucho. Suivez la direction de « BLUE FRONT SHIBAURA ». L'aéroport d'Haneda est à 13 minutes en train. Les gares de Tokyo et Shinagawa sont à environ 6 minutes en JR.`,
     image: "https://image.noelshack.com/fichiers/2026/22/1/1779706653-b6r8-ro-02-p-2048x1536.jpg",
     images: [
       "https://image.noelshack.com/fichiers/2026/22/1/1779706653-b6r8-ro-02-p-2048x1536.jpg",
