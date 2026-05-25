@@ -78,12 +78,14 @@ const hotelOffers: HotelOffer[] = [
     location: "Dakar, Sénégal",
     description: "Une oasis contemporaine d'exception surplombant l'océan Atlantique, au cœur de la capitale sénégalaise.",
     longDescription: "Bénéficiant d’une situation exceptionnelle au centre-ville de Dakar, avec une vue panoramique époustouflante sur l’océan Atlantique et l’île de Gorée, le Pullman Dakar Teranga est l'adresse privilégiée des voyageurs de prestige. Son design contemporain soigné fusionne harmonieusement avec la légendaire hospitalité Teranga sénégalaise. Détendez-vous au bord de notre piscine à débordement de classe mondiale, ressourcez-vous dans notre spa haut de gamme, ou découvrez de subtiles saveurs locales revisitées.",
-    image: "https://images.unsplash.com/photo-1540553016722-983e48a2cd10?auto=format&fit=crop&q=80&w=1200",
+    image: "https://image.noelshack.com/fichiers/2026/22/1/1779707711-0563-ho-03-p-2048x1536.jpg",
     images: [
-      "https://images.unsplash.com/photo-1540553016722-983e48a2cd10?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&q=80&w=1200"
+      "https://image.noelshack.com/fichiers/2026/22/1/1779707711-0563-ho-03-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779707724-0563-ro-05-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779707719-0563-ro-03-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779707717-0563-ro-01-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779707715-0563-ro-02-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779707702-0563-ho-01-p-2048x1536.jpg"
     ],
     price: "547 €",
     rating: 5,
@@ -103,12 +105,12 @@ const hotelOffers: HotelOffer[] = [
     location: "Masai Mara, Kenya",
     description: "Une expérience de safari de luxe incomparable sous des tentes majestueuses, nichée au cœur de la réserve nationale du Masai Mara.",
     longDescription: "Bordé sur trois côtés par la rivière Mara, le Fairmont Mara Safari Club est le summum du glamping et de l'aventure de prestige au Kenya. Surplombant des eaux peuplées d'hippopotames et de crocodiles, chaque tente de luxe dispose d'un pont d'observation privé. Vivez des safaris d'exception guidés pour observer les 'Big Five' au lever du soleil, avant de retrouver le confort raffiné de notre de piscine extérieure et d'un dîner mémorable sous les étoiles africaines.",
-    image: "https://images.unsplash.com/photo-1581850518616-bcb8077fa213?auto=format&fit=crop&q=80&w=1200",
+    image: "https://image.noelshack.com/fichiers/2026/22/1/1779707999-a5f3-ho-03-p-2048x1536.jpg",
     images: [
-      "https://images.unsplash.com/photo-1581850518616-bcb8077fa213?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=1200"
+      "https://image.noelshack.com/fichiers/2026/22/1/1779707999-a5f3-ho-03-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779707998-a5f3-ho-02-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779707998-a5f3-ho-01-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779707998-a5f3-ho-00-p-2048x1536.jpg"
     ],
     price: "2412 €",
     rating: 5,
@@ -120,6 +122,31 @@ const hotelOffers: HotelOffer[] = [
     viewers: 22,
     flashPeriod: "14 juin - 21 juin",
     externalUrl: "https://all.accor.com/hotel/A5F3/index.fr.shtml"
+  },
+  {
+    id: 9,
+    name: "Raffles Doha 5 étoiles",
+    hotel: "Raffles Doha",
+    location: "Doha, Qatar",
+    description: "Une merveille d'architecture ultra-luxe au design d'un palais moderne, nichée au cœur des sublimes Katara Towers.",
+    longDescription: "Le Raffles Doha, phare de l'hébergement ultra-luxueux, est une oasis de bien-être. Notre hôtel domine la ville et le golfe Persique dans les tours Katara, symbole sur le front de mer dans le quartier de Lusail. Doté de 132 suites opulentes, avec service de majordome personnalisé, de suites avec terrasse offrant une vue sur la mer ou la ville, ainsi que de restaurants/bars spectaculaires et d'un spa bien-être réparateur. Raffles Doha promet un séjour sans précédent dans la capitale du Qatar.",
+    image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&q=80&w=1200",
+    images: [
+      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&q=80&w=1200"
+    ],
+    price: "1305 €",
+    rating: 5,
+    services: [],
+    conditions: [],
+    discount: "-49%",
+    oldPrice: "2558 €",
+    nights: "7 nuits | 2 adultes",
+    viewers: 27,
+    flashPeriod: "21 juin - 28 juin",
+    externalUrl: "https://all.accor.com/hotel/B662/index.fr.shtml"
   }
 ];
 
