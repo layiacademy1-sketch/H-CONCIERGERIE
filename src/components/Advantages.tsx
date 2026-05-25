@@ -13,7 +13,7 @@ const advantages = [
     icon: <Car className="text-gold" size={32} />,
     title: "Location de voiture",
     description: "Profitez de tarifs préférentiels sur les véhicules de prestige et les locations standards jusqu'à -40%.",
-    image: "https://image.noelshack.com/fichiers/2026/16/2/1776185538-europcar-bretagne-saint-brieuc-location-voiture-camion-au-meilleur-prix-cd7bd3f0fe46262c4a06e0c1ed028e73.jpg"
+    image: "https://image.noelshack.com/fichiers/2026/22/1/1779734804-chatgpt-image-25-mai-2026-20-46-02.jpg"
   },
   {
     icon: <Plane className="text-gold" size={32} />,
