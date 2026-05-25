@@ -1295,18 +1295,20 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto"
+            onClick={() => setSelectedOffer(null)}
+            className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-4 pt-20 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto cursor-pointer"
           >
             <motion.div 
               initial={{ scale: 0.9, y: 30 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="bg-white border border-slate-200 rounded-[2.5rem] w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative"
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white border border-slate-200 rounded-[1.8rem] md:rounded-[2.5rem] w-full max-w-4xl max-h-[80vh] md:max-h-[90vh] overflow-y-auto shadow-2xl relative cursor-default"
             >
-              {/* Close Button */}
+              {/* Close Button - Positioned absolutely at the top-right of the card so it fits perfectly on all viewports */}
               <button
                 onClick={() => setSelectedOffer(null)}
-                className="absolute top-6 right-6 z-20 p-2.5 bg-black/60 rounded-full hover:bg-gold text-white hover:text-slate-900 border border-white/10 transition-colors cursor-pointer"
+                className="absolute top-4 right-4 md:top-6 md:right-6 z-[60] p-3 bg-slate-950/80 hover:bg-gold text-white hover:text-slate-900 border border-white/20 rounded-full transition-all shadow-xl cursor-pointer"
               >
                 <X size={20} />
               </button>
@@ -1442,6 +1444,16 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
                     </button>
                   </div>
 
+                </div>
+
+                {/* Secondary close button at the bottom of the content panel for excellent mobile accessibility */}
+                <div className="mt-8 pt-6 border-t border-slate-100 flex justify-center">
+                  <button
+                    onClick={() => setSelectedOffer(null)}
+                    className="flex items-center gap-2 px-6 py-3 border border-slate-200 text-slate-500 hover:border-gold hover:text-gold hover:bg-slate-50 text-[10px] uppercase font-bold tracking-widest rounded-xl transition-all duration-300 cursor-pointer bg-white"
+                  >
+                    Fermer les détails
+                  </button>
                 </div>
               </div>
             </motion.div>
