@@ -130,12 +130,13 @@ const hotelOffers: HotelOffer[] = [
     location: "Doha, Qatar",
     description: "Une merveille d'architecture ultra-luxe au design d'un palais moderne, nichée au cœur des sublimes Katara Towers.",
     longDescription: "Le Raffles Doha, phare de l'hébergement ultra-luxueux, est une oasis de bien-être. Notre hôtel domine la ville et le golfe Persique dans les tours Katara, symbole sur le front de mer dans le quartier de Lusail. Doté de 132 suites opulentes, avec service de majordome personnalisé, de suites avec terrasse offrant une vue sur la mer ou la ville, ainsi que de restaurants/bars spectaculaires et d'un spa bien-être réparateur. Raffles Doha promet un séjour sans précédent dans la capitale du Qatar.",
-    image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&q=80&w=1200",
+    image: "https://image.noelshack.com/fichiers/2026/22/1/1779710301-b662-ho-00-p-2048x1536.jpg",
     images: [
-      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&q=80&w=1200"
+      "https://image.noelshack.com/fichiers/2026/22/1/1779710301-b662-ho-00-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779710304-b662-ho-01-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779710306-b662-ho-02-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779710308-b662-ho-04-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779710311-b662-ho-09-p-2048x1536.jpg"
     ],
     price: "1305 €",
     rating: 5,
@@ -147,6 +148,58 @@ const hotelOffers: HotelOffer[] = [
     viewers: 27,
     flashPeriod: "21 juin - 28 juin",
     externalUrl: "https://all.accor.com/hotel/B662/index.fr.shtml"
+  },
+  {
+    id: 10,
+    name: "Dhawa Ihuru Maldives 5 étoiles",
+    hotel: "Dhawa Ihuru",
+    location: "Atoll de Malé Nord, Maldives",
+    description: "Un atoll paradisiaque d'une beauté préservée, offrant l'une des plus belles barrières de corail des Maldives.",
+    longDescription: "Découvrez un atoll. Plongez dans une eau bleu azur. Nagez avec des animaux marins colorés. Plantez des coraux. Apprenez la cuisine maldivienne. Admirez ihuru, dhiveni et les palmiers anciens. Découvrez votre nouveau terrain de jeu au resort Dhawa Ihuru, aux Maldives.",
+    image: "https://image.noelshack.com/fichiers/2026/22/1/1779710626-b1w1-ho-00-p-2048x1536.jpg",
+    images: [
+      "https://image.noelshack.com/fichiers/2026/22/1/1779710626-b1w1-ho-00-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779710628-b1w1-ho-01-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779710630-b1w1-ho-02-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779710632-b1w1-ho-03-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779710635-b1w1-ho-04-p-2048x1536.jpg"
+    ],
+    price: "1490 €",
+    rating: 5,
+    services: [],
+    conditions: [],
+    discount: "-69%",
+    oldPrice: "4813 €",
+    nights: "7 nuits | 2 adultes",
+    viewers: 32,
+    flashPeriod: "26 juin - 3 juil.",
+    externalUrl: "https://all.accor.com/hotel/B1W1/index.fr.shtml"
+  },
+  {
+    id: 11,
+    name: "Banyan Tree Vabbinfaru Maldives 5 étoiles",
+    hotel: "Banyan Tree Vabbinfaru",
+    location: "Atoll de Malé Nord, Maldives",
+    description: "Un havre de paix tropical et intimiste d'une beauté naturelle exceptionnelle aux Maldives.",
+    longDescription: "Le Banyan Tree Vabbinfaru vous accueille sur les côtes de son atoll depuis 1995. Avec son ambiance tropicale et décontractée, notre complexe des Maldives est aujourd'hui réputé comme étant un havre de paix unique alliant calme et intimité.",
+    image: "https://image.noelshack.com/fichiers/2026/22/1/1779711339-b1w0-ho-05-p-2048x1536.jpg",
+    images: [
+      "https://image.noelshack.com/fichiers/2026/22/1/1779711339-b1w0-ho-05-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779711342-b1w0-ro-01-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779711344-b1w0-ro-04-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779711337-b1w0-ho-02-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779711334-b1w0-ho-00-p-2048x1536.jpg"
+    ],
+    price: "1826 €",
+    rating: 5,
+    services: [],
+    conditions: [],
+    discount: "-67%",
+    oldPrice: "5582 €",
+    nights: "7 nuits | 2 adultes",
+    viewers: 28,
+    flashPeriod: "26 juin - 3 juil.",
+    externalUrl: "https://all.accor.com/hotel/B1W0/index.fr.shtml"
   }
 ];
 
