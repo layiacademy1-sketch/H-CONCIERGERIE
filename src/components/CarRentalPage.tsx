@@ -12,17 +12,113 @@ import {
   ArrowLeft,
   ChevronRight
 } from "lucide-react";
-import { frenchCities, FrenchCity } from "../data/frenchCities";
+
+interface CarCity {
+  name: string;
+  country: string;
+  flag: string;
+}
+
+const globalCities: CarCity[] = [
+  { name: "Paris", country: "France", flag: "🇫🇷" },
+  { name: "Saint-Tropez", country: "France", flag: "🇫🇷" },
+  { name: "Cannes", country: "France", flag: "🇫🇷" },
+  { name: "Monaco", country: "Monaco", flag: "🇲🇨" },
+  { name: "Nice", country: "France", flag: "🇫🇷" },
+  { name: "Marseille", country: "France", flag: "🇫🇷" },
+  { name: "Lyon", country: "France", flag: "🇫🇷" },
+  { name: "Bordeaux", country: "France", flag: "🇫🇷" },
+  { name: "Chamonix", country: "France", flag: "🇫🇷" },
+  { name: "Courchevel", country: "France", flag: "🇫🇷" },
+  { name: "Megève", country: "France", flag: "🇫🇷" },
+  { name: "Saint-Jean-Cap-Ferrat", country: "France", flag: "🇫🇷" },
+  { name: "Cap d'Antibes", country: "France", flag: "🇫🇷" },
+  { name: "Maldives", country: "Maldives", flag: "🇲🇻" },
+  { name: "Dubaï", country: "Émirats Arabes Unis", flag: "🇦🇪" },
+  { name: "Bora Bora", country: "Polynésie Française", flag: "🇵🇫" },
+  { name: "Bali", country: "Indonésie", flag: "🇮🇩" },
+  { name: "Phuket", country: "Thaïlande", flag: "🇹🇭" },
+  { name: "Koh Samui", country: "Thaïlande", flag: "🇹🇭" },
+  { name: "Bangkok", country: "Thaïlande", flag: "🇹🇭" },
+  { name: "Mykonos", country: "Grèce", flag: "🇬🇷" },
+  { name: "Santorin", country: "Grèce", flag: "🇬🇷" },
+  { name: "Ibiza", country: "Espagne", flag: "🇪🇸" },
+  { name: "Majorque", country: "Espagne", flag: "🇪🇸" },
+  { name: "Barcelone", country: "Espagne", flag: "🇪🇸" },
+  { name: "Madrid", country: "Espagne", flag: "🇪🇸" },
+  { name: "Séville", country: "Espagne", flag: "🇪🇸" },
+  { name: "Londres", country: "Royaume-Uni", flag: "🇬🇧" },
+  { name: "New York", country: "États-Unis", flag: "🇺🇸" },
+  { name: "Los Angeles", country: "États-Unis", flag: "🇺🇸" },
+  { name: "Miami", country: "États-Unis", flag: "🇺🇸" },
+  { name: "Las Vegas", country: "États-Unis", flag: "🇺🇸" },
+  { name: "Hawaii", country: "États-Unis", flag: "🇺🇸" },
+  { name: "Aspen", country: "États-Unis", flag: "🇺🇸" },
+  { name: "Tokyo", country: "Japon", flag: "🇯🇵" },
+  { name: "Kyoto", country: "Japon", flag: "🇯🇵" },
+  { name: "Rome", country: "Italie", flag: "🇮🇹" },
+  { name: "Venise", country: "Italie", flag: "🇮🇹" },
+  { name: "Florence", country: "Italie", flag: "🇮🇹" },
+  { name: "Milan", country: "Italie", flag: "🇮🇹" },
+  { name: "Capri", country: "Italie", flag: "🇮🇹" },
+  { name: "Amalfi", country: "Italie", flag: "🇮🇹" },
+  { name: "Portofino", country: "Italie", flag: "🇮🇹" },
+  { name: "Genève", country: "Suisse", flag: "🇨🇭" },
+  { name: "Zurich", country: "Suisse", flag: "🇨🇭" },
+  { name: "Gstaad", country: "Suisse", flag: "🇨🇭" },
+  { name: "Zermatt", country: "Suisse", flag: "🇨🇭" },
+  { name: "Saint-Moritz", country: "Suisse", flag: "🇨🇭" },
+  { name: "Bruxelles", country: "Belgique", flag: "🇧🇪" },
+  { name: "Amsterdam", country: "Pays-Bas", flag: "🇳🇱" },
+  { name: "Lisbonne", country: "Portugal", flag: "🇵🇹" },
+  { name: "Porto", country: "Portugal", flag: "🇵🇹" },
+  { name: "Marrakech", country: "Maroc", flag: "🇲🇦" },
+  { name: "Casablanca", country: "Maroc", flag: "🇲🇦" },
+  { name: "Le Caire", country: "Égypte", flag: "🇪🇬" },
+  { name: "Seychelles", country: "Seychelles", flag: "🇸🇨" },
+  { name: "Île Maurice", country: "Île Maurice", flag: "🇲🇺" },
+  { name: "Zanzibar", country: "Tanzanie", flag: "🇹🇿" },
+  { name: "Le Cap", country: "Afrique du Sud", flag: "🇿🇦" },
+  { name: "Singapour", country: "Singapour", flag: "🇸🇬" },
+  { name: "Hong Kong", country: "Hong Kong", flag: "🇭🇰" },
+  { name: "Séoul", country: "Corée du Sud", flag: "🇰🇷" },
+  { name: "Sydney", country: "Australie", flag: "🇦🇺" },
+  { name: "Melbourne", country: "Australie", flag: "🇦🇺" },
+  { name: "Auckland", country: "Nouvelle-Zélande", flag: "🇳🇿" },
+  { name: "Saint-Barthélemy", country: "Saint-Barth", flag: "🇫🇷" },
+  { name: "Nassau", country: "Bahamas", flag: "🇧🇸" },
+  { name: "Cancún", country: "Mexique", flag: "🇲🇽" },
+  { name: "Tulum", country: "Mexique", flag: "🇲🇽" },
+  { name: "Punta Cana", country: "République Dominicaine", flag: "🇩🇴" },
+  { name: "Rio de Janeiro", country: "Brésil", flag: "🇧🇷" },
+  { name: "Buenos Aires", country: "Argentine", flag: "🇦🇷" },
+  { name: "Carthagène", country: "Colombie", flag: "🇨🇴" },
+  { name: "Istanbul", country: "Turquie", flag: "🇹🇷" },
+  { name: "Vienne", country: "Autriche", flag: "🇦🇹" },
+  { name: "Prague", country: "République Tchèque", flag: "🇨🇿" },
+  { name: "Munich", country: "Allemagne", flag: "🇩🇪" },
+  { name: "Athènes", country: "Grèce", flag: "🇬🇷" },
+  { name: "Budapest", country: "Hongrie", flag: "🇭🇺" },
+  { name: "Copenhague", country: "Danemark", flag: "🇩🇰" },
+  { name: "Oslo", country: "Norvège", flag: "🇳🇴" },
+  { name: "Stockholm", country: "Suède", flag: "🇸🇪" },
+  { name: "Reykjavik", country: "Islande", flag: "🇮🇸" },
+  { name: "Toronto", country: "Canada", flag: "🇨🇦" },
+  { name: "Montréal", country: "Canada", flag: "🇨🇦" },
+  { name: "Doha", country: "Qatar", flag: "🇶🇦" },
+  { name: "Mascate", country: "Oman", flag: "🇴🇲" },
+  { name: "Abou Dabi", country: "Émirats Arabes Unis", flag: "🇦🇪" }
+];
 
 export default function CarRentalPage({ onBack }: { onBack: () => void }) {
   // Search Engine states
   const [pickupInput, setPickupInput] = useState("");
-  const [pickupAgency, setPickupAgency] = useState<FrenchCity | null>(null);
+  const [pickupAgency, setPickupAgency] = useState<CarCity | null>(null);
   const [showPickupList, setShowPickupList] = useState(false);
 
   const [returnSameAgency, setReturnSameAgency] = useState(true);
   const [dropoffInput, setDropoffInput] = useState("");
-  const [dropoffAgency, setDropoffAgency] = useState<FrenchCity | null>(null);
+  const [dropoffAgency, setDropoffAgency] = useState<CarCity | null>(null);
   const [showDropoffList, setShowDropoffList] = useState(false);
 
   // Vehicle choices states
@@ -85,15 +181,15 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handlePickPickupAgency = (city: FrenchCity) => {
+  const handlePickPickupAgency = (city: CarCity) => {
     setPickupAgency(city);
-    setPickupInput(`${city.name} (${city.zipCode}) - ${city.department}`);
+    setPickupInput(`${city.flag} L'Agence de ${city.name} (${city.country})`);
     setShowPickupList(false);
   };
 
-  const handlePickDropoffAgency = (city: FrenchCity) => {
+  const handlePickDropoffAgency = (city: CarCity) => {
     setDropoffAgency(city);
-    setDropoffInput(`${city.name} (${city.zipCode}) - ${city.department}`);
+    setDropoffInput(`${city.flag} L'Agence de ${city.name} (${city.country})`);
     setShowDropoffList(false);
   };
 
@@ -106,30 +202,28 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
       .replace(/[^a-z0-9]/g, " "); // replaces accents and symbols with space for multi-term query match
   };
 
-  const isMatch = (city: FrenchCity, rawQuery: string) => {
+  const isMatch = (city: CarCity, rawQuery: string) => {
     const normQuery = normalizeString(rawQuery).trim();
     if (!normQuery) return false;
     
     const normCityName = normalizeString(city.name);
-    const normDept = normalizeString(city.department);
-    const zipCode = city.zipCode;
+    const normCountry = normalizeString(city.country);
     
     const queryTerms = normQuery.split(/\s+/);
     return queryTerms.every(term => 
       normCityName.includes(term) || 
-      normDept.includes(term) || 
-      zipCode.includes(term)
+      normCountry.includes(term)
     );
   };
 
   // Filter suggestion list based on user autocomplete query
   const filteredPickupCities = pickupInput.trim() === ""
-    ? frenchCities.slice(0, 15) // default list
-    : frenchCities.filter(city => isMatch(city, pickupInput)).slice(0, 15);
+    ? globalCities.slice(0, 15) // default list
+    : globalCities.filter(city => isMatch(city, pickupInput)).slice(0, 15);
 
   const filteredDropoffCities = dropoffInput.trim() === ""
-    ? frenchCities.slice(0, 15) // default list
-    : frenchCities.filter(city => isMatch(city, dropoffInput)).slice(0, 15);
+    ? globalCities.slice(0, 15) // default list
+    : globalCities.filter(city => isMatch(city, dropoffInput)).slice(0, 15);
 
   // Send WhatsApp Inquiry
   const handleSendDemand = (e: React.FormEvent) => {
@@ -145,12 +239,12 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
 
     setIsFilteringCars(true);
 
-    const cleanPickup = `${pickupAgency.name} (${pickupAgency.zipCode}) - ${pickupAgency.department}`;
-    const cleanDropoff = returnSameAgency ? cleanPickup : `${dropoffAgency!.name} (${dropoffAgency!.zipCode}) - ${dropoffAgency!.department}`;
+    const cleanPickup = `${pickupAgency.flag} L'Agence de ${pickupAgency.name} (${pickupAgency.country})`;
+    const cleanDropoff = returnSameAgency ? cleanPickup : `${dropoffAgency!.flag} L'Agence de ${dropoffAgency!.name} (${dropoffAgency!.country})`;
 
     const message = `Bonjour H-CONCIERGERIE, je souhaite soumettre une demande de réservation de véhicule :
 📌 Type de véhicule : ${vehicleType}
-⚙️ Transmission : ${transmission}
+⚙️ Boîte : ${transmission}
 📍 Ville de départ : ${cleanPickup}
 🏁 Ville de retour : ${cleanDropoff}
 📅 Date de départ : ${pickupDate} à ${pickupTime}
@@ -243,12 +337,12 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="Recherchez Paris, Nice, Lyon, Le Havre, Parthenay..."
+                        placeholder="Recherchez Paris, Saint-Tropez, Monaco, Nice, Ibiza, Dubaï..."
                         value={pickupInput}
                         onChange={(e) => {
                           setPickupInput(e.target.value);
                           setShowPickupList(true);
-                          if (pickupAgency && `${pickupAgency.name} (${pickupAgency.zipCode}) - ${pickupAgency.department}` !== e.target.value) {
+                          if (pickupAgency && `${pickupAgency.flag} L'Agence de ${pickupAgency.name} (${pickupAgency.country})` !== e.target.value) {
                             setPickupAgency(null);
                           }
                         }}
@@ -270,32 +364,39 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                           exit={{ opacity: 0, y: 5 }}
                           className="absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl z-50 max-h-68 overflow-y-auto"
                         >
+                          {pickupInput.trim().length === 0 ? (
+                            <div className="px-5 py-2.5 text-[10px] uppercase font-black tracking-widest text-[#e31c25] border-b border-slate-100 bg-slate-50/50">
+                              Agences Populaires
+                            </div>
+                          ) : null}
                           {filteredPickupCities.length > 0 ? (
-                            <div className="py-2.5">
+                            <div className="py-1">
                               {filteredPickupCities.map((city, idx) => (
                                 <button
                                   key={idx}
                                   type="button"
                                   onClick={() => handlePickPickupAgency(city)}
-                                  className="w-full flex items-center gap-3.5 px-5 py-3 hover:bg-slate-50 active:bg-slate-100/50 transition-colors text-left"
+                                  className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 active:bg-slate-100/50 border-b border-slate-100 last:border-b-0 transition-all text-left cursor-pointer"
                                 >
-                                  <span className="w-8 h-8 rounded-lg bg-slate-105 flex items-center justify-center text-xs shrink-0 select-none">
-                                    🏢
-                                  </span>
-                                  <div className="flex flex-col min-w-0">
-                                    <span className="font-bold text-xs text-slate-900 truncate">
-                                      {city.name} ({city.zipCode})
+                                  <div className="flex items-center gap-3.5 min-w-0">
+                                    <span className="text-xl select-none" role="img" aria-label={city.country}>
+                                      {city.flag}
                                     </span>
-                                    <span className="text-[10px] text-slate-400 truncate mt-0.5">
-                                      {city.department}
-                                    </span>
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="font-bold text-xs text-slate-900 truncate">
+                                        Agence de {city.name}
+                                      </span>
+                                    </div>
                                   </div>
+                                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider bg-slate-100 px-2 py-1 rounded shrink-0">
+                                    {city.country}
+                                  </span>
                                 </button>
                               ))}
                             </div>
                           ) : (
                             <div className="p-5 text-center text-xs text-slate-400 font-medium">
-                              Aucune ville trouvée
+                              Aucune agence trouvée
                             </div>
                           )}
                         </motion.div>
@@ -343,7 +444,7 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                               onChange={(e) => {
                                 setDropoffInput(e.target.value);
                                 setShowDropoffList(true);
-                                if (dropoffAgency && `${dropoffAgency.name} (${dropoffAgency.zipCode}) - ${dropoffAgency.department}` !== e.target.value) {
+                                if (dropoffAgency && `${dropoffAgency.flag} L'Agence de ${dropoffAgency.name} (${dropoffAgency.country})` !== e.target.value) {
                                   setDropoffAgency(null);
                                 }
                               }}
@@ -365,32 +466,39 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                                 exit={{ opacity: 0, y: 5 }}
                                 className="absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl z-50 max-h-68 overflow-y-auto"
                               >
+                                {dropoffInput.trim().length === 0 ? (
+                                  <div className="px-5 py-2.5 text-[10px] uppercase font-black tracking-widest text-[#e31c25] border-b border-slate-100 bg-slate-50/50">
+                                    Agences Populaires
+                                  </div>
+                                ) : null}
                                 {filteredDropoffCities.length > 0 ? (
-                                  <div className="py-2.5">
+                                  <div className="py-1">
                                     {filteredDropoffCities.map((city, idx) => (
                                       <button
                                         key={idx}
                                         type="button"
                                         onClick={() => handlePickDropoffAgency(city)}
-                                        className="w-full flex items-center gap-3.5 px-5 py-3 hover:bg-slate-50 active:bg-slate-100/50 transition-colors text-left"
+                                        className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 active:bg-slate-100/50 border-b border-slate-100 last:border-b-0 transition-all text-left cursor-pointer"
                                       >
-                                        <span className="w-8 h-8 rounded-lg bg-slate-105 flex items-center justify-center text-xs shrink-0 select-none">
-                                          🏢
-                                        </span>
-                                        <div className="flex flex-col min-w-0">
-                                          <span className="font-bold text-xs text-slate-900 truncate">
-                                            {city.name} ({city.zipCode})
+                                        <div className="flex items-center gap-3.5 min-w-0">
+                                          <span className="text-xl select-none" role="img" aria-label={city.country}>
+                                            {city.flag}
                                           </span>
-                                          <span className="text-[10px] text-slate-400 truncate mt-0.5">
-                                            {city.department}
-                                          </span>
+                                          <div className="flex flex-col min-w-0">
+                                            <span className="font-bold text-xs text-slate-900 truncate">
+                                              Agence de {city.name}
+                                            </span>
+                                          </div>
                                         </div>
+                                        <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider bg-slate-100 px-2 py-1 rounded shrink-0">
+                                          {city.country}
+                                        </span>
                                       </button>
                                     ))}
                                   </div>
                                 ) : (
                                   <div className="p-5 text-center text-xs text-slate-400 font-medium">
-                                    Aucune ville trouvée
+                                    Aucune agence trouvée
                                   </div>
                                 )}
                               </motion.div>
@@ -422,11 +530,11 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                     </select>
                   </div>
 
-                  {/* Transmission */}
+                  {/* Boîte */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1.5">
                       <SlidersHorizontal size={13} className="text-[#e31c25]" />
-                      Transmission
+                      Boîte
                     </label>
                     <div className="grid grid-cols-2 gap-3 h-full">
                       <button
@@ -594,13 +702,13 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                   <span className="text-white font-extrabold">{vehicleType}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
-                  <span className="text-slate-400 uppercase font-bold tracking-wider">Transmission :</span>
+                  <span className="text-slate-400 uppercase font-bold tracking-wider">Boîte :</span>
                   <span className="text-white font-extrabold">{transmission}</span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-slate-400 uppercase font-bold tracking-wider">Départ :</span>
-                  <span className="text-white font-extrabold text-right max-w-[200px] truncate" title={pickupAgency ? `${pickupAgency.name} (${pickupAgency.zipCode}) - ${pickupAgency.department}` : pickupInput}>
-                    {pickupAgency ? `${pickupAgency.name} (${pickupAgency.zipCode}) - ${pickupAgency.department}` : pickupInput}
+                  <span className="text-white font-extrabold text-right max-w-[200px] truncate" title={pickupAgency ? `${pickupAgency.flag} Agence de ${pickupAgency.name} (${pickupAgency.country})` : pickupInput}>
+                    {pickupAgency ? `${pickupAgency.flag} ${pickupAgency.name}` : pickupInput}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
@@ -609,8 +717,8 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-slate-400 uppercase font-bold tracking-wider">Retour :</span>
-                  <span className="text-white font-extrabold text-right max-w-[200px] truncate" title={returnSameAgency ? (pickupAgency ? `${pickupAgency.name} (${pickupAgency.zipCode}) - ${pickupAgency.department}` : pickupInput) : (dropoffAgency ? `${dropoffAgency.name} (${dropoffAgency.zipCode}) - ${dropoffAgency.department}` : dropoffInput)}>
-                    {returnSameAgency ? "Même agence" : (dropoffAgency ? `${dropoffAgency.name} (${dropoffAgency.zipCode}) - ${dropoffAgency.department}` : dropoffInput)}
+                  <span className="text-white font-extrabold text-right max-w-[200px] truncate" title={returnSameAgency ? (pickupAgency ? `${pickupAgency.flag} Agence de ${pickupAgency.name} (${pickupAgency.country})` : pickupInput) : (dropoffAgency ? `${dropoffAgency.flag} Agence de ${dropoffAgency.name} (${dropoffAgency.country})` : dropoffInput)}>
+                    {returnSameAgency ? "Même agence" : (dropoffAgency ? `${dropoffAgency.flag} ${dropoffAgency.name}` : dropoffInput)}
                   </span>
                 </div>
                 <div className="flex justify-between">

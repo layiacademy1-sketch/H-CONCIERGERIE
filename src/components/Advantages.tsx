@@ -1,5 +1,6 @@
-import { motion } from "motion/react";
-import { Hotel, Car, Plane, ShoppingBag } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import { Hotel, Car, Plane, ShoppingBag, X, Sparkles } from "lucide-react";
 
 const advantages = [
   {
@@ -29,6 +30,22 @@ const advantages = [
 ];
 
 export default function Advantages({ onExploreHotels, onExploreCars }: { onExploreHotels?: () => void; onExploreCars?: () => void }) {
+  const [showComingSoon, setShowComingSoon] = useState(false);
+
+  // Auto-dismiss after 4 seconds
+  useEffect(() => {
+    if (showComingSoon) {
+      const timer = setTimeout(() => {
+        setShowComingSoon(false);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [showComingSoon]);
+
+  const triggerComingSoon = () => {
+    setShowComingSoon(true);
+  };
+
   return (
     <section id="avantages" className="py-24 bg-slate-50/70 relative overflow-hidden">
       <div className="container mx-auto px-6">
@@ -86,7 +103,7 @@ export default function Advantages({ onExploreHotels, onExploreCars }: { onExplo
                 <p className="text-slate-600 font-light leading-relaxed mb-6">
                   {adv.description}
                 </p>
-                <div className="mt-auto">
+                 <div className="mt-auto">
                   {adv.title === "Hôtels de luxe" && onExploreHotels ? (
                     <button 
                       onClick={onExploreHotels}
@@ -97,6 +114,13 @@ export default function Advantages({ onExploreHotels, onExploreCars }: { onExplo
                   ) : adv.title === "Location de voiture" && onExploreCars ? (
                     <button 
                       onClick={onExploreCars}
+                      className="inline-flex items-center justify-center px-6 py-3 bg-gold text-slate-950 text-xs tracking-widest uppercase font-bold rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer w-full text-center"
+                    >
+                      En savoir plus
+                    </button>
+                  ) : adv.title === "Vols Privilèges" ? (
+                    <button 
+                      onClick={triggerComingSoon}
                       className="inline-flex items-center justify-center px-6 py-3 bg-gold text-slate-950 text-xs tracking-widest uppercase font-bold rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer w-full text-center"
                     >
                       En savoir plus
@@ -117,6 +141,40 @@ export default function Advantages({ onExploreHotels, onExploreCars }: { onExplo
           ))}
         </div>
       </div>
+
+      {/* Premium Toast Notification */}
+      <AnimatePresence>
+        {showComingSoon && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] w-[calc(100%-2rem)] max-w-md bg-slate-950/98 backdrop-blur-md border border-gold/40 shadow-2xl rounded-2xl p-5 text-left"
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-gold/10 rounded-xl text-gold shrink-0">
+                <Sparkles size={20} />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-serif text-lg text-white mb-1">Vols Privilèges</h4>
+                <p className="text-slate-300 text-xs font-light leading-relaxed">
+                  Notre espace de réservation de Vols Privilèges sera <span className="text-gold font-medium">Bientôt Disponible</span>.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowComingSoon(false)}
+                className="text-slate-400 hover:text-white transition-colors p-1 cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="mt-3.5 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-slate-400">
+              <span>H-CONCIERGERIE</span>
+              <span className="text-gold">Service d'excellence</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

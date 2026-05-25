@@ -74,17 +74,17 @@ export default function About() {
           </motion.div>
         </div>
 
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center justify-center w-full text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="mb-12 flex flex-col items-center"
+            className="mb-12 w-full flex flex-col items-center justify-center"
           >
             <motion.div
               animate={{ y: [0, 8, 0] }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-              className="mb-4"
+              className="mb-4 flex justify-center"
             >
               <ChevronRight className="text-gold rotate-90" size={32} />
             </motion.div>
@@ -92,7 +92,7 @@ export default function About() {
               href="https://snapchat.com/t/oOvhoJ45"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center px-10 py-5 bg-gold text-slate-950 text-sm tracking-widest uppercase font-bold rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300 shadow-[0_0_30px_rgba(212,175,55,0.4)] group scale-110"
+              className="inline-flex items-center justify-center px-8 py-4 sm:px-10 sm:py-5 bg-gold text-slate-950 text-xs sm:text-sm tracking-widest uppercase font-bold rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300 shadow-[0_0_30px_rgba(212,175,55,0.4)] group scale-105 sm:scale-110 text-center max-w-[90%] sm:max-w-none"
             >
               Nous suivre sur Snapchat
             </a>
