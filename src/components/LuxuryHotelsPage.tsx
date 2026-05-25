@@ -30,6 +30,9 @@ interface HotelOffer {
   oldPrice: string;
   nights: string;
   viewers: number;
+  images?: string[];
+  flashPeriod?: string;
+  externalUrl?: string;
 }
 
 interface Testimonial {
@@ -44,139 +47,79 @@ interface Testimonial {
 // 6 Promotional offers of luxury hotels
 const hotelOffers: HotelOffer[] = [
   {
-    id: 1,
-    name: "Offre Escapade Royale",
-    hotel: "Le Bristol Paris",
-    location: "Paris, France",
-    description: "Une nuit somptueuse dans un joyau de l'hôtellerie française avec accueil VIP et petit-déjeuner michelin.",
-    longDescription: "Vivez l'excellence à la parisienne. Le Bristol Paris propose une expérience d'habitation digne des rois, combinant élégance classique, haute gastronomie, et un service d'une attention inégalée en plein cœur du Faubourg Saint-Honoré.",
-    image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=1200",
-    price: "890 €",
-    rating: 5,
-    services: [
-      "Accueil personnalisé avec Champagne de prestige & Macarons artisanaux",
-      "Petit-déjeuner gastronomique concocté par notre Chef 3 étoiles michelin",
-      "Accès exclusif à la piscine suspendue avec vue panoramique sur les toits de Paris",
-      "Surclassement garanti en suite exécutive selon disponibilité",
-      "Service de majordome dédié disponible 24h/24"
-    ],
-    conditions: [
-      "Offre valable pour des séjours de 2 nuits minimum",
-      "Annulation flexible sans frais jusqu'à 7 jours avant l'arrivée",
-      "Sujet à des restrictions de dates spécifiques en haute saison"
-    ],
-    discount: "-57%",
-    oldPrice: "2100 €",
-    nights: "3 nuits",
-    viewers: 7
-  },
-  {
-    id: 2,
-    name: "Sérénité Tropicale & Spa",
-    hotel: "One&Only Reethi Rah",
-    location: "Maldives",
-    description: "Une villa sur pilotis d'exception avec piscine privée suspendue au-dessus de l'océan Indien.",
-    longDescription: "Une retraite insulaire ultime où les eaux turquoise rencontrent le sable blanc le plus pur. Votre villa privée sur pilotis offre une intimité totale, des couchers de soleil incomparables, et les soins holistiques du spa mondialement primé.",
-    image: "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&q=80&w=1200",
-    price: "1250 €",
-    rating: 5,
-    services: [
-      "Villa privée sur pilotis de 150m² avec accès direct à la mer pour baignade privée",
-      "Transfert aller-retour en yacht privé de luxe depuis l'aéroport de Malé",
-      "Soin signature de 90 minutes en couple au Spa ou espace bien-être",
-      "Majordome attitré (hôte de villa) dédié à chaque instant de votre séjour",
-      "Équipements de sports nautiques non motorisés en accès libre"
-    ],
-    conditions: [
-      "Tarifs négociés exclusifs H-CONCIERGERIE sur demande écrite",
-      "Réservation conseillée au moins 30 jours à l'avance",
-      "Séjour minimum conseillé de 5 nuits pour bénéficier des tarifs préférentiels"
-    ],
-    discount: "-68%",
-    oldPrice: "3900 €",
-    nights: "5 nuits",
-    viewers: 11
-  },
-  {
-    id: 4,
-    name: "Grand Splendeur de la Renaissance",
-    hotel: "Villa d'Este",
-    location: "Lac de Côme, Italie",
-    description: "Résidence historique d'exception nichée au cœur d'un parc botanique privé en bord de lac.",
-    longDescription: "Chef-d'œuvre de la Renaissance, la Villa d'Este incarne la quintessence du chic italien. Ses jardins magnifiques, sa célèbre piscine flottante et ses intérieurs richement décorés de soies et d'œuvres d'art vous invitent à la Dolce Vita dans sa forme la plus noble.",
-    image: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&q=80&w=1200",
-    price: "620 €",
-    rating: 5,
-    services: [
-      "Séjour en chambre Double Prestige avec terrasse privative offrant vue lac panoramique",
-      "Visite guidée privée des somptueux jardins botaniques et historiques du domaine",
-      "Excursion d'une heure à bord d'un bateau Riva classique privé sur le lac de Côme",
-      "Bouteille Spumante de prestige et assiette de fruits frais dans la chambre à l'arrivée",
-      "Accès aux terrains de tennis et au club de remise en forme haut de gamme"
-    ],
-    conditions: [
-      "Séjour minimum de 3 nuits requis pendant les mois de juillet et août",
-      "Pétition de réservation requise au moins 14 jours avant",
-      "Taxe de séjour historique non comprise dans le prix de l'offre"
-    ],
-    discount: "-67%",
-    oldPrice: "1900 €",
-    nights: "3 nuits",
-    viewers: 6
-  },
-  {
-    id: 5,
-    name: "Opulence Étoilée & Plage Privée",
-    hotel: "Burj Al Arab",
-    location: "Dubaï, Émirats Arabes Unis",
-    description: "Une expérience ultra-luxe inégalée dans la suite de l'icône architecturale en forme de voile.",
-    longDescription: "Seul hôtel au monde souvent qualifié de 7 étoiles, le Burj Al Arab s'élève sur sa propre île artificielle. Sa silhouette emblématique abrite des suites s'étendant sur deux étages, l'utilisation exclusive d'or 24 carats dans les décors, et une île-terrasse privée d'exception.",
-    image: "https://images.unsplash.com/photo-1517840901100-8179e982acb7?auto=format&fit=crop&q=80&w=1200",
-    price: "1150 €",
-    rating: 5,
-    services: [
-      "Suite Royale en duplex de 170m² avec escalier en colimaçon en marbre précieux",
-      "Dîner dégustation gastronomique privé de 6 plats dans notre restaurant sous-marin",
-      "Accès exclusif à la terrasse géante de 10 000m² avec une plage de sable privée et gazebos luxueux",
-      "Transfert depuis l'aéroport de Dubaï en Rolls-Royce Phantom avec chauffeur privé",
-      "Service de check-in et check-out personnalisé directement en Suite avec majordome"
-    ],
-    conditions: [
-      "Réservations sujettes à validation budgétaire stricte",
-      "Dépôt de garantie requis à la confirmation de séjour",
-      "Départ tardif garanti jusqu'à 16:00 pour tous les membres de H-CONCIERGERIE"
-    ],
-    discount: "-72%",
-    oldPrice: "4200 €",
-    nights: "4 nuits",
-    viewers: 9
-  },
-  {
     id: 6,
-    name: "Retraite Canyons & Grand Ouest",
-    hotel: "Amangiri",
-    location: "Utah, États-Unis",
-    description: "Un domaine architectural d'exception fondu au cœur des paysages sauvages et secrets des canyons.",
-    longDescription: "Niché dans le décor grandiose du désert de l'Utah, l'Amangiri s'intègre avec une discrétion magistrale aux formations géologiques millénaires. Ses lignes de béton brut teinté de sable s'organisent autour d'une piscine iconique encadrée par une falaise monumentale.",
-    image: "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&q=80&w=1200",
-    price: "980 €",
+    name: "Pullman Tokyo Hotel 5 étoiles",
+    hotel: "Pullman Tokyo",
+    location: "Minato-ku, Tokyo, Japon",
+    description: "Un havre de paix contemporain alliant l'élégance de la marque Pullman au raffinement japonais, offrant des vues imprenables sur Tokyo.",
+    longDescription: `Hôtel international pour les voyageurs hyper-connectés\n\nQue vous voyagiez pour affaires ou loisirs, le Pullman Tokyo Tamachi répond aux attentes des voyageurs exigeants dans cette métropole emblématique. Situé à Tamachi, avec des transports à quelques minutes, il offre un accès facile à la ville. Son design mêle art et culture japonaise contemporains, faisant de l'hôtel une base idéale pour courts ou longs séjours. Vivez Tokyo autrement au Pullman Tokyo.\n\nLe Pullman Tokyo Tamachi est un hôtel avec bar sur le toit situé à Tamachi, un quartier doté de canaux et l'un des principaux quartiers d'affaires de la ville. Il offre un accès direct à la gare de Tamachi via une passerelle intérieure au 2e étage.\n\nTokyo est facile à visiter. Elle est traversée par un réseau de trains et de métros. Prenez la ligne JR Yamanote à la gare de Tamachi accessible depuis l'hôtel pour rejoindre tout point de la ville. Ou connectez-vous au métro de Tokyo via la station Mita.`,
+    image: "https://image.noelshack.com/fichiers/2026/22/1/1779706653-b6r8-ro-02-p-2048x1536.jpg",
+    images: [
+      "https://image.noelshack.com/fichiers/2026/22/1/1779706653-b6r8-ro-02-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779706653-b6r8-ro-00-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779706653-b6r8-ro-01-p-2048x1536.jpg",
+      "https://image.noelshack.com/fichiers/2026/22/1/1779706653-b6r8-ho-04-p-2048x1536.jpg"
+    ],
+    price: "1818 €",
     rating: 5,
-    services: [
-      "Suite Désert d'exception avec terrasse extérieure, cheminée au feu de bois et lit de repos aérien",
-      "Tous les repas inclus (concept de table ouverte gastronomique locale d'inspiration amérindienne)",
-      "Randonnée privatisée de 3 heures menée par un guide naturaliste expert des canyons",
-      "Soin de massage corporel signature d'une heure basé sur les thérapies traditionnelles Navajo",
-      "Accès illimité aux pavillons flottants en plein air, sauna et installations d'hydrothérapie"
+    services: [],
+    conditions: [],
+    discount: "-62%",
+    oldPrice: "4792 €",
+    nights: "7 jours | 2 adultes",
+    viewers: 14,
+    flashPeriod: "20 juin - 27 juin",
+    externalUrl: "https://all.accor.com/hotel/B6R8/index.fr.shtml"
+  },
+  {
+    id: 7,
+    name: "Pullman Dakar Teranga 5 étoiles",
+    hotel: "Pullman Dakar Teranga",
+    location: "Dakar, Sénégal",
+    description: "Une oasis contemporaine d'exception surplombant l'océan Atlantique, au cœur de la capitale sénégalaise.",
+    longDescription: "Bénéficiant d’une situation exceptionnelle au centre-ville de Dakar, avec une vue panoramique époustouflante sur l’océan Atlantique et l’île de Gorée, le Pullman Dakar Teranga est l'adresse privilégiée des voyageurs de prestige. Son design contemporain soigné fusionne harmonieusement avec la légendaire hospitalité Teranga sénégalaise. Détendez-vous au bord de notre piscine à débordement de classe mondiale, ressourcez-vous dans notre spa haut de gamme, ou découvrez de subtiles saveurs locales revisitées.",
+    image: "https://images.unsplash.com/photo-1540553016722-983e48a2cd10?auto=format&fit=crop&q=80&w=1200",
+    images: [
+      "https://images.unsplash.com/photo-1540553016722-983e48a2cd10?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&q=80&w=1200"
     ],
-    conditions: [
-      "Offre valable hors vacances scolaires américaines",
-      "Pré-paiement total non remboursable à la confirmation de réservation",
-      "Accès privilégié aux hébergements en formule villa complète sur demande spéciale"
+    price: "547 €",
+    rating: 5,
+    services: [],
+    conditions: [],
+    discount: "-67%",
+    oldPrice: "1654 €",
+    nights: "7 jours | 2 adultes",
+    viewers: 18,
+    flashPeriod: "20 juin - 27 juin",
+    externalUrl: "https://all.accor.com/hotel/0524/index.fr.shtml"
+  },
+  {
+    id: 8,
+    name: "Fairmont Mara Safari Club Kenya 5 étoiles",
+    hotel: "Fairmont Mara Safari Club",
+    location: "Masai Mara, Kenya",
+    description: "Une expérience de safari de luxe incomparable sous des tentes majestueuses, nichée au cœur de la réserve nationale du Masai Mara.",
+    longDescription: "Bordé sur trois côtés par la rivière Mara, le Fairmont Mara Safari Club est le summum du glamping et de l'aventure de prestige au Kenya. Surplombant des eaux peuplées d'hippopotames et de crocodiles, chaque tente de luxe dispose d'un pont d'observation privé. Vivez des safaris d'exception guidés pour observer les 'Big Five' au lever du soleil, avant de retrouver le confort raffiné de notre de piscine extérieure et d'un dîner mémorable sous les étoiles africaines.",
+    image: "https://images.unsplash.com/photo-1581850518616-bcb8077fa213?auto=format&fit=crop&q=80&w=1200",
+    images: [
+      "https://images.unsplash.com/photo-1581850518616-bcb8077fa213?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&q=80&w=1200",
+      "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=1200"
     ],
-    discount: "-71%",
-    oldPrice: "3400 €",
-    nights: "3 nuits",
-    viewers: 5
+    price: "2412 €",
+    rating: 5,
+    services: [],
+    conditions: [],
+    discount: "-75%",
+    oldPrice: "9677 €",
+    nights: "7 jours | 2 adultes",
+    viewers: 22,
+    flashPeriod: "14 juin - 21 juin",
+    externalUrl: "https://all.accor.com/hotel/A5F3/index.fr.shtml"
   }
 ];
 
@@ -1102,9 +1045,10 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
                     </div>
 
                     {/* ★ 5 Rating Star Badge */}
-                    <div className="absolute top-4 right-4 bg-slate-950/75 backdrop-blur-md text-white font-bold text-xs px-2.5 py-1 rounded-[12px] flex items-center gap-1 select-none shadow-md">
-                      <span className="text-amber-400">★</span>
-                      <span>{offer.rating}</span>
+                    <div className="absolute top-4 right-4 bg-slate-950/75 backdrop-blur-md text-white font-bold text-xs px-2.5 py-1.5 rounded-[12px] flex items-center gap-0.5 select-none shadow-md">
+                      {Array.from({ length: offer.rating }).map((_, i) => (
+                        <span key={i} className="text-amber-400 text-[11px]">★</span>
+                      ))}
                     </div>
 
                     {/* Heart Option Toggle Button (Simulating interactive wishlist) */}
@@ -1136,8 +1080,16 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
                       <span className="text-[11px] uppercase font-black text-[#1a2e5c] tracking-wider select-none">
                         OFFRE ÉCLAIR
                       </span>
-                      {/* Live Ticking Countdown */}
-                      <FlashTimer id={offer.id} />
+                      {/* Live Ticking Countdown / Date Range representation */}
+                      {offer.flashPeriod ? (
+                        <div className="flex items-center gap-1 shrink-0 font-sans">
+                          <span className="bg-rose-50 border border-rose-100 rounded-md text-[#e31c25] font-extrabold px-1.5 py-0.5 text-[11px] select-none">
+                            {offer.flashPeriod}
+                          </span>
+                        </div>
+                      ) : (
+                        <FlashTimer id={offer.id} />
+                      )}
                     </div>
 
                     {/* Urgency indicator: ● 👁 X regardent */}
@@ -1252,20 +1204,62 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
               </button>
 
               {/* Large Image Showcase with Gold gradient overlays */}
-              <div className="h-80 md:h-[400px] w-full relative">
-                <img
-                  src={selectedOffer.image}
-                  alt={selectedOffer.hotel}
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/35" />
+              <div className="h-80 md:h-[400px] w-full relative overflow-hidden group/modalheader">
+                {selectedOffer.images ? (
+                  <div className="absolute inset-0 flex items-center overflow-hidden bg-slate-950 select-none">
+                    <div className="flex h-full w-max shrink-0 animate-[scrollLeftContinuous_25s_linear_infinite] hover:[animation-play-state:paused] cursor-grab active:cursor-grabbing">
+                      {/* Duplicated for a seamless infinite loop */}
+                      {[...selectedOffer.images, ...selectedOffer.images, ...selectedOffer.images].map((imgUrl, i) => (
+                        <div key={i} className="h-full w-[280px] md:w-[480px] shrink-0 border-r-2 border-slate-950/80">
+                          <img
+                            src={imgUrl}
+                            alt={`${selectedOffer.hotel} Photo View ${i}`}
+                            className="w-full h-full object-cover pointer-events-none"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <img
+                    src={selectedOffer.image}
+                    alt={selectedOffer.hotel}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
                 
-                <div className="absolute bottom-8 left-8 right-8 text-slate-900">
+                {/* Overlay shade gradients */}
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 via-transparent to-black/35 pointer-events-none" />
+
+                {/* Optional 'Voir plus de photos' Button overlay */}
+                {selectedOffer.externalUrl && (
+                  <div className="absolute top-6 left-6 z-20">
+                    <a
+                      href={selectedOffer.externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-slate-950/85 hover:bg-[#e31c25] text-white hover:text-white border border-white/10 text-[10px] uppercase font-bold tracking-widest rounded-xl flex items-center gap-1.5 transition-all shadow-md backdrop-blur-md cursor-pointer"
+                    >
+                      <Eye size={12} />
+                      <span>Voir plus de photos</span>
+                    </a>
+                  </div>
+                )}
+                
+                <div className="absolute bottom-8 left-8 right-8 text-slate-900 pointer-events-none z-10">
                   <span className="px-3.5 py-1.5 bg-gold text-slate-900 uppercase tracking-widest text-[9px] font-black rounded-full shadow-lg block w-max mb-3">
                     {selectedOffer.location}
                   </span>
-                  <p className="text-amber-800 text-[10px] uppercase font-bold tracking-widest mb-1">{selectedOffer.hotel}</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-amber-800 text-[10px] uppercase font-bold tracking-widest">{selectedOffer.hotel}</p>
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: selectedOffer.rating }).map((_, i) => (
+                        <span key={i} className="text-amber-500 text-xs select-none">★</span>
+                      ))}
+                    </div>
+                  </div>
                   <h3 className="text-3xl md:text-5xl font-serif text-slate-900">{selectedOffer.name}</h3>
                 </div>
               </div>
@@ -1278,21 +1272,36 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
                   <div className="md:col-span-2 space-y-6">
                     <div>
                       <h4 className="text-sm uppercase font-bold tracking-widest text-amber-700 mb-3">L'Expérience Proposée</h4>
-                      <p className="text-slate-600 font-light leading-relaxed">{selectedOffer.longDescription}</p>
+                      <p className="whitespace-pre-line text-slate-600 font-light leading-relaxed">{selectedOffer.longDescription}</p>
                     </div>
 
                     <div>
-                      <h4 className="text-sm uppercase font-bold tracking-widest text-amber-700 mb-4">Privilèges & Services Inclus</h4>
-                      <div className="space-y-3">
-                        {selectedOffer.services.map((srv, idx) => (
-                          <div key={idx} className="flex gap-3 items-start">
-                            <div className="p-1 bg-gold/10 text-gold-dark rounded-md mt-0.5 shrink-0">
-                              <Check size={12} className="stroke-[3]" />
-                            </div>
-                            <span className="text-slate-600 text-xs font-light leading-relaxed">{srv}</span>
+                      {selectedOffer.services.length > 0 ? (
+                        <>
+                          <h4 className="text-sm uppercase font-bold tracking-widest text-amber-700 mb-4">Privilèges & Services Inclus</h4>
+                          <div className="space-y-3">
+                            {selectedOffer.services.map((srv, idx) => (
+                              <div key={idx} className="flex gap-3 items-start">
+                                <div className="p-1 bg-gold/10 text-gold-dark rounded-md mt-0.5 shrink-0">
+                                  <Check size={12} className="stroke-[3]" />
+                                </div>
+                                <span className="text-slate-600 text-xs font-light leading-relaxed">{srv}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </>
+                      ) : (
+                        <div className="pt-2">
+                          <a
+                            href={selectedOffer.externalUrl || "https://all.accor.com/hotel/B6R8/index.fr.shtml"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-6 py-4 bg-slate-900 hover:bg-[#e31c25] text-white hover:text-white border border-slate-800 text-xs uppercase font-extrabold tracking-widest rounded-xl transition-all shadow-md cursor-pointer"
+                          >
+                            En savoir plus
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1302,15 +1311,19 @@ Merci de me recontacter afin de réserver ou de m'envoyer plus de détails sur l
                       <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-1">Budget requis</span>
                       <p className="text-2xl font-serif text-gold-dark font-bold mb-6">{selectedOffer.price}</p>
                       
-                      <h5 className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-3">Conditions d'application</h5>
-                      <ul className="space-y-2 mb-8">
-                        {selectedOffer.conditions.map((cnd, index) => (
-                          <li key={index} className="text-slate-500 text-[10px] font-light leading-relaxed flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 bg-gold/50 rounded-full shrink-0" />
-                            {cnd}
-                          </li>
-                        ))}
-                      </ul>
+                      {selectedOffer.conditions.length > 0 && (
+                        <>
+                          <h5 className="text-[10px] uppercase font-bold tracking-widest text-slate-400 block mb-3">Conditions d'application</h5>
+                          <ul className="space-y-2 mb-8">
+                            {selectedOffer.conditions.map((cnd, index) => (
+                              <li key={index} className="text-slate-500 text-[10px] font-light leading-relaxed flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-gold/50 rounded-full shrink-0" />
+                                {cnd}
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
                     </div>
 
                     <button
