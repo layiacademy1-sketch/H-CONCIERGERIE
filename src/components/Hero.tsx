@@ -1,7 +1,7 @@
 import { motion, useScroll, useTransform } from "motion/react";
 import { Star, ChevronDown } from "lucide-react";
 
-export default function Hero() {
+export default function Hero({ onDevenirMembre }: { onDevenirMembre: () => void }) {
   const { scrollY } = useScroll();
   
   // Arrow animation based on scroll
@@ -31,11 +31,11 @@ export default function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="flex flex-col items-center gap-4 mb-16"
+            className="flex flex-col items-center gap-4 mb-4"
           >
             <div className="flex items-center gap-4">
               <div className="h-px w-8 bg-gold" />
-              <span className="text-gold tracking-[0.4em] uppercase text-xs font-bold">
+              <span className="text-gold tracking-[0.4em] uppercase text-xs font-bold font-sans">
                 L'Excellence à votre service
               </span>
               <div className="h-px w-8 bg-gold" />
@@ -46,9 +46,24 @@ export default function Hero() {
               transition={{ delay: 0.3 }}
               src="https://image.noelshack.com/fichiers/2026/16/2/1776179004-taxi-12.png" 
               alt="Logo" 
-              className="h-48 md:h-72 w-auto object-contain drop-shadow-[0_0_25px_rgba(212,175,55,0.6)]"
+              className="h-41 md:h-64 w-auto object-contain drop-shadow-[0_0_25px_rgba(212,175,55,0.6)]"
               referrerPolicy="no-referrer"
             />
+          </motion.div>
+
+          {/* DEVENIR MEMBRE PREMIUM BUTTON */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="mb-14"
+          >
+            <button 
+              onClick={onDevenirMembre}
+              className="px-8 py-4 bg-slate-950/80 backdrop-blur-md border border-gold hover:border-white text-gold hover:text-white rounded-xl text-xs font-black tracking-[0.3em] uppercase cursor-pointer transition-all duration-300 hover:scale-[1.05] shadow-[0_0_20px_rgba(212,175,55,0.4)] hover:shadow-[0_0_25px_rgba(255,255,255,0.5)] active:scale-95"
+            >
+              Devenir Membre
+            </button>
           </motion.div>
 
           {/* Horizontal Text + Scroll Arrow */}
