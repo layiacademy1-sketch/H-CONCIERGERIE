@@ -183,13 +183,13 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
 
   const handlePickPickupAgency = (city: CarCity) => {
     setPickupAgency(city);
-    setPickupInput(`${city.flag} L'Agence de ${city.name} (${city.country})`);
+    setPickupInput(`${city.flag} ${city.name} (${city.country})`);
     setShowPickupList(false);
   };
 
   const handlePickDropoffAgency = (city: CarCity) => {
     setDropoffAgency(city);
-    setDropoffInput(`${city.flag} L'Agence de ${city.name} (${city.country})`);
+    setDropoffInput(`${city.flag} ${city.name} (${city.country})`);
     setShowDropoffList(false);
   };
 
@@ -228,19 +228,40 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
   // Send WhatsApp Inquiry
   const handleSendDemand = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pickupAgency) {
-      alert("Veuillez sélectionner une ville / agence de départ dans la liste.");
+
+    // Support any custom input text typed by the user as a fallback
+    let finalPickup = pickupAgency;
+    if (!finalPickup && pickupInput.trim()) {
+      finalPickup = {
+        name: pickupInput.trim(),
+        country: "Monde",
+        flag: "📍"
+      };
+    }
+
+    if (!finalPickup) {
+      alert("Veuillez saisir un lieu de départ.");
       return;
     }
-    if (!returnSameAgency && !dropoffAgency) {
-      alert("Veuillez sélectionner une ville / agence de retour dans la liste.");
+
+    let finalDropoff = returnSameAgency ? finalPickup : dropoffAgency;
+    if (!returnSameAgency && !finalDropoff && dropoffInput.trim()) {
+      finalDropoff = {
+        name: dropoffInput.trim(),
+        country: "Monde",
+        flag: "📍"
+      };
+    }
+
+    if (!returnSameAgency && !finalDropoff) {
+      alert("Veuillez saisir un lieu de retour.");
       return;
     }
 
     setIsFilteringCars(true);
 
-    const cleanPickup = `${pickupAgency.flag} L'Agence de ${pickupAgency.name} (${pickupAgency.country})`;
-    const cleanDropoff = returnSameAgency ? cleanPickup : `${dropoffAgency!.flag} L'Agence de ${dropoffAgency!.name} (${dropoffAgency!.country})`;
+    const cleanPickup = `${finalPickup.flag} ${finalPickup.name}${finalPickup.country ? ` (${finalPickup.country})` : ""}`;
+    const cleanDropoff = returnSameAgency ? cleanPickup : `${finalDropoff.flag} ${finalDropoff.name}${finalDropoff.country ? ` (${finalDropoff.country})` : ""}`;
 
     const message = `Bonjour H-CONCIERGERIE, je souhaite soumettre une demande de réservation de véhicule :
 📌 Type de véhicule : ${vehicleType}
@@ -332,7 +353,7 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                   <div ref={pickupRef} className="relative flex flex-col gap-1.5 lg:col-span-2">
                     <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1">
                       <MapPin size={11} className="text-[#e31c25]" />
-                      Agence de Départ
+                      Lieu de Départ
                     </label>
                     <div className="relative">
                       <input
@@ -342,7 +363,7 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                         onChange={(e) => {
                           setPickupInput(e.target.value);
                           setShowPickupList(true);
-                          if (pickupAgency && `${pickupAgency.flag} L'Agence de ${pickupAgency.name} (${pickupAgency.country})` !== e.target.value) {
+                          if (pickupAgency && `${pickupAgency.flag} ${pickupAgency.name} (${pickupAgency.country})` !== e.target.value) {
                             setPickupAgency(null);
                           }
                         }}
@@ -364,9 +385,25 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                           exit={{ opacity: 0, y: 5 }}
                           className="absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl z-50 max-h-68 overflow-y-auto"
                         >
+                          {pickupInput.trim().length > 0 && !globalCities.some(city => city.name.toLowerCase() === pickupInput.trim().toLowerCase()) && (
+                            <button
+                              type="button"
+                              onClick={() => handlePickPickupAgency({ name: pickupInput.trim(), country: "Monde", flag: "📍" })}
+                              className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 border-b border-slate-100 transition-all text-left cursor-pointer"
+                            >
+                              <span className="text-xl shrink-0">📍</span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-bold text-xs text-slate-900 truncate">
+                                  Prise en charge à "{pickupInput.trim()}"
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-medium">Lieu personnalisé</span>
+                              </div>
+                            </button>
+                          )}
+
                           {pickupInput.trim().length === 0 ? (
                             <div className="px-5 py-2.5 text-[10px] uppercase font-black tracking-widest text-[#e31c25] border-b border-slate-100 bg-slate-50/50">
-                              Agences Populaires
+                              Suggestion de Villes
                             </div>
                           ) : null}
                           {filteredPickupCities.length > 0 ? (
@@ -384,7 +421,7 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                                     </span>
                                     <div className="flex flex-col min-w-0">
                                       <span className="font-bold text-xs text-slate-900 truncate">
-                                        Agence de {city.name}
+                                        {city.name}
                                       </span>
                                     </div>
                                   </div>
@@ -394,11 +431,11 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                                 </button>
                               ))}
                             </div>
-                          ) : (
+                          ) : pickupInput.trim().length === 0 ? (
                             <div className="p-5 text-center text-xs text-slate-400 font-medium">
-                              Aucune agence trouvée
+                              Aucune suggestion trouvée
                             </div>
-                          )}
+                          ) : null}
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -417,7 +454,7 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                       htmlFor="same-agency" 
                       className="text-xs font-bold text-slate-600 cursor-pointer hover:text-slate-900 transition-colors py-1"
                     >
-                      Retour dans la même agence
+                      Retour dans le même lieu de départ
                     </label>
                   </div>
 
@@ -434,17 +471,17 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                         <div ref={dropoffRef} className="relative flex flex-col gap-1.5">
                           <label className="text-xs font-black uppercase text-slate-500 tracking-wider flex items-center gap-1">
                             <MapPin size={11} className="text-[#e31c25]" />
-                            Agence de Retour
+                            Lieu de Retour
                           </label>
                           <div className="relative">
                             <input
                               type="text"
-                              placeholder="Sélectionnez une agence de retour..."
+                              placeholder="Sélectionnez ou saisissez un lieu de retour..."
                               value={dropoffInput}
                               onChange={(e) => {
                                 setDropoffInput(e.target.value);
                                 setShowDropoffList(true);
-                                if (dropoffAgency && `${dropoffAgency.flag} L'Agence de ${dropoffAgency.name} (${dropoffAgency.country})` !== e.target.value) {
+                                if (dropoffAgency && `${dropoffAgency.flag} ${dropoffAgency.name} (${dropoffAgency.country})` !== e.target.value) {
                                   setDropoffAgency(null);
                                 }
                               }}
@@ -466,9 +503,25 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                                 exit={{ opacity: 0, y: 5 }}
                                 className="absolute left-0 right-0 top-full mt-2 bg-white border border-slate-200 shadow-2xl rounded-2xl z-50 max-h-68 overflow-y-auto"
                               >
+                                {dropoffInput.trim().length > 0 && !globalCities.some(city => city.name.toLowerCase() === dropoffInput.trim().toLowerCase()) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePickDropoffAgency({ name: dropoffInput.trim(), country: "Monde", flag: "📍" })}
+                                    className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50 border-b border-slate-100 transition-all text-left cursor-pointer"
+                                  >
+                                    <span className="text-xl shrink-0">📍</span>
+                                    <div className="flex flex-col min-w-0">
+                                      <span className="font-bold text-xs text-slate-900 truncate">
+                                        Restitution à "{dropoffInput.trim()}"
+                                      </span>
+                                      <span className="text-[10px] text-slate-400 font-medium">Lieu personnalisé</span>
+                                    </div>
+                                  </button>
+                                )}
+
                                 {dropoffInput.trim().length === 0 ? (
                                   <div className="px-5 py-2.5 text-[10px] uppercase font-black tracking-widest text-[#e31c25] border-b border-slate-100 bg-slate-50/50">
-                                    Agences Populaires
+                                    Suggestion de Villes
                                   </div>
                                 ) : null}
                                 {filteredDropoffCities.length > 0 ? (
@@ -486,7 +539,7 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                                           </span>
                                           <div className="flex flex-col min-w-0">
                                             <span className="font-bold text-xs text-slate-900 truncate">
-                                              Agence de {city.name}
+                                              {city.name}
                                             </span>
                                           </div>
                                         </div>
@@ -496,11 +549,11 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                                       </button>
                                     ))}
                                   </div>
-                                ) : (
+                                ) : dropoffInput.trim().length === 0 ? (
                                   <div className="p-5 text-center text-xs text-slate-400 font-medium">
-                                    Aucune agence trouvée
+                                    Aucune suggestion trouvée
                                   </div>
-                                )}
+                                ) : null}
                               </motion.div>
                             )}
                           </AnimatePresence>
@@ -707,7 +760,7 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-slate-400 uppercase font-bold tracking-wider">Départ :</span>
-                  <span className="text-white font-extrabold text-right max-w-[200px] truncate" title={pickupAgency ? `${pickupAgency.flag} Agence de ${pickupAgency.name} (${pickupAgency.country})` : pickupInput}>
+                  <span className="text-white font-extrabold text-right max-w-[200px] truncate" title={pickupAgency ? `${pickupAgency.flag} ${pickupAgency.name} (${pickupAgency.country})` : pickupInput}>
                     {pickupAgency ? `${pickupAgency.flag} ${pickupAgency.name}` : pickupInput}
                   </span>
                 </div>
@@ -717,8 +770,8 @@ export default function CarRentalPage({ onBack }: { onBack: () => void }) {
                 </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-slate-400 uppercase font-bold tracking-wider">Retour :</span>
-                  <span className="text-white font-extrabold text-right max-w-[200px] truncate" title={returnSameAgency ? (pickupAgency ? `${pickupAgency.flag} Agence de ${pickupAgency.name} (${pickupAgency.country})` : pickupInput) : (dropoffAgency ? `${dropoffAgency.flag} Agence de ${dropoffAgency.name} (${dropoffAgency.country})` : dropoffInput)}>
-                    {returnSameAgency ? "Même agence" : (dropoffAgency ? `${dropoffAgency.flag} ${dropoffAgency.name}` : dropoffInput)}
+                  <span className="text-white font-extrabold text-right max-w-[200px] truncate" title={returnSameAgency ? (pickupAgency ? `${pickupAgency.flag} ${pickupAgency.name} (${pickupAgency.country})` : pickupInput) : (dropoffAgency ? `${dropoffAgency.flag} ${dropoffAgency.name} (${dropoffAgency.country})` : dropoffInput)}>
+                    {returnSameAgency ? "Même lieu" : (dropoffAgency ? `${dropoffAgency.flag} ${dropoffAgency.name}` : dropoffInput)}
                   </span>
                 </div>
                 <div className="flex justify-between">
