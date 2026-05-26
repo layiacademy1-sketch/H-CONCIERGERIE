@@ -85,42 +85,100 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     setLoading(true);
     setErrorMsg("");
     try {
-      const { data, error } = await supabase
-        .from("membrehcon")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching from public.membrehcon:", error);
-        setErrorMsg(`Erreur : ${error.message}`);
-        return;
+      const res = await fetch("/api/admin/members");
+      if (!res.ok) {
+        throw new Error(`Erreur serveur de récupération: HTTP ${res.status}`);
+      }
+      
+      const result = await res.json();
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      if (data) {
-        const normalized = data.map((item: any) => {
-          const namePart = item.full_name || `${item.prenom || ""} ${item.nom || ""}`.trim() || item.name || "Nom non spécifié";
-          return {
-            id: item.id || item.auth_user_id,
-            name: namePart,
-            prenom: item.prenom || item.first_name || "",
-            nom: item.nom || item.last_name || "",
+      const dbData = result.data || [];
+      const normalized = dbData.map((item: any) => {
+        const namePart = item.full_name || `${item.prenom || ""} ${item.nom || ""}`.trim() || item.name || "Nom non spécifié";
+        return {
+          id: item.id || item.auth_user_id,
+          name: namePart,
+          prenom: item.prenom || item.first_name || "",
+          nom: item.nom || item.last_name || "",
+          email: item.email || "Email non renseigné",
+          phone: item.phone || item.telephone || "Non renseigné",
+          city: item.city || item.ville || "",
+          pseudo: item.pseudo || "",
+          abonnement: item.abonnement || (item.access_status === "active" ? "actif" : "non payé"),
+          paiement: item.paiement || (item.payment_status === "paid" ? "payé" : "en attente"),
+          payment_status: item.payment_status || "pending",
+          access_status: item.access_status || "pending",
+          subscription_expires_at: item.subscription_expires_at,
+          created_at: item.created_at
+        };
+      });
+
+      // Also merge in additional custom mock session user if any local storage backup exists
+      const savedMock = localStorage.getItem("h_supabase_session_mock");
+      let localMembers: Member[] = [];
+      if (savedMock) {
+        try {
+          const parsed = JSON.parse(savedMock);
+          if (parsed && parsed.email) {
+            localMembers.push({
+              id: parsed.id || "local-session",
+              name: `${parsed.prenom || ""} ${parsed.nom || ""}`.trim() || parsed.pseudo || "Membre",
+              prenom: parsed.prenom || "",
+              nom: parsed.nom || "",
+              email: parsed.email,
+              phone: parsed.telephone || parsed.phone || "Non renseigné",
+              city: parsed.ville || parsed.city || "",
+              pseudo: parsed.pseudo || "",
+              abonnement: parsed.abonnement || "non payé",
+              paiement: parsed.paiement || "en attente",
+              payment_status: parsed.payment_status || "pending",
+              access_status: parsed.access_status || "pending",
+              created_at: parsed.created_at || new Date().toISOString()
+            });
+          }
+        } catch (e) {}
+      }
+
+      // Merge additional custom elements array
+      if (additionalMembers && additionalMembers.length > 0) {
+        additionalMembers.forEach((item, index) => {
+          localMembers.push({
+            id: `local-custom-${index}-${item.email || ''}`,
+            name: item.name,
+            prenom: item.name.split(" ")[0] || "",
+            nom: item.name.split(" ").slice(1).join(" ") || "",
             email: item.email || "Email non renseigné",
-            phone: item.phone || item.telephone || "Non renseigné",
-            city: item.city || item.ville || "",
-            pseudo: item.pseudo || "",
-            abonnement: item.abonnement || (item.access_status === "active" ? "actif" : "non payé"),
-            paiement: item.paiement || (item.payment_status === "paid" ? "payé" : "en attente"),
-            payment_status: item.payment_status || "pending",
-            access_status: item.access_status || "pending",
-            subscription_expires_at: item.subscription_expires_at,
-            created_at: item.created_at
-          };
+            phone: item.phone || "Non renseigné",
+            city: item.city || "",
+            pseudo: "",
+            abonnement: "non payé",
+            paiement: "en attente",
+            payment_status: "pending",
+            access_status: "pending",
+            created_at: new Date().toISOString()
+          });
         });
-        setMembers(normalized);
       }
+
+      const combined = [...normalized];
+      localMembers.forEach(lm => {
+        const alreadyInDb = combined.some(m => 
+          (m.email && m.email !== "Email non renseigné" && m.email.toLowerCase() === lm.email.toLowerCase()) ||
+          (m.phone && m.phone !== "Non renseigné" && m.phone.replace(/\s+/g, "") === lm.phone.replace(/\s+/g, "")) ||
+          (m.id === lm.id)
+        );
+        if (!alreadyInDb) {
+          combined.push(lm);
+        }
+      });
+
+      setMembers(combined);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(`Erreur d'accès à la table : ${err.message || err}`);
+      setErrorMsg(`Erreur lors de la récupération : ${err.message || err}`);
     } finally {
       setLoading(false);
     }
@@ -196,43 +254,26 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
   };
 
   const safeUpdateMember = async (id: string, initialPayload: any) => {
-    let payload = { ...initialPayload };
-    let attempts = 0;
-    while (attempts < 15) {
-      attempts++;
-      try {
-        const { error } = await supabase
-          .from("membrehcon")
-          .update(payload)
-          .or(`auth_user_id.eq.${id},id.eq.${id}`);
-
-        if (!error) {
-          return null;
-        }
-
-        console.warn(`Update attempt ${attempts} failed:`, error.message);
-        const msg = error.message || "";
-        let columnMatch = msg.match(/column "([^"]+)"/i);
-        if (!columnMatch) {
-          columnMatch = msg.match(/has no column named "([^"]+)"/i);
-        }
-        if (!columnMatch) {
-          columnMatch = msg.match(/column_name "([^"]+)"/i);
-        }
-
-        if (columnMatch && columnMatch[1]) {
-          const columnName = columnMatch[1];
-          console.log(`Removing non-existent column '${columnName}' from update payload and retrying...`);
-          delete payload[columnName];
-        } else {
-          return error;
-        }
-      } catch (e: any) {
-        console.error("Exception in safeUpdateMember:", e);
-        return e;
+    try {
+      const res = await fetch("/api/admin/update-member", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, payload: initialPayload })
+      });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP Erreur ${res.status}`);
       }
+      
+      const result = await res.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      return null;
+    } catch (e: any) {
+      console.error("Exception in safeUpdateMember:", e);
+      return e;
     }
-    return new Error("Too many retries stripping column updates");
   };
 
   const handleChangeMemberStatus = async (id: string, targetStatus: "pending" | "active" | "expired") => {
@@ -258,7 +299,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       abonnement: isAct ? "actif" : (isPending ? "non payé" : "expiré")
     };
 
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || id.startsWith("local-custom-") || id === "local-session") {
       // Simulation update
       setMembers(prev => prev.map(m => {
         if (m.id === id) {
@@ -269,6 +310,18 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
         }
         return m;
       }));
+
+      // Update local storage too if it's the session mock
+      if (id === "local-session") {
+        const savedMock = localStorage.getItem("h_supabase_session_mock");
+        if (savedMock) {
+          try {
+            const parsed = JSON.parse(savedMock);
+            const updated = { ...parsed, ...payload };
+            localStorage.setItem("h_supabase_session_mock", JSON.stringify(updated));
+          } catch (e) {}
+        }
+      }
       return;
     }
 
@@ -284,22 +337,30 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
   };
 
   const handleDeleteMember = async (id: string) => {
-    if (!isSupabaseConfigured()) {
+    if (!isSupabaseConfigured() || id.startsWith("local-custom-") || id === "local-session") {
       setMembers(prev => prev.filter(m => m.id !== id));
+      if (id === "local-session") {
+        localStorage.removeItem("h_supabase_session_mock");
+      }
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("membrehcon")
-        .delete()
-        .or(`auth_user_id.eq.${id},id.eq.${id}`);
-
-      if (error) {
-        console.error("Error deleting member", error);
-      } else {
-        await fetchMembers();
+      const res = await fetch("/api/admin/delete-member", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP Erreur ${res.status}`);
       }
+
+      const result = await res.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      await fetchMembers();
     } catch (err) {
       console.error(err);
     }

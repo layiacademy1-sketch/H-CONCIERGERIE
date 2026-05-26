@@ -48,12 +48,43 @@ function getSupabaseAdmin() {
   return supabaseAdmin;
 }
 
+// Helper to extract a column name that caused a database schema error
+function extractColumnFromErrorMessage(msg: string): string | null {
+  if (!msg) return null;
+
+  // 1. "Could not find the 'column_name' column of 'table' in the schema cache"
+  let match = msg.match(/Could not find the '([^']+)' column/i);
+  if (match) return match[1];
+
+  // 2. "'column_name' column"
+  match = msg.match(/'([^']+)' column/i);
+  if (match) return match[1];
+
+  // 3. "column 'column_name'"
+  match = msg.match(/column '([^']+)'/i);
+  if (match) return match[1];
+
+  // 4. "column "column_name""
+  match = msg.match(/column "([^"]+)"/i);
+  if (match) return match[1];
+
+  // 5. "has no column named 'column_name'" or "has no column named "column_name""
+  match = msg.match(/has no column named ['"]([^'"]+)['"]/i);
+  if (match) return match[1];
+
+  // 6. "column_name 'column_name'" or "column_name "column_name""
+  match = msg.match(/column_name ['"]([^'"]+)['"]/i);
+  if (match) return match[1];
+
+  return null;
+}
+
 // Helper to safely write members to 'membrehcon' without throwing Postgres column errors
 async function safeUpsertMembrehcon(supabaseClient: any, payload: any, primaryMatchColumn: string = "auth_user_id") {
   let currentPayload = { ...payload };
   let currentMatchColumn = primaryMatchColumn;
   let attempts = 0;
-  while (attempts < 20) {
+  while (attempts < 25) {
     attempts++;
     try {
       const { data, error } = await supabaseClient
@@ -77,16 +108,8 @@ async function safeUpsertMembrehcon(supabaseClient: any, payload: any, primaryMa
         }
       }
 
-      let columnMatch = msg.match(/column "([^"]+)"/i);
-      if (!columnMatch) {
-        columnMatch = msg.match(/has no column named "([^"]+)"/i);
-      }
-      if (!columnMatch) {
-        columnMatch = msg.match(/column_name "([^"]+)"/i);
-      }
-
-      if (columnMatch && columnMatch[1]) {
-        const columnName = columnMatch[1];
+      const columnName = extractColumnFromErrorMessage(msg);
+      if (columnName) {
         console.log(`Removing non-existent column '${columnName}' from payload and retrying...`);
         delete currentPayload[columnName];
         
@@ -235,6 +258,108 @@ app.post("/api/register-unpaid", async (req, res) => {
   } catch (error: any) {
     console.error("Exception in register-unpaid:", error);
     res.status(500).json({ error: error.message || "Erreur interne lors de l'enregistrement." });
+  }
+});
+
+// API Admin - Fetch all members safely bypassing client-side RLS
+app.get("/api/admin/members", async (req, res) => {
+  try {
+    const adminSb = getSupabaseAdmin();
+    if (!adminSb) {
+      return res.json({ success: true, isSimulated: true, data: [] });
+    }
+
+    const { data, error } = await adminSb
+      .from("membrehcon")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error in GET /api/admin/members:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.json({ success: true, data });
+  } catch (error: any) {
+    console.error("Exception in GET /api/admin/members:", error);
+    res.status(500).json({ error: error.message || "Erreur interne" });
+  }
+});
+
+// API Admin - Update member status safely bypassing RLS
+app.post("/api/admin/update-member", async (req, res) => {
+  try {
+    const { id, payload } = req.body;
+    if (!id) {
+      return res.status(400).json({ error: "L'identifiant est requis." });
+    }
+
+    const adminSb = getSupabaseAdmin();
+    if (!adminSb) {
+      return res.json({ success: true, isSimulated: true });
+    }
+
+    // Try updating by auth_user_id or id using safeUpdate logic
+    let currentPayload = { ...payload };
+    let attempts = 0;
+    while (attempts < 15) {
+      attempts++;
+      const { data, error } = await adminSb
+        .from("membrehcon")
+        .update(currentPayload)
+        .or(`auth_user_id.eq.${id},id.eq.${id}`)
+        .select();
+
+      if (!error) {
+        return res.json({ success: true, data });
+      }
+
+      console.warn(`Admin update attempt ${attempts} failed:`, error.message);
+      const msg = error.message || "";
+      const columnName = extractColumnFromErrorMessage(msg);
+
+      if (columnName) {
+        console.log(`Removing non-existent column '${columnName}' from payload and retrying...`);
+        delete currentPayload[columnName];
+      } else {
+        return res.status(500).json({ error: error.message });
+      }
+    }
+
+    return res.status(500).json({ error: "Trop de tentatives de suppression de colonnes non existantes." });
+  } catch (error: any) {
+    console.error("Exception in POST /api/admin/update-member:", error);
+    res.status(500).json({ error: error.message || "Erreur interne" });
+  }
+});
+
+// API Admin - Delete member safely bypassing RLS
+app.post("/api/admin/delete-member", async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) {
+      return res.status(400).json({ error: "L'identifiant est requis." });
+    }
+
+    const adminSb = getSupabaseAdmin();
+    if (!adminSb) {
+      return res.json({ success: true, isSimulated: true });
+    }
+
+    const { error } = await adminSb
+      .from("membrehcon")
+      .delete()
+      .or(`auth_user_id.eq.${id},id.eq.${id}`);
+
+    if (error) {
+      console.error("Error in delete member:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error("Exception in POST /api/admin/delete-member:", error);
+    res.status(500).json({ error: error.message || "Erreur interne" });
   }
 });
 
