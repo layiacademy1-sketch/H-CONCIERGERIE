@@ -87,13 +87,21 @@ export const handler: Handler = async (event, context) => {
       updatedData.date_inscription = memberDetails.date_inscription || new Date().toISOString();
     }
 
-    // Upsert members table in Supabase bypass RLS
-    const { data, error } = await supabaseAdmin
-      .from("membres")
-      .upsert(updatedData, { onConflict: "id" })
-      .select();
+    // 1. Update 'membres'
+    let errorMembres: any = null;
+    let dataMembres: any = null;
+    try {
+      const result = await supabaseAdmin
+        .from("membres")
+        .upsert(updatedData, { onConflict: "id" })
+        .select();
+      errorMembres = result.error;
+      dataMembres = result.data;
+    } catch (e: any) {
+      errorMembres = e;
+    }
 
-    // Also update the 'members' table if it exists
+    // 2. Update 'members'
     const membersPaidData = {
       auth_user_id: userId,
       email: memberDetails?.email || "",
@@ -104,17 +112,18 @@ export const handler: Handler = async (event, context) => {
     };
 
     console.log("Updating 'members' table on Netlify verify-payment for user:", userId);
-    const { error: membersErr } = await supabaseAdmin
-      .from("members")
-      .upsert(membersPaidData, { onConflict: "auth_user_id" });
-
-    if (membersErr) {
-      console.warn("Could not update 'members' table in Netlify payment validation, continuing:", membersErr.message);
+    let errorMembers: any = null;
+    try {
+      const result = await supabaseAdmin
+        .from("members")
+        .upsert(membersPaidData, { onConflict: "auth_user_id" });
+      errorMembers = result.error;
+    } catch (e: any) {
+      errorMembers = e;
     }
 
-    if (error) {
-      console.error("Supabase service error admin, conversion en simulation locale:", error);
-      
+    if (errorMembres && errorMembers) {
+      console.error("Critical: Both 'membres' and 'members' table updates failed in Netlify function:", { errorMembres, errorMembers });
       return {
         statusCode: 200,
         headers,
@@ -122,14 +131,20 @@ export const handler: Handler = async (event, context) => {
           success: true, 
           isSimulated: true, 
           warning: "supabase_upsert_failed",
-          details: error.message,
-          code: error.code,
+          details: `membres: ${errorMembres.message || errorMembres.code || errorMembres}, members: ${errorMembers?.message || errorMembers?.code || errorMembers}`,
           member: updatedData 
         }),
       };
     }
 
-    const memberRecord = (data && data.length > 0) ? data[0] : updatedData;
+    if (errorMembres) {
+      console.warn("Netlify table 'membres' update failed (ignored as 'members' succeeded):", errorMembres.message || errorMembres);
+    }
+    if (errorMembers) {
+      console.warn("Netlify table 'members' update failed (ignored as 'membres' succeeded):", errorMembers.message || errorMembers);
+    }
+
+    const memberRecord = (dataMembres && dataMembres.length > 0) ? dataMembres[0] : updatedData;
 
     return {
       statusCode: 200,

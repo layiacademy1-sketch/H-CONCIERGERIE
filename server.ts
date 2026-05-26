@@ -109,11 +109,20 @@ app.post("/api/register-unpaid", async (req, res) => {
     }
 
     if (adminSb) {
-      console.log("Attempting to upsert to 'membres' table for user:", userId);
-      const { data, error } = await adminSb
-        .from("membres")
-        .upsert(unpaidData, { onConflict: "id" })
-        .select();
+      console.log("Attempting base synchronization for user:", userId);
+      
+      let errorMembres: any = null;
+      let dataMembres: any = null;
+      try {
+        const result = await adminSb
+          .from("membres")
+          .upsert(unpaidData, { onConflict: "id" })
+          .select();
+        errorMembres = result.error;
+        dataMembres = result.data;
+      } catch (e: any) {
+        errorMembres = e;
+      }
 
       // Automatically add a row to the 'members' table with auth_user_id, email, full_name, phone, payment_status="pending" and access_status="pending"
       const membersData = {
@@ -126,28 +135,36 @@ app.post("/api/register-unpaid", async (req, res) => {
       };
 
       console.log("Attempting to write to 'members' table with user:", userId);
-      const { error: membersErr } = await adminSb
-        .from("members")
-        .upsert(membersData, { onConflict: "auth_user_id" });
-
-      if (membersErr) {
-        console.warn("Could not insert to 'members' table (it might not exist or schema mismatch), continuing:", membersErr.message);
+      let errorMembers: any = null;
+      try {
+        const result = await adminSb
+          .from("members")
+          .upsert(membersData, { onConflict: "auth_user_id" });
+        errorMembers = result.error;
+      } catch (e: any) {
+        errorMembers = e;
       }
 
-      if (error) {
-        console.error("Supabase Admin Upsert Error (Enregistrement), conversion en simulation locale:", error);
-        
+      // If BOTH failed to write, then we warn and return simulated mode.
+      if (errorMembres && errorMembers) {
+        console.error("Critical: Both 'membres' and 'members' table writes failed:", { errorMembres, errorMembers });
         return res.json({
           success: true,
           isSimulated: true,
           warning: "supabase_upsert_failed",
-          details: error.message,
-          code: error.code,
+          details: `membres: ${errorMembres.message || errorMembres.code || errorMembres}, members: ${errorMembers?.message || errorMembers?.code || errorMembers}`,
           member: unpaidData
         });
       }
+
+      if (errorMembres) {
+        console.warn("Table 'membres' write failed (ignored as 'members' succeeded):", errorMembres.message || errorMembres);
+      }
+      if (errorMembers) {
+        console.warn("Table 'members' write failed (ignored as 'membres' succeeded):", errorMembers.message || errorMembers);
+      }
       
-      const memberRecord = (data && data.length > 0) ? data[0] : unpaidData;
+      const memberRecord = (dataMembres && dataMembres.length > 0) ? dataMembres[0] : unpaidData;
       return res.json({ success: true, member: memberRecord });
     } else {
       return res.json({
@@ -208,12 +225,20 @@ app.post("/api/verify-payment", async (req, res) => {
       }
 
       if (adminSb) {
-        console.log("Attempting to upsert to 'membres' table on payment verification for user:", userId);
-        // Securely upsert the user record bypassing RLS (via Service Role)
-        const { data, error } = await adminSb
-          .from("membres")
-          .upsert(updatedData, { onConflict: "id" })
-          .select();
+        console.log("Attempting payment update for user:", userId);
+        
+        let errorMembres: any = null;
+        let dataMembres: any = null;
+        try {
+          const result = await adminSb
+            .from("membres")
+            .upsert(updatedData, { onConflict: "id" })
+            .select();
+          errorMembres = result.error;
+          dataMembres = result.data;
+        } catch (e: any) {
+          errorMembres = e;
+        }
 
         // Also update the 'members' table if it exists
         const membersPaidData = {
@@ -225,28 +250,37 @@ app.post("/api/verify-payment", async (req, res) => {
           access_status: "active"
         };
         console.log("Updating 'members' table on payment verification with user:", userId);
-        const { error: membersErr } = await adminSb
-          .from("members")
-          .upsert(membersPaidData, { onConflict: "auth_user_id" });
-
-        if (membersErr) {
-          console.warn("Could not update 'members' table on payment verification, continuing:", membersErr.message);
+        let errorMembers: any = null;
+        try {
+          const result = await adminSb
+            .from("members")
+            .upsert(membersPaidData, { onConflict: "auth_user_id" });
+          errorMembers = result.error;
+        } catch (e: any) {
+          errorMembers = e;
         }
 
-        if (error) {
-          console.error("Supabase Admin Upsert Error in verify-payment, conversion en simulation locale:", error);
+        // If BOTH failed, then we show/return simulation fallback
+        if (errorMembres && errorMembers) {
+          console.error("Critical: Both 'membres' and 'members' table updates failed:", { errorMembres, errorMembers });
           
           return res.json({ 
             success: true, 
             isSimulated: true, 
             warning: "supabase_upsert_failed",
-            details: error.message,
-            code: error.code,
+            details: `membres: ${errorMembres.message || errorMembres.code || errorMembres}, members: ${errorMembers?.message || errorMembers?.code || errorMembers}`,
             member: updatedData 
           });
         }
+
+        if (errorMembres) {
+          console.warn("Table 'membres' update failed (ignored as 'members' succeeded):", errorMembres.message || errorMembres);
+        }
+        if (errorMembers) {
+          console.warn("Table 'members' update failed (ignored as 'membres' succeeded):", errorMembers.message || errorMembers);
+        }
         
-        const memberRecord = (data && data.length > 0) ? data[0] : updatedData;
+        const memberRecord = (dataMembres && dataMembres.length > 0) ? dataMembres[0] : updatedData;
         return res.json({ success: true, member: memberRecord });
       } else {
         // If Supabase Admin Client is missing, report success and let client update mock localStorage
