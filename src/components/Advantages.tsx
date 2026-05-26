@@ -30,20 +30,20 @@ const advantages = [
 ];
 
 export default function Advantages({ onExploreHotels, onExploreCars }: { onExploreHotels?: () => void; onExploreCars?: () => void }) {
-  const [showComingSoon, setShowComingSoon] = useState(false);
+  const [comingSoonType, setComingSoonType] = useState<"vols" | "ventes" | null>(null);
 
   // Auto-dismiss after 4 seconds
   useEffect(() => {
-    if (showComingSoon) {
+    if (comingSoonType) {
       const timer = setTimeout(() => {
-        setShowComingSoon(false);
+        setComingSoonType(null);
       }, 4000);
       return () => clearTimeout(timer);
     }
-  }, [showComingSoon]);
+  }, [comingSoonType]);
 
-  const triggerComingSoon = () => {
-    setShowComingSoon(true);
+  const triggerComingSoon = (type: "vols" | "ventes") => {
+    setComingSoonType(type);
   };
 
   return (
@@ -120,20 +120,18 @@ export default function Advantages({ onExploreHotels, onExploreCars }: { onExplo
                     </button>
                   ) : adv.title === "Vols Privilèges" ? (
                     <button 
-                      onClick={triggerComingSoon}
+                      onClick={() => triggerComingSoon("vols")}
                       className="inline-flex items-center justify-center px-6 py-3 bg-gold text-slate-950 text-xs tracking-widest uppercase font-bold rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer w-full text-center"
                     >
                       En savoir plus
                     </button>
                   ) : (
-                    <a 
-                      href="https://wa.me/33774067388"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center px-6 py-3 bg-gold text-slate-950 text-xs tracking-widest uppercase font-bold rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300 group/btn w-full text-center"
+                    <button 
+                      onClick={() => triggerComingSoon("ventes")}
+                      className="inline-flex items-center justify-center px-6 py-3 bg-gold text-slate-950 text-xs tracking-widest uppercase font-bold rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer w-full text-center"
                     >
                       En savoir plus
-                    </a>
+                    </button>
                   )}
                 </div>
               </div>
@@ -144,7 +142,7 @@ export default function Advantages({ onExploreHotels, onExploreCars }: { onExplo
 
       {/* Premium Toast Notification */}
       <AnimatePresence>
-        {showComingSoon && (
+        {comingSoonType && (
           <motion.div
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -156,13 +154,15 @@ export default function Advantages({ onExploreHotels, onExploreCars }: { onExplo
                 <Sparkles size={20} />
               </div>
               <div className="flex-1">
-                <h4 className="font-serif text-lg text-white mb-1">Vols Privilèges</h4>
+                <h4 className="font-serif text-lg text-white mb-1">
+                  {comingSoonType === "vols" ? "Vols Privilèges" : "Ventes Privées"}
+                </h4>
                 <p className="text-slate-300 text-xs font-light leading-relaxed">
-                  Notre espace de réservation de Vols Privilèges sera <span className="text-gold font-medium">Bientôt Disponible</span>.
+                  Notre espace de {comingSoonType === "vols" ? "réservation de Vols Privilèges" : "ventes privées"} sera <span className="text-gold font-medium">Bientôt Disponible</span>.
                 </p>
               </div>
               <button
-                onClick={() => setShowComingSoon(false)}
+                onClick={() => setComingSoonType(null)}
                 className="text-slate-400 hover:text-white transition-colors p-1 cursor-pointer"
               >
                 <X size={16} />

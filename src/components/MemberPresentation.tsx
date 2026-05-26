@@ -149,7 +149,7 @@ export default function MemberPresentation({ onBack, onSubmitMember }: MemberPre
                   rel="noopener noreferrer"
                   className="block text-center w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 cursor-pointer"
                 >
-                  S'inscrire ci-dessous
+                  DEVENIR MEMBRE
                 </a>
               </div>
             </div>

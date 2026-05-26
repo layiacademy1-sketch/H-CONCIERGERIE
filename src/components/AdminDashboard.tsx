@@ -23,7 +23,6 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({ onLogout, additionalMembers }: AdminDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterCity, setFilterCity] = useState("all");
   const [members, setMembers] = useState<Member[]>([]);
 
   // Phone Verification States
@@ -127,19 +126,10 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     setMembers(unique);
   }, [additionalMembers]);
 
-  // Extract all unique cities for filtering options
-  const cities = ["all", ...Array.from(new Set(members.map(m => m.city)))];
-
-  // Filtering based on search query (name or city) and filter criteria
+  // Filtering based on search query (by member name only)
   const filteredMembers = members.filter(member => {
-    const matchesSearch = 
-      member.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      member.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      member.job.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesCity = filterCity === "all" || member.city.toLowerCase() === filterCity.toLowerCase();
-
-    return matchesSearch && matchesCity;
+    const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
   });
 
   const handleDeleteMember = (id: string | number) => {
@@ -289,42 +279,28 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
 
         </div>
 
-        {/* CONTROLS BAR: SEARCH & CITY FILTER */}
-        <div className="bg-slate-900 border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:max-w-md">
+        {/* CONTROLS BAR: SEARCH */}
+        <div className="bg-slate-900 border border-white/5 rounded-2xl p-5 flex gap-4 items-center justify-between">
+          <div className="relative flex-1 max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
             <input 
               type="text" 
-              placeholder="Rechercher par nom, ville ou métier..."
+              placeholder="Rechercher par nom..."
               className="w-full bg-slate-950 border border-white/5 rounded-xl pl-11 pr-4 py-3 text-xs text-white outline-none focus:border-rose-500/50 transition-colors"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          <div className="flex gap-3 w-full md:w-auto">
-            <div className="relative flex-1 md:flex-initial">
-              <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={13} />
-              <select 
-                className="bg-slate-950 border border-white/5 rounded-xl pl-10 pr-6 py-3 text-xs text-slate-300 outline-none cursor-pointer focus:border-rose-500/50 transition-colors appearance-none w-full"
-                value={filterCity}
-                onChange={(e) => setFilterCity(e.target.value)}
-              >
-                <option value="all">Toutes les Villes</option>
-                {cities.filter(c => c !== "all").map((city, idx) => (
-                  <option key={idx} value={city}>{city}</option>
-                ))}
-              </select>
-            </div>
-
+          {searchQuery && (
             <button 
-              onClick={() => { setSearchQuery(""); setFilterCity("all"); }}
+              onClick={() => setSearchQuery("")}
               className="px-4 py-3 bg-slate-950 hover:bg-white/5 border border-white/5 text-xs text-slate-400 font-bold rounded-xl transition-colors cursor-pointer"
-              title="Réinitialiser les filtres"
+              title="Réinitialiser la recherche"
             >
               <RefreshCw size={13} />
             </button>
-          </div>
+          )}
         </div>
 
         {/* MEMBERS DATABASE TABLE / CARD VIEW */}
@@ -373,24 +349,10 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                       </h4>
 
                       <div className="space-y-2.5 text-xs">
-                        <div className="flex items-center gap-2 text-slate-400">
-                          <MapPin size={12} className="text-rose-500 shrink-0" />
-                          <span className="font-semibold text-white">{member.city}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-slate-400">
-                          <Briefcase size={12} className="text-rose-500 shrink-0" />
-                          <span className="truncate">{member.job}</span>
-                        </div>
                         {member.phone && (
                           <div className="flex items-center gap-2 text-slate-400 font-mono">
                             <Phone size={12} className="text-[#D4AF37] shrink-0" />
                             <span className="truncate">{member.phone}</span>
-                          </div>
-                        )}
-                        {member.email && (
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <Mail size={12} className="text-blue-400 shrink-0" />
-                            <span className="truncate text-[11px]">{member.email}</span>
                           </div>
                         )}
                         <div className="flex items-center gap-2 text-slate-400">
@@ -418,7 +380,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
           ) : (
             <div className="p-12 text-center rounded-3xl bg-slate-900 border border-white/5">
               <span className="text-slate-400 text-sm font-light block mb-2">Aucun adhérent ne correspond à vos critères de recherche.</span>
-              <p className="text-xs text-slate-500">Essayez de saisir un autre nom de ville ou d'adhérent.</p>
+              <p className="text-xs text-slate-500">Essayez de saisir un autre nom d'adhérent.</p>
             </div>
           )}
         </div>

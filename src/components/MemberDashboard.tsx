@@ -335,53 +335,17 @@ export default function MemberDashboard({ onLogout }: MemberDashboardProps) {
                   <p className="text-slate-400 text-xs font-light">Le catalogue Haute Couture et High-Tech premium réservé de façon intemporelle pour nos adhérents.</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {privateStoreItems.map((item) => (
-                    <div 
-                      key={item.id} 
-                      className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden flex flex-col h-full hover:border-[#D4AF37]/35 transition-all group"
-                    >
-                      <div className="relative aspect-square overflow-hidden bg-slate-950">
-                        <img 
-                          src={item.image} 
-                          alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="absolute top-3 left-3 bg-gold text-slate-950 text-[9px] font-black tracking-widest px-2.5 py-0.5 rounded-full uppercase shadow">
-                          {item.badge}
-                        </div>
-                        <div className="absolute top-3 right-3 bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded">
-                          {item.discount}
-                        </div>
-                      </div>
-
-                      <div className="p-5 flex flex-col flex-1 justify-between">
-                        <div>
-                          <span className="text-[10px] text-slate-500 font-extrabold uppercase block mb-1">
-                            {item.category}
-                          </span>
-                          <h4 className="font-serif text-sm text-slate-200 leading-snug mb-3 font-semibold group-hover:text-gold transition-colors">
-                            {item.name}
-                          </h4>
-                        </div>
-
-                        <div>
-                          <div className="flex justify-between items-baseline mb-3">
-                            <span className="text-xs line-through text-slate-500">{item.oldPrice}</span>
-                            <span className="text-lg font-black text-white">{item.price}</span>
-                          </div>
-
-                          <button
-                            onClick={() => handleWhatsAppAction(`Bonjour, je suis membre et je souhaite acquérir l'article de la vente privée : ${item.name} au prix exclusif de ${item.price}`)}
-                            className="w-full bg-white/5 hover:bg-gold hover:text-slate-950 text-slate-300 border border-white/10 hover:border-gold font-extrabold tracking-widest uppercase text-[10px] rounded-lg py-2 transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                          >
-                            Acheter
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex flex-col items-center justify-center border border-gold/20 bg-slate-900/60 rounded-3xl p-12 text-center space-y-4 max-w-2xl mx-auto py-16 shadow-2xl">
+                  <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center text-gold border border-gold/30">
+                    <ShoppingBag size={28} />
+                  </div>
+                  <h3 className="font-serif text-3xl text-white tracking-wide">Bientôt disponible</h3>
+                  <p className="text-slate-400 text-xs font-light max-w-md leading-relaxed">
+                    Notre équipe prépare minutieusement une sélection exclusive d’articles aux meilleurs prix négociés pour nos membres.
+                  </p>
+                  <div className="pt-2 text-[10px] text-gold uppercase tracking-widest font-bold bg-gold/15 border border-gold/20 px-4 py-1.5 rounded-full">
+                    Exclusivité H-Conciergerie
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -394,103 +358,20 @@ export default function MemberDashboard({ onLogout }: MemberDashboardProps) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -15 }}
                 transition={{ duration: 0.3 }}
-                className="space-y-8"
+                className="space-y-6"
               >
-                {/* COUNTDOWN BOARD */}
-                <div className="bg-gradient-to-r from-gold-dark/30 to-slate-900 border border-gold/40 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                    <Clock size={150} />
-                  </div>
-                  
-                  <div className="space-y-2 text-center md:text-left relative z-10">
-                    <span className="text-[10px] font-black tracking-[0.2em] text-gold uppercase block">• PROCHAIN GALA VIP</span>
-                    <h3 className="font-serif text-xl md:text-2xl text-white">Grande Nuit de Gala des Membres</h3>
-                    <p className="text-xs text-slate-300 font-light max-w-md">Les invitations d'élite personnalisées par coursier physique sont prêtes à l'envoi.</p>
-                  </div>
-
-                  <div className="flex gap-4 relative z-10">
-                    <div className="flex flex-col items-center">
-                      <div className="bg-slate-950/80 backdrop-blur border border-gold/30 rounded-xl w-14 h-14 md:w-16 md:h-16 flex items-center justify-center font-serif text-xl md:text-2xl text-gold font-bold">
-                        {String(countdown.days).padStart(2, '0')}
-                      </div>
-                      <span className="text-[8px] uppercase font-black text-slate-400 mt-1.5">Jours</span>
-                    </div>
-
-                    <div className="flex flex-col items-center">
-                      <div className="bg-slate-950/80 backdrop-blur border border-gold/30 rounded-xl w-14 h-14 md:w-16 md:h-16 flex items-center justify-center font-serif text-xl md:text-2xl text-gold font-bold">
-                        {String(countdown.hours).padStart(2, '0')}
-                      </div>
-                      <span className="text-[8px] uppercase font-black text-slate-400 mt-1.5">Heures</span>
-                    </div>
-
-                    <div className="flex flex-col items-center">
-                      <div className="bg-slate-950/80 backdrop-blur border border-gold/30 rounded-xl w-14 h-14 md:w-16 md:h-16 flex items-center justify-center font-serif text-xl md:text-2xl text-gold font-bold">
-                        {String(countdown.minutes).padStart(2, '0')}
-                      </div>
-                      <span className="text-[8px] uppercase font-black text-slate-400 mt-1.5">Min</span>
-                    </div>
-
-                    <div className="flex flex-col items-center">
-                      <div className="bg-slate-950/80 backdrop-blur border border-gold/30 rounded-xl w-14 h-14 md:w-16 md:h-16 flex items-center justify-center font-serif text-xl md:text-2xl text-gold font-bold">
-                        {String(countdown.seconds).padStart(2, '0')}
-                      </div>
-                      <span className="text-[8px] uppercase font-black text-slate-400 mt-1.5">Sec</span>
-                    </div>
-                  </div>
+                <div>
+                  <h2 className="text-3xl font-serif text-white tracking-widest uppercase">Évènements VIP</h2>
+                  <p className="text-slate-400 text-xs font-light">Réservez vos places de prestige en avant-première mondiale.</p>
                 </div>
 
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-serif text-white tracking-widest uppercase">Calendrier des Évènements</h2>
-                    <p className="text-slate-400 text-xs font-light">Réservez vos places de prestige en avant-première.</p>
+                <div className="flex flex-col items-center justify-center border border-gold/20 bg-slate-900/60 rounded-3xl p-12 text-center space-y-4 max-w-2xl mx-auto py-16 shadow-2xl">
+                  <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center text-gold border border-gold/30">
+                    <Calendar size={28} />
                   </div>
-
-                  <div className="space-y-6">
-                    {vipEvents.map((evt, idx) => (
-                      <div 
-                        key={idx} 
-                        className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden flex flex-col md:flex-row gap-6 shadow-xl p-4 md:p-5 hover:border-gold/20 transition-all group"
-                      >
-                        <div className="md:w-48 shrink-0 h-32 md:h-auto rounded-xl overflow-hidden relative">
-                          <img 
-                            src={evt.image} 
-                            alt={evt.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="absolute top-2 left-2 bg-slate-950/90 text-gold text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg">
-                            {evt.time}
-                          </div>
-                        </div>
-
-                        <div className="flex-1 flex flex-col justify-between">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2 mb-1">
-                              <span className="text-xs text-gold font-black uppercase tracking-widest">{evt.date}</span>
-                              <span className="text-[9px] text-slate-400">•</span>
-                              <span className="text-[9px] font-bold text-slate-400 flex items-center gap-1">
-                                <MapPin size={10} className="text-gold" /> {evt.location}
-                              </span>
-                            </div>
-                            <h4 className="font-serif text-base font-semibold text-white mb-2 group-hover:text-gold transition-colors">
-                              {evt.title}
-                            </h4>
-                            <p className="text-[11px] text-slate-400 font-light leading-relaxed">
-                              {evt.desc}
-                            </p>
-                          </div>
-
-                          <div className="pt-4 flex items-center justify-end">
-                            <button
-                              onClick={() => handleWhatsAppAction(`Bonjour H-CONCIERGERIE, je souhaite réserver ma place de VIP Membre pour l'évènement : ${evt.title} prévu le ${evt.date}`)}
-                              className="bg-white text-slate-950 hover:bg-gold hover:text-slate-950 cursor-pointer text-[10px] font-extrabold tracking-widest uppercase px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5"
-                            >
-                              Confirmer ma place <ChevronRight size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <h3 className="font-serif text-3xl text-white tracking-wide">Bientôt disponible</h3>
+                  <div className="pt-2 text-[10px] text-gold uppercase tracking-widest font-bold bg-gold/15 border border-gold/20 px-4 py-1.5 rounded-full">
+                    Réservé aux Membres
                   </div>
                 </div>
               </motion.div>

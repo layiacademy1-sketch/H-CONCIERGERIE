@@ -10,7 +10,6 @@ import MemberPresentation from "./components/MemberPresentation";
 import MemberDashboard from "./components/MemberDashboard";
 import AdminDashboard from "./components/AdminDashboard";
 import WhatsAppButton from "./components/WhatsAppButton";
-import Footer from "./components/Footer";
 import { motion, useScroll, useSpring, AnimatePresence } from "motion/react";
 import React, { useState, useEffect } from "react";
 import { Lock, X, Eye, EyeOff, ShieldCheck } from "lucide-react";
@@ -449,13 +448,6 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
-
-      <Footer 
-        onOpenAdmin={() => {
-          setView("admin");
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }}
-      />
 
       {/* FLOATING ACTION WHATSAPP KEY */}
       <WhatsAppButton />

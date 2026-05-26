@@ -8,8 +8,13 @@ export default function Footer({ onOpenAdmin }: FooterProps) {
   return (
     <footer className="bg-slate-950 border-t border-white/5 py-12 text-slate-500">
       <div className="container mx-auto px-6 max-w-7xl flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="text-xs font-serif font-light tracking-widest text-slate-600">
-          © {new Date().getFullYear()} H-CONCIERGERIE. Tous droits réservés.
+        <div className="flex flex-col items-center md:items-start gap-1.5">
+          <div className="text-xs font-serif font-light tracking-widest text-slate-600">
+            © {new Date().getFullYear()} H-CONCIERGERIE. Tous droits réservés.
+          </div>
+          <div className="text-[11px] font-sans font-light tracking-wider text-slate-500">
+            Contact : <a href="mailto:support@h-conciergerie.fr" className="hover:text-gold transition-colors underline underline-offset-4 decoration-white/10 hover:decoration-gold">support@h-conciergerie.fr</a>
+          </div>
         </div>
         
         <div className="flex items-center gap-6">

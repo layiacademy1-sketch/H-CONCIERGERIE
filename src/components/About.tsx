@@ -96,6 +96,9 @@ export default function About() {
             >
               Nous suivre sur Snapchat
             </a>
+            <div className="mt-8 text-xs font-sans font-light tracking-wide text-slate-500">
+              Contact : <a href="mailto:support@h-conciergerie.fr" className="text-slate-800 hover:text-gold transition-colors font-medium underline underline-offset-4 decoration-slate-300 hover:decoration-gold">support@h-conciergerie.fr</a>
+            </div>
           </motion.div>
 
           <motion.p
