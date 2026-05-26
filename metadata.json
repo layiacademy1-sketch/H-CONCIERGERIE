@@ -1,6 +1,5 @@
 {
   "name": "H CONCIERGERIE",
   "description": "Conciergerie ultra premium et club privé de réductions voyages exclusifs.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "requestFramePermissions": []
 }

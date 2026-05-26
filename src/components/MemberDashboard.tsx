@@ -2,29 +2,15 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Compass, Zap, Lock, LogOut, Ticket, Star, Calendar, 
-  Clock, ShoppingBag, MapPin, ChevronRight, Share2, Sparkles, Award, PlayCircle,
-  User, ShieldCheck
+  Clock, ShoppingBag, MapPin, ChevronRight, Share2, Sparkles, Award, PlayCircle
 } from "lucide-react";
 
 interface MemberDashboardProps {
   onLogout: () => void;
-  memberData?: {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    phone?: string;
-    pseudo?: string;
-    status?: string;
-    date_joined?: string;
-    date_paiement?: string;
-    montant_paye?: number;
-    stripe_session_id?: string;
-    abonnement?: string;
-  } | null;
 }
 
-export default function MemberDashboard({ onLogout, memberData }: MemberDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"flash" | "ventes" | "events" | "profile">("flash");
+export default function MemberDashboard({ onLogout }: MemberDashboardProps) {
+  const [activeTab, setActiveTab] = useState<"flash" | "ventes" | "events">("flash");
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   // Calculate countdown to the next event (e.g. 15 November 2026)
@@ -204,14 +190,12 @@ export default function MemberDashboard({ onLogout, memberData }: MemberDashboar
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-black tracking-widest uppercase text-white">
-                Bienvenue, {memberData?.firstName || "Cher Membre"}
-              </span>
+              <span className="text-sm font-black tracking-widest uppercase text-white">Espace Membre H-Conciergerie</span>
               <span className="bg-gold text-slate-900 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest">
-                {memberData?.status === "membre_actif" ? "Actif VIP" : "En attente"}
+                Actif VIP
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 font-medium">Ravi de vous retrouver. Profitez de vos privilèges exclusifs de conciergerie.</p>
+            <p className="text-[10px] text-slate-400 font-medium">Félicitations pour votre connexion. Profitez de vos privilèges exclusifs.</p>
           </div>
         </div>
 
@@ -249,13 +233,6 @@ export default function MemberDashboard({ onLogout, memberData }: MemberDashboar
                 className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-left cursor-pointer ${activeTab === "events" ? "bg-gold text-slate-950 shadow-lg font-black" : "text-slate-300 hover:bg-white/5"}`}
               >
                 <Calendar size={14} /> Évènements VIP
-              </button>
-
-              <button
-                onClick={() => setActiveTab("profile")}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-left cursor-pointer ${activeTab === "profile" ? "bg-gold text-slate-950 shadow-lg font-black" : "text-slate-300 hover:bg-white/5"}`}
-              >
-                <User size={14} /> Mes Informations
               </button>
             </div>
           </div>
@@ -296,7 +273,7 @@ export default function MemberDashboard({ onLogout, memberData }: MemberDashboar
                           referrerPolicy="no-referrer"
                         />
                         <div className="absolute top-4 left-4 bg-[#e31c25] text-white text-[10px] font-black tracking-widest px-3 py-1 rounded-full uppercase shadow-lg">
-                          -{offer.discount} CLUB
+                          {offer.discount} CLUB
                         </div>
                         <div className="absolute bottom-4 right-4 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-lg text-[9px] text-slate-300 font-bold uppercase">
                           {offer.nights}
@@ -395,67 +372,6 @@ export default function MemberDashboard({ onLogout, memberData }: MemberDashboar
                   <h3 className="font-serif text-3xl text-white tracking-wide">Bientôt disponible</h3>
                   <div className="pt-2 text-[10px] text-gold uppercase tracking-widest font-bold bg-gold/15 border border-gold/20 px-4 py-1.5 rounded-full">
                     Réservé aux Membres
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* TABS: MES INFORMATIONS */}
-            {activeTab === "profile" && (
-              <motion.div
-                key="profile"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -15 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div>
-                  <h2 className="text-3xl font-serif text-white tracking-widest uppercase">Mes Informations Personnelles</h2>
-                  <p className="text-slate-400 text-xs font-light">Gérez les détails de votre accréditation et de votre abonnement.</p>
-                </div>
-
-                <div className="bg-slate-900 border border-white/5 rounded-3xl p-6 md:p-8 space-y-6 max-w-2xl">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                    <div className="space-y-1">
-                      <div className="text-[10px] uppercase font-bold text-slate-400">Prénom</div>
-                      <div className="text-sm font-medium text-white">{memberData?.firstName || "Non renseigné"}</div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-[10px] uppercase font-bold text-slate-400">Nom de famille</div>
-                      <div className="text-sm font-medium text-white">{memberData?.lastName || "Non renseigné"}</div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-[10px] uppercase font-bold text-slate-400">Nom d'utilisateur (Pseudo)</div>
-                      <div className="text-sm font-medium text-white">{memberData?.pseudo || "Non renseigné"}</div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-[10px] uppercase font-bold text-slate-400">Téléphone mobile</div>
-                      <div className="text-sm font-medium text-[#D4AF37]">{memberData?.phone || "Non renseigné"}</div>
-                    </div>
-                    <div className="space-y-1 md:col-span-2">
-                      <div className="text-[10px] uppercase font-bold text-slate-400">Adresse de messagerie (Email)</div>
-                      <div className="text-sm font-medium text-white">{memberData?.email || "Non renseigné"}</div>
-                    </div>
-                  </div>
-
-                  <div className="pt-6 border-t border-white/5 space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-[#D4AF37]">Détails d'abonnement</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                      <div className="bg-slate-950 p-4 rounded-xl border border-white/5">
-                        <div className="text-[9px] uppercase font-bold text-slate-400">Statut de la cotisation</div>
-                        <div className="text-xs font-bold text-emerald-400 uppercase mt-1 flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          Membre Actif VIP
-                        </div>
-                      </div>
-                      
-                      <div className="bg-slate-950 p-4 rounded-xl border border-white/5">
-                        <div className="text-[9px] uppercase font-bold text-slate-400">Formule souscrite</div>
-                        <div className="text-xs font-bold text-white mt-1">Abonnement Annuel (365 €)</div>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </motion.div>

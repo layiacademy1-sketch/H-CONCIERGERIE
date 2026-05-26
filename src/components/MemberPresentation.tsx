@@ -1,26 +1,16 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { 
   CheckCircle, ArrowLeft, Star, Heart, Award, 
   MapPin, Notebook as Journal, ShieldCheck, Mail, Send, Sparkles, Zap, Lock, Compass, Calendar, Phone, CreditCard
 } from "lucide-react";
-import SignUpForm from "./SignUpForm";
 
 interface MemberPresentationProps {
   onBack: () => void;
   onSubmitMember: (member: { name: string; city: string; job: string; phone?: string; email?: string }) => void;
-  onSignUpSubmit: (formData: any) => Promise<void>;
-  isLoading: boolean;
-  signUpError: string;
 }
 
-export default function MemberPresentation({ 
-  onBack, 
-  onSubmitMember, 
-  onSignUpSubmit, 
-  isLoading, 
-  signUpError
-}: MemberPresentationProps) {
+export default function MemberPresentation({ onBack, onSubmitMember }: MemberPresentationProps) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -153,12 +143,14 @@ export default function MemberPresentation({
               </div>
               
               <div className="pt-2">
-                <button 
-                  onClick={() => setShowForm(true)}
-                  className="w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 cursor-pointer"
+                <a 
+                  href="https://buy.stripe.com/bJe5kD6htcmW5fR9GT7ss01"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-center w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 cursor-pointer"
                 >
                   DEVENIR MEMBRE
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -199,44 +191,12 @@ export default function MemberPresentation({
             <p className="text-slate-400 text-xs font-light">Discutez directement avec un représentant de notre service des relations membres.</p>
           </div>
           <button 
-            onClick={() => window.open(`https://wa.me/33756832263?text=Bonjour,%20j'aimerais%2520en%2520savoir%2520plus%2520sur%252520les%252520avantages%252520des%252520membres%252520H-Conciergerie.`, "_blank")}
+            onClick={() => window.open(`https://wa.me/33756832263?text=Bonjour,%20j'aimerais%20en%20savoir%20plus%20sur%20les%20avantages%20des%20membres%20H-Conciergerie.`, "_blank")}
             className="bg-white text-slate-950 px-6 py-3 rounded-xl text-xs font-extrabold tracking-widest uppercase hover:bg-gold hover:text-slate-950 transition-colors shrink-0 cursor-pointer"
           >
             Contacter un conseiller
           </button>
         </div>
-
-        {/* Popup / Modal for the registration form */}
-        <AnimatePresence>
-          {showForm && (
-            <div 
-              className="fixed inset-0 z-[150] overflow-y-auto bg-slate-950/85 backdrop-blur-md"
-              onClick={() => setShowForm(false)}
-            >
-              <div className="flex min-h-screen items-start md:items-center justify-center p-4 md:p-8">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                  transition={{ duration: 0.2 }}
-                  className="w-full max-w-2xl relative z-[151] pointer-events-auto my-auto"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <SignUpForm
-                    onSubmit={async (data) => {
-                      await onSignUpSubmit(data);
-                      // Close local modal on successful registration
-                      setShowForm(false);
-                    }}
-                    onCancel={() => setShowForm(false)}
-                    isLoading={isLoading}
-                    error={signUpError}
-                  />
-                </motion.div>
-              </div>
-            </div>
-          )}
-        </AnimatePresence>
 
       </div>
     </div>
