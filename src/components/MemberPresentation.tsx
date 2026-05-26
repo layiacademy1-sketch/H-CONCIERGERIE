@@ -145,10 +145,10 @@ export default function MemberPresentation({
               
               <div className="space-y-1">
                 <div className="text-5xl font-serif text-gold-gradient font-bold tracking-tight">
-                  1 € <span className="text-lg text-slate-400 font-light">/ an</span>
+                  365 € <span className="text-lg text-slate-400 font-light">/ an</span>
                 </div>
                 <div className="text-xs text-slate-300 font-semibold tracking-wide bg-gold/10 border border-gold/10 inline-block px-3 py-1 rounded-full">
-                  Offre de lancement exclusive
+                  Soit seulement <strong className="text-white">1 € par jour</strong>
                 </div>
               </div>
               

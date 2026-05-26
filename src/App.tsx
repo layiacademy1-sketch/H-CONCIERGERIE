@@ -129,7 +129,7 @@ export default function App() {
           await setDoc(docRef, {
             status: "membre_actif",
             date_paiement: new Date().toLocaleDateString("fr-FR"),
-            montant_paye: 1,
+            montant_paye: 365,
             stripe_session_id: params.get("session_id") || "mock_session",
             abonnement: "annuel"
           }, { merge: true });
@@ -506,7 +506,7 @@ export default function App() {
 
                       <p className="text-xs text-slate-400 font-light leading-relaxed">
                         Bonjour <strong>{memberData?.firstName}</strong>. Votre inscription annuelle d'exception à H-Conciergerie a expiré. <br/><br/>
-                        Afin de pouvoir ré-activer vos accès privilégiés 24/7, veuillez renouveler votre cotisation de <strong>1 €</strong> via notre lien Stripe sécurisé.
+                        Afin de pouvoir ré-activer vos accès privilégiés 24/7, veuillez renouveler votre cotisation de <strong>365 €</strong> via notre lien Stripe sécurisé.
                       </p>
 
                       <div className="pt-2 space-y-3">
@@ -516,7 +516,7 @@ export default function App() {
                           rel="noopener noreferrer"
                           className="w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black uppercase text-xs tracking-widest rounded-xl py-4 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-lg block text-center"
                         >
-                          Renouveler mon Adhésion (1 €)
+                          Renouveler mon Adhésion (365 €)
                         </a>
                         <button
                           onClick={() => window.open("https://wa.me/33756832263?text=Bonjour,%20je%20souhaite%20renouveler%20mon%20accréditation%20H-Conciergerie.")}
@@ -557,7 +557,7 @@ export default function App() {
 
                       <p className="text-xs text-slate-400 font-light leading-relaxed">
                         Bonjour <strong>{memberData?.firstName}</strong>. Votre inscription a été enregistrée de façon sécurisée. <br/><br/>
-                        Afin de pouvoir accéder aux privilèges exclusifs de notre club privé, veuillez finaliser votre cotisation annuelle de <strong>1 €</strong> (si ce n'est pas déjà fait). <br/><br/>
+                        Afin de pouvoir accéder aux privilèges exclusifs de notre club privé, veuillez finaliser votre cotisation annuelle de <strong>365 €</strong> (si ce n'est pas déjà fait). <br/><br/>
                         Une fois le règlement effectué, notre équipe procédera à l'accréditation et à l'activation manuelle de votre espace membre VIP sous de brefs délais.
                       </p>
 
@@ -568,7 +568,7 @@ export default function App() {
                           rel="noopener noreferrer"
                           className="w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black uppercase text-xs tracking-widest rounded-xl py-4 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-lg block text-center"
                         >
-                          Procéder au Règlement (1 €)
+                          Procéder au Règlement (365 €)
                         </a>
                       </div>
 
@@ -816,7 +816,7 @@ export default function App() {
                   </p>
                 </div>
                 <p className="text-xs text-slate-300 font-light leading-relaxed">
-                  Votre adhésion annuelle VIP de <strong>1 €</strong> au club privé H-Conciergerie a été activée. Vous disposez désormais d'un accès membre actif régularisé.
+                  Votre adhésion annuelle VIP de <strong>365 €</strong> au club privé H-Conciergerie a été activée. Vous disposez désormais d'un accès membre actif régularisé.
                 </p>
                 <div className="pt-4">
                   <button

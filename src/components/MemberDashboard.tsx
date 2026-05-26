@@ -453,7 +453,7 @@ export default function MemberDashboard({ onLogout, memberData }: MemberDashboar
                       
                       <div className="bg-slate-950 p-4 rounded-xl border border-white/5">
                         <div className="text-[9px] uppercase font-bold text-slate-400">Formule souscrite</div>
-                        <div className="text-xs font-bold text-white mt-1">Abonnement Annuel (1 €)</div>
+                        <div className="text-xs font-bold text-white mt-1">Abonnement Annuel (365 €)</div>
                       </div>
                     </div>
                   </div>

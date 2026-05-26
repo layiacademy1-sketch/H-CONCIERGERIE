@@ -119,7 +119,7 @@ export default function SignUpForm({ onSubmit, onCancel, isLoading, error }: Sig
           </p>
         </div>
         <div className="flex items-center gap-1.5 bg-gold/10 border border-gold/20 rounded-lg px-3 py-1.5 text-[10px] font-black text-gold tracking-widest uppercase self-start lg:self-center">
-          <Sparkles size={11} /> 1 € / AN
+          <Sparkles size={11} /> 365 € / AN
         </div>
       </div>
 
@@ -291,7 +291,7 @@ export default function SignUpForm({ onSubmit, onCancel, isLoading, error }: Sig
                 Création de votre accès membre unique...
               </>
             ) : (
-              "S'inscrire et finaliser le Règlement (1 €)"
+              "S'inscrire et finaliser le Règlement (365 €)"
             )}
           </button>
 
