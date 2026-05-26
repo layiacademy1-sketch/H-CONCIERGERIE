@@ -2,8 +2,11 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Users, Search, ShieldAlert, Award, Calendar, 
-  MapPin, Briefcase, Filter, RefreshCw, Star, Trash2, Phone, Mail, CheckCircle2, XCircle, ShieldCheck
+  MapPin, Briefcase, Filter, RefreshCw, Star, Trash2, Phone, Mail, CheckCircle2, XCircle, ShieldCheck,
+  CreditCard, Clock, Lock
 } from "lucide-react";
+import { db } from "../firebase";
+import { collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
 
 interface Member {
   id: string | number;
@@ -24,6 +27,8 @@ interface AdminDashboardProps {
 export default function AdminDashboard({ onLogout, additionalMembers }: AdminDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [members, setMembers] = useState<Member[]>([]);
+  const [dbMembers, setDbMembers] = useState<any[]>([]);
+  const [loadingDb, setLoadingDb] = useState(true);
 
   // Phone Verification States
   const [verifyPhoneInput, setVerifyPhoneInput] = useState("");
@@ -32,6 +37,70 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     isAdmin: boolean;
     member?: Member;
   } | null>(null);
+
+  // Real-time Firestore sync
+  useEffect(() => {
+    const listRef = collection(db, "members");
+    const unsubscribe = onSnapshot(listRef, (snapshot) => {
+      const items: any[] = [];
+      snapshot.forEach((docSnap) => {
+        items.push({
+          id: docSnap.id,
+          ...docSnap.data()
+        });
+      });
+      setDbMembers(items);
+      setLoadingDb(false);
+    }, (error) => {
+      console.error("Firestore onSnapshot error:", error);
+      setLoadingDb(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleChangeStatus = async (memberId: string, newStatus: string) => {
+    try {
+      const docRef = doc(db, "members", memberId);
+      await updateDoc(docRef, {
+        status: newStatus
+      });
+    } catch (error) {
+      console.error("Failed to update member status in Firestore:", error);
+    }
+  };
+
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case "en_attente_paiement":
+        return (
+          <span className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1 text-[9px] text-amber-400 font-extrabold tracking-widest uppercase flex items-center gap-1.5 shadow-[0_0_15px_rgba(245,158,11,0.05)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+            En Attente
+          </span>
+        );
+      case "membre_actif":
+        return (
+          <span className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-2.5 py-1 text-[9px] text-emerald-400 font-extrabold tracking-widest uppercase flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.05)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Active VIP
+          </span>
+        );
+      case "expiré":
+        return (
+          <span className="bg-rose-500/10 border border-rose-500/30 rounded-lg px-2.5 py-1 text-[9px] text-rose-400 font-extrabold tracking-widest uppercase flex items-center gap-1.5 shadow-[0_0_15px_rgba(244,63,94,0.05)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            Expiré
+          </span>
+        );
+      default:
+        return (
+          <span className="bg-slate-950 border border-white/5 rounded-lg px-2.5 py-1 text-[9px] text-[#D4AF37] font-extrabold tracking-widest uppercase flex items-center gap-1.5">
+            {status}
+          </span>
+        );
+    }
+  };
 
   const handleVerifyPhone = () => {
     const cleanedSearch = verifyPhoneInput.replace(/\s+/g, "").trim();
@@ -94,6 +163,18 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
   ];
 
   useEffect(() => {
+    // Map Firestore dynamic database accounts
+    const formattedDbMembers = dbMembers.map((m) => ({
+      id: m.id || m.uid,
+      name: m.lastName ? `${m.firstName} ${m.lastName}` : (m.name || m.firstName || "Inconnu"),
+      city: "Paris / Club Privé",
+      job: m.pseudo || "Membre",
+      phone: m.phone || "",
+      email: m.email || "",
+      dateJoined: m.date_joined || "Nouveau",
+      status: m.status || "en_attente_paiement"
+    }));
+
     // Combine base with additional newly registered members
     const formattedAdditionals = additionalMembers.map((m, idx) => ({
       id: `new-${idx}`,
@@ -101,6 +182,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       city: m.city,
       job: m.job,
       phone: m.phone || "",
+      email: m.email || "",
       dateJoined: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
       status: "MEMBRE"
     }));
@@ -116,15 +198,28 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       }
     }
 
-    // Merge everything uniquely
-    const all = [...parsedSaved, ...formattedAdditionals, ...baseMembers];
-    // Remove duplicates based on name & city combination
-    const unique = all.filter((value, index, self) =>
-      self.findIndex(m => m.name.toLowerCase() === value.name.toLowerCase() && m.city.toLowerCase() === value.city.toLowerCase()) === index
-    );
+    // Merge everything uniquely. Firestore records go first for easy status management!
+    const all = [...formattedDbMembers, ...parsedSaved, ...formattedAdditionals, ...baseMembers];
+    
+    // Remove duplicates based on ID or Name combination
+    const unique: Member[] = [];
+    const seenNames = new Set<string>();
+    const seenIds = new Set<string | number>();
+
+    all.forEach(m => {
+      const uniqueNameKey = m.name.toLowerCase().trim();
+      const idKey = String(m.id);
+      if (!seenIds.has(idKey) && !seenNames.has(uniqueNameKey)) {
+        seenIds.add(idKey);
+        if (m.name !== "Inconnu") {
+          seenNames.add(uniqueNameKey);
+        }
+        unique.push(m);
+      }
+    });
 
     setMembers(unique);
-  }, [additionalMembers]);
+  }, [dbMembers, additionalMembers]);
 
   // Filtering based on search query (by member name only)
   const filteredMembers = members.filter(member => {
@@ -324,13 +419,11 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="p-6 rounded-2xl bg-slate-900 border border-white/5 flex flex-col justify-between hover:border-rose-500/30 transition-all group"
+                    className="p-6 rounded-2xl bg-slate-900 border border-white/5 flex flex-col justify-between hover:border-rose-500/30 transition-all group animate-[fadeIn_0.5s_ease-out]"
                   >
                     <div>
                       <div className="flex justify-between items-start mb-4">
-                        <span className="bg-slate-950 border border-white/5 rounded-lg px-2.5 py-1 text-[9px] text-[#D4AF37] font-black tracking-widest uppercase">
-                          {member.status}
-                        </span>
+                        {renderStatusBadge(member.status)}
                         
                         {/* Only allow deleting if it's dynamic or custom-added */}
                         {typeof member.id === 'string' && member.id.startsWith('new-') && (
@@ -344,7 +437,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                         )}
                       </div>
 
-                      <h4 className="text-lg font-serif text-white mb-3 tracking-wide group-hover:text-rose-400 transition-colors">
+                      <h4 className="text-lg font-serif text-white mb-3 tracking-wide group-hover:text-[#D4AF37] transition-colors">
                         {member.name}
                       </h4>
 
@@ -355,6 +448,12 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                             <span className="truncate">{member.phone}</span>
                           </div>
                         )}
+                        {member.email && (
+                          <div className="flex items-center gap-2 text-slate-400 font-mono">
+                            <Mail size={12} className="text-[#D4AF37] shrink-0" />
+                            <span className="truncate text-[11px]">{member.email}</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 text-slate-400">
                           <Calendar size={12} className="text-slate-500 shrink-0" />
                           <span className="text-[10px] text-slate-500">Inscrit le {member.dateJoined}</span>
@@ -362,9 +461,50 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                       </div>
                     </div>
 
+                    {/* Status modifications for Real Firestore Database Accounts */}
+                    {typeof member.id === "string" && !member.id.startsWith("new-") && !member.id.startsWith("admin-") && member.id !== "1" && (
+                      <div className="mt-4 flex flex-col gap-1.5 bg-slate-950 p-3 rounded-xl border border-white/5">
+                        <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">
+                          Valider / Modifier Statut :
+                        </span>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleChangeStatus(member.id as string, "en_attente_paiement")}
+                            className={`flex-1 text-[8px] font-black uppercase tracking-widest py-1.5 rounded-md transition-all border cursor-pointer ${
+                              member.status === "en_attente_paiement"
+                                ? "bg-amber-500/15 border-amber-500/50 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.1)]"
+                                : "bg-transparent border-white/5 hover:border-amber-500/25 text-slate-500"
+                            }`}
+                          >
+                            Attente
+                          </button>
+                          <button
+                            onClick={() => handleChangeStatus(member.id as string, "membre_actif")}
+                            className={`flex-1 text-[8px] font-black uppercase tracking-widest py-1.5 rounded-md transition-all border cursor-pointer ${
+                              member.status === "membre_actif"
+                                ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                                : "bg-transparent border-white/5 hover:border-emerald-500/25 text-slate-500"
+                            }`}
+                          >
+                            Activer
+                          </button>
+                          <button
+                            onClick={() => handleChangeStatus(member.id as string, "expiré")}
+                            className={`flex-1 text-[8px] font-black uppercase tracking-widest py-1.5 rounded-md transition-all border cursor-pointer ${
+                              member.status === "expiré"
+                                ? "bg-rose-500/15 border-rose-500/50 text-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.1)]"
+                                : "bg-transparent border-white/5 hover:border-rose-500/25 text-slate-500"
+                            }`}
+                          >
+                            Expiré
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="mt-5 border-t border-white/5 pt-4 flex justify-between items-center">
                       <span className="text-[9px] uppercase font-black tracking-widest text-[#D4AF37]">
-                        Statut : Certifié VIP
+                        Statut : {member.status === "membre_actif" ? "VIP ACTIF" : member.status === "expiré" ? "EXPIRÉ" : "Non Activé"}
                       </span>
                       <button 
                         onClick={() => window.open(`https://wa.me/33756832263?text=Bonjour,%20en%20tant%20qu'administrateur%20H-Conciergerie%20je%20souhaite%20contacter%20le%20membre%20${encodeURIComponent(member.name)}.`)}
