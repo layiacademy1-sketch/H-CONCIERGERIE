@@ -147,7 +147,6 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
 
         localStorage.setItem("h_supabase_session_mock", JSON.stringify(fallbackMember));
         localStorage.setItem("h_session_auth", "true");
-        localStorage.setItem("h_supabase_trigger_error_warning", "true");
 
         onSubmitMember({
           name: `${firstName} ${lastName}`,

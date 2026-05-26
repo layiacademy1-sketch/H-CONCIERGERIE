@@ -32,14 +32,6 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
   const [isActivating, setIsActivating] = useState(false);
   const [activationError, setActivationError] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
-  const [showTriggerBanner, setShowTriggerBanner] = useState(false);
-  const [sqlCopied, setSqlCopied] = useState(false);
-
-  useEffect(() => {
-    if (localStorage.getItem("h_supabase_trigger_error_warning") === "true") {
-      setShowTriggerBanner(true);
-    }
-  }, []);
 
   // Auto-sync on mount
   useEffect(() => {
@@ -269,6 +261,102 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
     }
   ];
 
+  // 1. Check for Pending Access status
+  if (memberData && (((memberData as any).access_status === "pending" || !memberData.acces_membre) && (memberData as any).access_status !== "expired")) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center px-6 relative overflow-hidden">
+        {/* Luxuriously styled background decorations to match H-CONCIERGERIE aesthetic */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#D4AF37]/5 rounded-full filter blur-[100px] pointer-events-none" />
+        
+        <div className="w-full max-w-xl bg-slate-900/90 backdrop-blur-md border border-[#D4AF37]/30 rounded-3xl p-8 md:p-12 shadow-3xl text-center relative z-10 space-y-6">
+          <div className="w-14 h-14 bg-gold/10 border border-gold/20 rounded-full flex items-center justify-center text-gold mx-auto mb-2">
+            <Clock size={24} className="animate-pulse" />
+          </div>
+
+          <p className="text-sm md:text-base font-serif text-slate-100 leading-relaxed font-semibold max-w-lg mx-auto">
+            Votre accès est en attente de validation. Votre espace sera validé dans moins de 24h après vérification du paiement.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+            <button 
+              type="button"
+              onClick={handleManualSync}
+              disabled={isSyncing}
+              className="flex items-center justify-center gap-1.5 px-5 py-3 bg-[#D4AF37] text-slate-950 text-xs font-black tracking-widest uppercase rounded-xl hover:bg-yellow-500 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer disabled:opacity-60"
+            >
+              <RefreshCw size={13} className={`shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? "Vérification..." : "Actualiser mon statut"}</span>
+            </button>
+            
+            <button 
+              type="button"
+              onClick={onLogout}
+              className="flex items-center justify-center gap-1.5 px-5 py-3 bg-white/5 border border-white/10 text-xs font-bold tracking-widest text-[#D4AF37] hover:bg-red-500 hover:text-white hover:border-red-500 rounded-xl transition-all cursor-pointer"
+            >
+              <LogOut size={13} /> Se Déconnecter
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Check for Expired Access status
+  if (memberData && (memberData as any).access_status === "expired") {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center px-6 relative overflow-hidden">
+        {/* Luxuriously styled background decorations to match H-CONCIERGERIE aesthetic */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-900/5 rounded-full filter blur-[100px] pointer-events-none" />
+        
+        <div className="w-full max-w-xl bg-slate-900/90 backdrop-blur-md border border-[#D4AF37]/30 rounded-3xl p-8 md:p-12 shadow-3xl text-center relative z-10 space-y-6">
+          <div className="w-14 h-14 bg-red-950/20 border border-red-500/30 rounded-full flex items-center justify-center text-red-500 mx-auto mb-2">
+            <Lock size={24} />
+          </div>
+
+          <p className="text-sm md:text-base font-serif text-slate-100 leading-relaxed font-semibold max-w-lg mx-auto">
+            Votre abonnement a expiré. Veuillez renouveler votre accès.
+          </p>
+
+          <div className="bg-slate-950/80 border border-gold/20 p-5 rounded-xl space-y-3 text-center max-w-md mx-auto">
+            <div className="space-y-0.5">
+              <span className="text-[9px] uppercase font-bold tracking-widest text-gold text-center block">Cotisation annuelle de renouvellement</span>
+              <p className="text-sm text-white font-serif">1,00 €</p>
+            </div>
+
+            <a 
+              href="https://buy.stripe.com/3cIeVe9P715h9PLc7T7Re09"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full bg-gradient-to-r from-gold via-yellow-400 to-amber-500 hover:from-yellow-400 hover:to-gold text-slate-950 font-black tracking-widest uppercase text-xs rounded-xl py-3.5 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_15px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2"
+            >
+              <CreditCard size={14} className="shrink-0" />
+              <span>Renouveler ma cotisation (1 €)</span>
+            </a>
+          </div>
+
+          <div className="flex gap-3 justify-center pt-4">
+            <button 
+              type="button"
+              onClick={handleManualSync}
+              disabled={isSyncing}
+              className="flex items-center justify-center gap-1.5 px-4 py-3 bg-white/5 border border-white/10 text-xs font-bold tracking-widest text-[#D4AF37] hover:bg-[#D4AF37] hover:text-slate-950 rounded-xl transition-all cursor-pointer disabled:opacity-60"
+            >
+              <RefreshCw size={13} className={`shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? "Vérification..." : "Actualiser mon statut"}</span>
+            </button>
+            <button 
+              type="button"
+              onClick={onLogout}
+              className="flex items-center justify-center gap-1.5 px-4 py-3 bg-white/5 border border-white/10 text-xs font-bold tracking-widest text-[#D4AF37] hover:bg-red-500 hover:text-white hover:border-red-500 rounded-xl transition-all cursor-pointer"
+            >
+              Se Déconnecter
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-gold selection:text-slate-950 pt-28 flex flex-col">
       
@@ -322,121 +410,7 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
         </div>
       </div>
 
-      {showTriggerBanner && (
-        <div className="max-w-7xl w-full mx-auto px-6 pt-6 animate-fade-in">
-          <div className="bg-amber-500/5 border border-[#D4AF37]/40 rounded-3xl p-6 relative overflow-hidden text-left shadow-xl">
-            <button 
-              type="button"
-              className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer" 
-              onClick={() => {
-                localStorage.removeItem("h_supabase_trigger_error_warning");
-                setShowTriggerBanner(false);
-              }}
-            >
-              <X size={18} />
-            </button>
-            <div className="flex gap-4 items-start flex-col sm:flex-row">
-              <div className="w-10 h-10 rounded-full bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37] shrink-0 border border-[#D4AF37]/20 mt-1">
-                <ShieldCheck size={20} />
-              </div>
-              <div className="space-y-3 w-full">
-                <span className="bg-[#D4AF37]/20 border border-[#D4AF37]/45 rounded-lg px-2 py-0.5 text-[9px] font-black tracking-widest text-[#D4AF37] uppercase inline-block">
-                  Diagnostic Technique Supabase
-                </span>
-                <h4 className="text-base font-serif text-white tracking-wide">
-                  Correction du Trigger PostgreSQL requis pour votre table <code className="text-[#D4AF37] font-mono bg-slate-950 px-1.5 py-0.5 rounded">membrehcon</code>
-                </h4>
-                <p className="text-xs text-slate-300 font-light leading-relaxed max-w-3xl">
-                  Votre base de données Supabase possède un Trigger de création d'utilisateurs qui pointe vers l'ancienne table (<code className="font-mono bg-white/5 px-1 py-0.2 rounded text-slate-400">members</code> ou <code className="font-mono bg-white/5 px-1.5 py-0.5 rounded text-slate-400">membres</code>), ce qui cause l'erreur <strong className="text-red-400">Database error saving new user</strong> lors de l'inscription.
-                </p>
-                <p className="text-xs text-slate-350 font-light leading-relaxed">
-                  Pour résoudre cette erreur définitivement, copiez et exécutez le script SQL ci-dessous dans l'onglet <strong>SQL Editor</strong> de votre console Supabase :
-                </p>
-                
-                <div className="bg-slate-950 p-4 rounded-xl border border-white/5 space-y-2 relative font-mono text-[10px] leading-relaxed text-slate-300 overflow-x-auto max-w-3xl max-h-48">
-                  <pre className="whitespace-pre text-left">{`-- 1. Supprimer l'ancien trigger conflictuel
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
--- 2. Créer ou remplacer la fonction pour écrire dans votre table 'membrehcon'
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
-BEGIN
-  INSERT INTO public.membrehcon (
-    id, auth_user_id, email, full_name, first_name, last_name, pseudo, phone, city, access_status, subscription_expires_at, created_at
-  )
-  VALUES (
-    new.id,
-    new.id,
-    new.email,
-    COALESCE(new.raw_user_meta_data->>'prenom', '') || ' ' || COALESCE(new.raw_user_meta_data->>'nom', ''),
-    COALESCE(new.raw_user_meta_data->>'prenom', ''),
-    COALESCE(new.raw_user_meta_data->>'nom', ''),
-    COALESCE(new.raw_user_meta_data->>'pseudo', ''),
-    COALESCE(new.raw_user_meta_data->>'telephone', ''),
-    COALESCE(new.raw_user_meta_data->>'ville', ''),
-    'pending',
-    null,
-    now()
-  )
-  ON CONFLICT (id) DO NOTHING;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 3. Recréer le trigger d'insertion automatique
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();`}</pre>
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(`-- 1. Supprimer l'ancien trigger conflictuel
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-
--- 2. Créer ou remplacer la fonction pour écrire dans votre table 'membrehcon'
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
-BEGIN
-  INSERT INTO public.membrehcon (
-    id, auth_user_id, email, full_name, first_name, last_name, pseudo, phone, city, access_status, subscription_expires_at, created_at
-  )
-  VALUES (
-    new.id,
-    new.id,
-    new.email,
-    COALESCE(new.raw_user_meta_data->>'prenom', '') || ' ' || COALESCE(new.raw_user_meta_data->>'nom', ''),
-    COALESCE(new.raw_user_meta_data->>'prenom', ''),
-    COALESCE(new.raw_user_meta_data->>'nom', ''),
-    COALESCE(new.raw_user_meta_data->>'pseudo', ''),
-    COALESCE(new.raw_user_meta_data->>'telephone', ''),
-    COALESCE(new.raw_user_meta_data->>'ville', ''),
-    'pending',
-    null,
-    now()
-  )
-  ON CONFLICT (id) DO NOTHING;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- 3. Recréer le trigger d'insertion automatique
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();`);
-                    setSqlCopied(true);
-                    setTimeout(() => setSqlCopied(false), 3000);
-                  }}
-                  className="bg-[#D4AF37] hover:bg-yellow-500 text-slate-950 font-extrabold tracking-widest text-[9px] uppercase px-4 py-2.5 rounded-lg transition-all cursor-pointer inline-block"
-                >
-                  {sqlCopied ? "✓ Code SQL copié !" : "Copier le code SQL"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
         
