@@ -115,21 +115,19 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
         // 2 & 3. Enregistrer dans la table Supabase `membres`
         const { error: insertError } = await supabase
           .from("membres")
-          .insert([
-            {
-              id: data.user.id,
-              nom: lastName,
-              prenom: firstName,
-              email: email,
-              telephone: phone,
-              ville: city,
-              pseudo: pseudo.trim(),
-              abonnement: "non payé",
-              acces_membre: false,
-              paiement: "en attente",
-              date_inscription: new Date().toISOString()
-            }
-          ]);
+          .insert({
+            id: data.user.id,
+            pseudo: pseudo.trim(),
+            prenom: firstName,
+            nom: lastName,
+            email: email,
+            telephone: phone,
+            ville: city,
+            abonnement: "non payé",
+            acces_membre: false,
+            paiement: "en attente",
+            date_inscription: new Date().toISOString()
+          });
 
         if (insertError) {
           console.error("Erreur de sauvegarde de la table membres:", insertError);
