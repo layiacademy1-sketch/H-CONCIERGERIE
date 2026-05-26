@@ -124,56 +124,21 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
       authError = null;
     }
 
+    let activeUserId = currentUser?.id;
+
     if (authError) {
       if (authError.message?.toLowerCase().includes("database error") || authError.message?.toLowerCase().includes("saving new user")) {
-        console.warn("Detected Supabase trigger database error! Gracefully switching to local & backend simulation to avoid blocking the user.");
-        
-        const mockUserId = "sim_" + Math.random().toString(36).substr(2, 9);
-        const fallbackMember = {
-          id: mockUserId,
-          nom: lastName,
-          prenom: firstName,
-          email,
-          telephone: phone,
-          ville: city,
-          pseudo: pseudo.trim(),
-          abonnement: "non payé",
-          acces_membre: false,
-          paiement: "en attente",
-          date_inscription: new Date().toLocaleDateString('fr-FR'),
-          payment_status: "pending",
-          access_status: "pending"
-        };
-
-        localStorage.setItem("h_supabase_session_mock", JSON.stringify(fallbackMember));
-        localStorage.setItem("h_session_auth", "true");
-
-        onSubmitMember({
-          name: `${firstName} ${lastName}`,
-          city,
-          job: "Membre Club VIP",
-          phone,
-          email
-        });
-
-        setSuccess(true);
-        setLoading(false);
-
-        setTimeout(() => {
-          onSignUpSuccess(fallbackMember);
-        }, 1500);
-
-        return;
+        console.warn("Detected Supabase trigger database error! Gracefully switching to direct api registration bypass.");
+        activeUserId = "sim_" + Math.random().toString(36).substr(2, 9);
+        authError = null;
+      } else {
+        throw new Error(`Échec d'authentification: ${authError.message}`);
       }
-
-      throw new Error(`Échec d'authentification: ${authError.message}`);
     }
 
-    if (!currentUser) {
+    if (!activeUserId) {
       throw new Error("La création ou connexion d'utilisateur Supabase a échoué.");
     }
-
-    const activeUserId = currentUser.id;
 
     // Finalize Register Unpaid Record bypassing RLS
     const registerUrl = getApiUrl("register-unpaid");
@@ -208,7 +173,9 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
         abonnement: "non payé",
         acces_membre: false,
         paiement: "en attente",
-        date_inscription: new Date().toLocaleDateString('fr-FR')
+        date_inscription: new Date().toLocaleDateString('fr-FR'),
+        payment_status: "pending",
+        access_status: "pending"
       };
 
       localStorage.setItem("h_supabase_session_mock", JSON.stringify(mockMember));
@@ -245,20 +212,28 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
     setLoading(false);
     localStorage.setItem("h_session_auth", "true");
 
+    const finalMember = registerData.member || {
+      id: activeUserId,
+      nom: lastName,
+      prenom: firstName,
+      email,
+      telephone: phone,
+      ville: city,
+      pseudo: pseudo.trim(),
+      abonnement: "non payé",
+      acces_membre: false,
+      paiement: "en attente",
+      date_inscription: new Date().toLocaleDateString('fr-FR'),
+      payment_status: "pending",
+      access_status: "pending"
+    };
+
+    if (activeUserId.startsWith("sim_")) {
+      localStorage.setItem("h_supabase_session_mock", JSON.stringify(finalMember));
+    }
+
     setTimeout(() => {
-      onSignUpSuccess(registerData.member || {
-        id: activeUserId,
-        nom: lastName,
-        prenom: firstName,
-        email,
-        telephone: phone,
-        ville: city,
-        pseudo: pseudo.trim(),
-        abonnement: "non payé",
-        acces_membre: false,
-        paiement: "en attente",
-        date_inscription: new Date().toLocaleDateString('fr-FR')
-      });
+      onSignUpSuccess(finalMember);
     }, 1500);
   };
 
@@ -285,7 +260,7 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
       if (isSupabaseConfigured()) {
         try {
           const { data: existingPseudo, error: checkError } = await supabase
-            .from("membres")
+            .from("membrehcon")
             .select("id")
             .eq("pseudo", pseudo.trim())
             .maybeSingle();
@@ -296,7 +271,7 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
             return;
           }
         } catch (dbErr) {
-          console.warn("Erreur d'accès à la table 'membres' lors de la vérification du pseudo, ignorée pour résilience:", dbErr);
+          console.warn("Erreur d'accès à la table 'membrehcon' lors de la vérification du pseudo, ignorée pour résilience:", dbErr);
         }
       }
 

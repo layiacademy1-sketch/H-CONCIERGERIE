@@ -274,19 +274,19 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
           </div>
 
           <p className="text-sm md:text-base font-serif text-slate-100 leading-relaxed font-semibold max-w-lg mx-auto">
-            Votre accès est en attente de validation. Votre espace sera validé dans moins de 24h après vérification du paiement.
+            Votre accès est en attente de validation. Votre espace sera validé après vérification du paiement.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-            <button 
-              type="button"
-              onClick={handleManualSync}
-              disabled={isSyncing}
-              className="flex items-center justify-center gap-1.5 px-5 py-3 bg-[#D4AF37] text-slate-950 text-xs font-black tracking-widest uppercase rounded-xl hover:bg-yellow-500 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer disabled:opacity-60"
+            <a 
+              href="https://buy.stripe.com/3cIeVe9P715h9PLc7T7Re09"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 px-5 py-3 bg-[#D4AF37] text-slate-950 text-xs font-black tracking-widest uppercase rounded-xl hover:bg-yellow-500 hover:scale-[1.01] transition-all cursor-pointer shadow-[0_3px_12px_rgba(212,175,55,0.2)] text-center font-bold"
             >
-              <RefreshCw size={13} className={`shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span>{isSyncing ? "Vérification..." : "Actualiser mon statut"}</span>
-            </button>
+              <CreditCard size={13} />
+              <span>passer au paiement</span>
+            </a>
             
             <button 
               type="button"

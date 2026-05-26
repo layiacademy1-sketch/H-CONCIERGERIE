@@ -272,15 +272,44 @@ export default function App() {
       if (error) throw error;
 
       if (data?.user) {
-        // Fetch from table `membres`
-        const { data: dbData } = await supabase
-          .from("membres")
+        // Fetch from table `membrehcon`
+        let dbData: any = null;
+        
+        const { data: attempt1 } = await supabase
+          .from("membrehcon")
           .select("*")
-          .eq("id", data.user.id)
-          .single();
+          .eq("auth_user_id", data.user.id)
+          .maybeSingle();
+
+        if (attempt1) {
+          dbData = attempt1;
+        } else {
+          const { data: attempt2 } = await supabase
+            .from("membrehcon")
+            .select("*")
+            .eq("id", data.user.id)
+            .maybeSingle();
+          if (attempt2) {
+            dbData = attempt2;
+          }
+        }
 
         if (dbData) {
-          setMemberData(dbData);
+          setMemberData({
+            id: dbData.id || dbData.auth_user_id || data.user.id,
+            nom: dbData.nom || dbData.last_name || data.user.user_metadata?.nom || "",
+            prenom: dbData.prenom || dbData.first_name || data.user.user_metadata?.prenom || "",
+            email: dbData.email || data.user.email,
+            telephone: dbData.telephone || dbData.phone || data.user.user_metadata?.telephone || "",
+            ville: dbData.ville || dbData.city || data.user.user_metadata?.ville || "",
+            pseudo: dbData.pseudo || data.user.user_metadata?.pseudo || "",
+            abonnement: dbData.abonnement || "non payé",
+            acces_membre: dbData.acces_membre ?? false,
+            paiement: dbData.paiement || "en attente",
+            date_inscription: dbData.created_at || new Date().toLocaleDateString("fr-FR"),
+            payment_status: dbData.payment_status || "pending",
+            access_status: dbData.access_status || "pending"
+          });
         } else {
           setMemberData({
             id: data.user.id,
@@ -293,7 +322,9 @@ export default function App() {
             abonnement: "non payé",
             acces_membre: false,
             paiement: "en attente",
-            date_inscription: new Date().toLocaleDateString("fr-FR")
+            date_inscription: new Date().toLocaleDateString("fr-FR"),
+            payment_status: "pending",
+            access_status: "pending"
           });
         }
 
