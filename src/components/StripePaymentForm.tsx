@@ -232,9 +232,58 @@ function BillingForm({ userId, email, onPaymentSuccess }: StripePaymentFormProps
         </div>
       )}
 
+      {/* Visual Representation of Luxury Card */}
+      <div className="relative w-full h-44 rounded-2xl bg-gradient-to-br from-slate-900 via-zinc-950 to-neutral-900 border border-gold/40 p-6 flex flex-col justify-between shadow-2xl overflow-hidden">
+        {/* Shimmer overlay */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-gold/5 via-transparent to-white/[0.02] pointer-events-none" />
+        
+        {/* Chip & contactless */}
+        <div className="flex justify-between items-center z-10">
+          <div className="w-10 h-7 rounded bg-gradient-to-br from-yellow-300/20 to-yellow-600/30 border border-gold/40 flex items-center justify-center overflow-hidden">
+            <div className="grid grid-cols-3 gap-0.5 w-full h-full p-1 opacity-70">
+              <div className="border border-gold/10"></div>
+              <div className="border border-gold/10"></div>
+              <div className="border border-gold/10"></div>
+              <div className="border border-gold/10"></div>
+              <div className="border border-gold/10"></div>
+              <div className="border border-gold/10"></div>
+            </div>
+          </div>
+          
+          <div className="text-right">
+            <span className="text-[9px] tracking-[0.2em] font-bold text-gold uppercase">H-CONCIERGERIE</span>
+            <div className="text-[7px] text-slate-500 font-serif tracking-widest mt-0.5">CLUB PRIVÉ VIP</div>
+          </div>
+        </div>
+
+        {/* Card number simulation representation */}
+        <div className="my-2 z-10 text-left">
+          <div className="font-mono text-sm tracking-[0.25em] text-white/95 font-semibold">
+            ••••  ••••  ••••  ••••
+          </div>
+        </div>
+
+        {/* Card holder & validation */}
+        <div className="flex justify-between items-end z-10 text-left">
+          <div>
+            <div className="text-[8px] uppercase tracking-wider text-slate-500 mb-0.5">Titulaire</div>
+            <div className="font-mono text-[10px] tracking-wide text-white font-medium uppercase truncate max-w-[220px]">
+              {email || "MEMBRE PRIVILÈGE"}
+            </div>
+          </div>
+          
+          <div className="text-right flex items-center gap-3">
+            {/* Mini Premium indicator */}
+            <div className="px-2 py-1 bg-gold/15 rounded border border-gold/30 flex items-center justify-center">
+              <span className="text-[8px] font-sans font-black tracking-wider text-gold uppercase">VIP</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-1.5 text-left">
         <label className="text-[10px] tracking-wider uppercase font-bold text-slate-400">Titulaire de la carte</label>
-        <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white">
+        <div className="bg-slate-950/70 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white">
           {email}
         </div>
       </div>
@@ -243,15 +292,26 @@ function BillingForm({ userId, email, onPaymentSuccess }: StripePaymentFormProps
         <label className="text-[10px] tracking-wider uppercase font-bold text-slate-400">Coordonnées bancaires</label>
         
         {isSimulatedFlow ? (
-          <div className="bg-slate-950 border border-yellow-800/20 rounded-xl px-4 py-3 text-xs text-slate-400 flex items-center gap-2 italic">
+          <div className="bg-slate-950 border border-gold/10 rounded-xl px-4 py-3.5 text-xs text-slate-400 flex items-center gap-2.5 italic">
             <CreditCard size={15} className="text-gold" />
-            <span>Simulation de carte active - Prêt à valider</span>
+            <span>Simulation de carte active - Prête à valider</span>
           </div>
         ) : (
-          <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3.5 focus-within:border-gold transition-colors">
+          <div className="bg-slate-950 border border-slate-800 focus-within:border-gold focus-within:ring-1 focus-within:ring-gold/30 rounded-xl px-4 py-4 transition-all">
             <CardElement options={cardElementOptions} />
           </div>
         )}
+      </div>
+
+      {/* Network Icons & Badges */}
+      <div className="flex items-center justify-between px-1 py-1 text-slate-500 text-[10px] border-t border-slate-900 pt-3">
+        <span className="font-medium">Cartes acceptées :</span>
+        <div className="flex gap-1.5 font-mono text-[8px] font-semibold text-slate-400">
+          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded">VISA</span>
+          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded">MASTERCARD</span>
+          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded">AMEX</span>
+          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded">APPLE PAY</span>
+        </div>
       </div>
 
       <div className="pt-2">

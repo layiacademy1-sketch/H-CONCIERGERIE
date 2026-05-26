@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { Elements, CardElement, useStripe, useElements, PaymentRequestButtonElement } from "@stripe/react-stripe-js";
 
 // Retrieve Stripe Publishable Key
 const stripeKey = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || "";
@@ -36,6 +36,13 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
   const [errorMsg, setErrorMsg] = useState("");
   const [success, setSuccess] = useState(false);
 
+  // Apple & Google Pay specific states
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "wallet">("card");
+  const [walletType, setWalletType] = useState<"apple" | "google" | null>(null);
+  const [simulatingWallet, setSimulatingWallet] = useState(false);
+  const [walletStep, setWalletStep] = useState<"idle" | "authenticating" | "approved">("idle");
+  const [paymentRequest, setPaymentRequest] = useState<any>(null);
+
   const isSimulatedFlow = !stripePromise || !stripeKey;
 
   const getApiUrl = (route: string) => {
@@ -44,6 +51,199 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
     }
     return `/api/${route}`;
   };
+
+  const finalizeUserRegistration = async (returnedPaymentIntentId: string) => {
+    // Unconfigured Supabase Fallback Simulation
+    if (!isSupabaseConfigured()) {
+      console.warn("Supabase is not configured yet. Running simulated registration.");
+      const mockUid = "mock-uuid-" + Date.now();
+      const mockMember = {
+        id: mockUid,
+        nom: lastName,
+        prenom: firstName,
+        email: email,
+        telephone: phone,
+        ville: city,
+        pseudo: pseudo.trim(),
+        abonnement: "payé",
+        acces_membre: true,
+        paiement: "validé",
+        date_inscription: new Date().toLocaleDateString('fr-FR'),
+        date_paiement: new Date().toLocaleDateString('fr-FR')
+      };
+
+      localStorage.setItem("h_supabase_session_mock", JSON.stringify(mockMember));
+      localStorage.setItem("h_session_auth", "true");
+
+      onSubmitMember({
+        name: `${firstName} ${lastName}`,
+        city,
+        job: "Membre Club VIP",
+        phone,
+        email
+      });
+
+      setSuccess(true);
+      setLoading(false);
+
+      setTimeout(() => {
+        onSignUpSuccess(mockMember);
+      }, 1500);
+      return;
+    }
+
+    // Create Supabase Auth Account
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          nom: lastName,
+          prenom: firstName,
+          telephone: phone,
+          ville: city,
+          pseudo: pseudo.trim()
+        }
+      }
+    });
+
+    if (authError) {
+      throw new Error(`Échec d'authentification: ${authError.message}`);
+    }
+
+    if (!authData?.user) {
+      throw new Error("La création d'utilisateur auth Supabase a échoué.");
+    }
+
+    const activeUserId = authData.user.id;
+
+    // Finalize Verify/Upsert member record bypassing RLS
+    const verifyUrl = getApiUrl("verify-payment");
+    const verifyRes = await fetch(verifyUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paymentIntentId: returnedPaymentIntentId,
+        userId: activeUserId,
+        isSimulated: isSimulatedFlow,
+        memberDetails: {
+          pseudo: pseudo.trim(),
+          prenom: firstName,
+          nom: lastName,
+          email: email,
+          telephone: phone,
+          ville: city,
+          date_inscription: new Date().toISOString()
+        }
+      })
+    });
+
+    if (!verifyRes.ok) {
+      throw new Error("Le débit a été réalisé, mais l'enregistrement de vos privilèges a échoué.");
+    }
+
+    const verifyData = await verifyRes.json();
+
+    onSubmitMember({
+      name: `${firstName} ${lastName}`,
+      city,
+      job: "Membre Club VIP",
+      phone,
+      email
+    });
+
+    setSuccess(true);
+    setLoading(false);
+    localStorage.setItem("h_session_auth", "true");
+
+    setTimeout(() => {
+      onSignUpSuccess(verifyData.member || {
+        id: activeUserId,
+        nom: lastName,
+        prenom: firstName,
+        email,
+        telephone: phone,
+        ville: city,
+        pseudo: pseudo.trim(),
+        abonnement: "payé",
+        acces_membre: true,
+        paiement: "validé",
+        date_inscription: new Date().toLocaleDateString('fr-FR'),
+        date_paiement: new Date().toLocaleDateString('fr-FR')
+      });
+    }, 1500);
+  };
+
+  // Setup actual payment request button for Stripe
+  React.useEffect(() => {
+    if (stripe) {
+      const pr = stripe.paymentRequest({
+        country: "FR",
+        currency: "eur",
+        total: {
+          label: "Abonnement Club Privé H-Conciergerie",
+          amount: 100, // 1€ in cents
+        },
+        requestPayerName: true,
+        requestPayerEmail: true,
+      });
+
+      pr.canMakePayment().then((result) => {
+        if (result) {
+          setPaymentRequest(pr);
+        }
+      });
+
+      pr.on("paymentmethod", async (ev) => {
+        if (!lastName || !firstName || !email || !phone || !city || !pseudo || !password) {
+          ev.complete("fail");
+          setErrorMsg("Veuillez d'abord remplir vos informations d'identité.");
+          return;
+        }
+
+        try {
+          const intentUrl = getApiUrl("create-payment-intent");
+          const intentRes = await fetch(intentUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, userId: "transient-signup" }),
+          });
+
+          if (!intentRes.ok) {
+            ev.complete("fail");
+            throw new Error("L'initialisation de la transaction Stripe a échoué.");
+          }
+
+          const intentData = await intentRes.json();
+          const clientSecret = intentData.clientSecret;
+
+          const { paymentIntent, error: stripeConfirmErr } = await stripe.confirmCardPayment(
+            clientSecret,
+            { payment_method: ev.paymentMethod.id },
+            { handleActions: false }
+          );
+
+          if (stripeConfirmErr) {
+            ev.complete("fail");
+            throw new Error(stripeConfirmErr.message);
+          }
+
+          if (!paymentIntent || paymentIntent.status !== "succeeded") {
+            ev.complete("fail");
+            throw new Error("La transaction a été rejetée.");
+          }
+
+          ev.complete("success");
+          setLoading(true);
+          await finalizeUserRegistration(paymentIntent.id);
+        } catch (err: any) {
+          console.error(err);
+          setErrorMsg(err.message || "Le paiement mobile a échoué.");
+          setLoading(false);
+        }
+      });
+    }
+  }, [stripe, lastName, firstName, email, phone, city, pseudo, password]);
 
   const handleCustomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,68 +264,25 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
     }
 
     try {
-      // 2. Unconfigured Supabase Fallback Simulation
-      if (!isSupabaseConfigured()) {
-        console.warn("Supabase is not configured yet. Running simulated payment & registration.");
-        
-        setTimeout(async () => {
-          const mockUid = "mock-uuid-" + Date.now();
-          const mockMember = {
-            id: mockUid,
-            nom: lastName,
-            prenom: firstName,
-            email: email,
-            telephone: phone,
-            ville: city,
-            pseudo: pseudo.trim(),
-            abonnement: "payé",
-            acces_membre: true,
-            paiement: "validé",
-            date_inscription: new Date().toLocaleDateString('fr-FR'),
-            date_paiement: new Date().toLocaleDateString('fr-FR')
-          };
+      // Check for pseudo availability in Supabase if configured
+      if (isSupabaseConfigured()) {
+        const { data: existingPseudo, error: checkError } = await supabase
+          .from("membres")
+          .select("id")
+          .eq("pseudo", pseudo.trim())
+          .maybeSingle();
 
-          // Save simulation states locally
-          localStorage.setItem("h_supabase_session_mock", JSON.stringify(mockMember));
-          localStorage.setItem("h_session_auth", "true");
-
-          onSubmitMember({
-            name: `${firstName} ${lastName}`,
-            city,
-            job: "Membre Club VIP",
-            phone,
-            email
-          });
-
-          setSuccess(true);
+        if (existingPseudo) {
+          setErrorMsg("Ce pseudo est déjà pris. Veuillez en choisir un autre.");
           setLoading(false);
-
-          setTimeout(() => {
-            onSignUpSuccess(mockMember);
-          }, 1500);
-        }, 1500);
-        return;
-      }
-
-      // 3. True Supabase Checked Flow
-      // Validate unique pseudo
-      const { data: existingPseudo, error: checkError } = await supabase
-        .from("membres")
-        .select("id")
-        .eq("pseudo", pseudo.trim())
-        .maybeSingle();
-
-      if (existingPseudo) {
-        setErrorMsg("Ce pseudo est déjà pris. Veuillez en choisir un autre.");
-        setLoading(false);
-        return;
+          return;
+        }
       }
 
       let returnedPaymentIntentId = "pi_mock_value";
 
       // 4. Handle Stripe Transaction via Serverless backend
       if (!isSimulatedFlow && stripe && elements) {
-        // Fetch payment intent from server
         const intentUrl = getApiUrl("create-payment-intent");
         const intentRes = await fetch(intentUrl, {
           method: "POST",
@@ -140,13 +297,11 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
         const intentData = await intentRes.json();
         const clientSecret = intentData.clientSecret;
 
-        // Obtain card details
         const cardElement = elements.getElement(CardElement);
         if (!cardElement) {
           throw new Error("Erreur de chargement du composant carte.");
         }
 
-        // Trigger payment confirmation
         const { paymentIntent, error: stripeConfirmErr } = await stripe.confirmCardPayment(clientSecret, {
           payment_method: {
             card: cardElement as any,
@@ -167,92 +322,10 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
 
         returnedPaymentIntentId = paymentIntent.id;
       } else {
-        // Simple artificial simulation timeout delay
         await new Promise((r) => setTimeout(r, 1000));
       }
 
-      // 5. Create Supabase Auth Account
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            nom: lastName,
-            prenom: firstName,
-            telephone: phone,
-            ville: city,
-            pseudo: pseudo.trim()
-          }
-        }
-      });
-
-      if (authError) {
-        throw new Error(`Échec d'authentification: ${authError.message}`);
-      }
-
-      if (!authData?.user) {
-        throw new Error("La création d'utilisateur auth Supabase a échoué.");
-      }
-
-      const activeUserId = authData.user.id;
-
-      // 6. Finalize Verify/Upsert member record in Supabase (Service Role bypass RLS)
-      const verifyUrl = getApiUrl("verify-payment");
-      const verifyRes = await fetch(verifyUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          paymentIntentId: returnedPaymentIntentId,
-          userId: activeUserId,
-          isSimulated: isSimulatedFlow,
-          memberDetails: {
-            pseudo: pseudo.trim(),
-            prenom: firstName,
-            nom: lastName,
-            email: email,
-            telephone: phone,
-            ville: city,
-            date_inscription: new Date().toISOString()
-          }
-        })
-      });
-
-      if (!verifyRes.ok) {
-        throw new Error("Le débit a été réalisé, mais l'enregistrement de vos privilèges a échoué. Contactez notre assistance.");
-      }
-
-      const verifyData = await verifyRes.json();
-
-      onSubmitMember({
-        name: `${firstName} ${lastName}`,
-        city,
-        job: "Membre Club VIP",
-        phone,
-        email
-      });
-
-      setSuccess(true);
-      setLoading(false);
-
-      // Save credentials login session locally
-      localStorage.setItem("h_session_auth", "true");
-
-      setTimeout(() => {
-        onSignUpSuccess(verifyData.member || {
-          id: activeUserId,
-          nom: lastName,
-          prenom: firstName,
-          email,
-          telephone: phone,
-          ville: city,
-          pseudo: pseudo.trim(),
-          abonnement: "payé",
-          acces_membre: true,
-          paiement: "validé",
-          date_inscription: new Date().toLocaleDateString('fr-FR'),
-          date_paiement: new Date().toLocaleDateString('fr-FR')
-        });
-      }, 1500);
+      await finalizeUserRegistration(returnedPaymentIntentId);
 
     } catch (err: any) {
       console.error(err);
@@ -410,30 +483,322 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
         </div>
       </div>
 
-      {/* Integrated Stripe elements view credit card check */}
-      <div className="pt-4 border-t border-white/5 space-y-1.5 text-left">
-        <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Coordonnées bancaires cryptées</label>
-        
-        {isSimulatedFlow ? (
-          <div className="bg-slate-950 border border-gold/10 rounded-xl px-4 py-3 text-xs text-slate-400 flex items-center gap-2 italic">
-            <CreditCard size={15} className="text-gold" />
-            <span>Simulation de paiement intégrée active</span>
-          </div>
-        ) : (
-          <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3.5 focus-within:border-gold transition-colors">
-            <CardElement options={cardElementOptions} />
-          </div>
-        )}
+      {/* Payment Selection Tabs */}
+      <div className="pt-6 border-t border-white/5 space-y-3 text-left">
+        <div>
+          <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Mode de règlement sécurisé</label>
+          <p className="text-[10px] text-slate-500 font-light">Sélectionnez votre moyen de paiement d'exception</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("card")}
+            className={`py-3.5 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+              paymentMethod === "card"
+                ? "bg-gold/10 border-gold/60 text-gold shadow-[0_0_15px_rgba(212,175,55,0.15)]"
+                : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
+            }`}
+          >
+            <CreditCard size={14} />
+            Carte Bancaire
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => setPaymentMethod("wallet")}
+            className={`py-3.5 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+              paymentMethod === "wallet"
+                ? "bg-gold/10 border-gold/60 text-gold shadow-[0_0_15px_rgba(212,175,55,0.15)]"
+                : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
+            }`}
+          >
+            <Sparkles size={14} className="text-gold" />
+            Wallet Express
+          </button>
+        </div>
       </div>
 
-      <div className="pt-6">
-        <button 
-          type="submit"
-          disabled={loading}
-          className="w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black tracking-widest uppercase text-xs rounded-xl py-4 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_4px_20px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2 disabled:opacity-50"
-        >
-          {loading ? "Création & Transaction..." : "Créer mon compte et payer 1€"}
-        </button>
+      {paymentMethod === "card" && (
+        <div className="space-y-4 text-left">
+          {/* Integrated Stripe elements view credit card check with luxury preview card */}
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Carte Membre Officielle</label>
+              <p className="text-[10px] text-slate-500 font-light">Génération automatique de vos privilèges</p>
+            </div>
+
+            {/* Visual Luxury Card Front */}
+            <div className="relative w-full h-44 rounded-2xl bg-gradient-to-br from-slate-900 via-zinc-950 to-neutral-900 border border-gold/40 p-6 flex flex-col justify-between shadow-2xl overflow-hidden">
+              {/* Shimmer overlay */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-gold/5 via-transparent to-white/[0.02] pointer-events-none" />
+              
+              {/* Chip & contactless */}
+              <div className="flex justify-between items-center z-10">
+                <div className="w-10 h-7 rounded bg-gradient-to-br from-yellow-300/20 to-yellow-600/30 border border-gold/40 flex items-center justify-center overflow-hidden">
+                  <div className="grid grid-cols-3 gap-0.5 w-full h-full p-1 opacity-70">
+                    <div className="border border-gold/10"></div>
+                    <div className="border border-gold/10"></div>
+                    <div className="border border-gold/10"></div>
+                    <div className="border border-gold/10"></div>
+                    <div className="border border-gold/10"></div>
+                    <div className="border border-gold/10"></div>
+                  </div>
+                </div>
+                
+                <div className="text-right">
+                  <span className="text-[9px] tracking-[0.2em] font-bold text-gold uppercase">H-CONCIERGERIE</span>
+                  <div className="text-[7px] text-slate-500 font-serif tracking-widest mt-0.5">CLUB PRIVÉ VIP</div>
+                </div>
+              </div>
+
+              {/* Card number simulation representation */}
+              <div className="my-2 z-10 text-left">
+                <div className="font-mono text-sm tracking-[0.25em] text-white/95 font-semibold">
+                  ••••  ••••  ••••  ••••
+                </div>
+              </div>
+
+              {/* Card holder & validation */}
+              <div className="flex justify-between items-end z-10 text-left">
+                <div>
+                  <div className="text-[8px] uppercase tracking-wider text-slate-500 mb-0.5">Titulaire</div>
+                  <div className="font-mono text-[10px] tracking-wide text-white font-medium uppercase truncate max-w-[220px]">
+                    {(firstName || lastName) ? `${firstName} ${lastName}`.trim().toUpperCase() : (pseudo ? `@${pseudo.trim().toUpperCase()}` : "MEMBRE PRIVILÈGE")}
+                  </div>
+                </div>
+                
+                <div className="text-right flex items-center gap-3">
+                  {/* Mini Premium indicator */}
+                  <div className="px-2 py-1 bg-gold/15 rounded border border-gold/30 flex items-center justify-center">
+                    <span className="text-[8px] font-sans font-black tracking-wider text-gold uppercase">VIP</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Coordonnées bancaires cryptées</label>
+              
+              {isSimulatedFlow ? (
+                <div className="bg-slate-950 border border-gold/10 rounded-xl px-4 py-3.5 text-xs text-slate-400 flex items-center gap-2.5 italic">
+                  <CreditCard size={15} className="text-gold" />
+                  <span>Simulation de paiement intégrée active</span>
+                </div>
+              ) : (
+                <div className="bg-slate-950 border border-slate-800 focus-within:border-gold focus-within:ring-1 focus-within:ring-gold/30 rounded-xl px-4 py-4 transition-all">
+                  <CardElement options={cardElementOptions} />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <button 
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black tracking-widest uppercase text-xs rounded-xl py-4 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_4px_20px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {loading ? "Création & Transaction..." : "Créer mon compte et payer 1€"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {paymentMethod === "wallet" && (
+        <div className="space-y-4 text-left">
+          <div className="p-3 bg-slate-950/60 border border-white/5 rounded-xl text-[11px] text-slate-400 leading-relaxed font-light">
+            Option d'adhésion ultra-rapide sans saisie bancaire. Votre compte conciergerie VIP sera automatiquement créé à l'adhésion biométrique sécurisée.
+          </div>
+
+          {/* Real Stripe paymentRequest button if available */}
+          {!isSimulatedFlow && paymentRequest && (
+            <div className="p-1 bg-white rounded-xl">
+              <PaymentRequestButtonElement options={{ paymentRequest }} />
+            </div>
+          )}
+
+          {/* Aesthetic Luxury Branded Fast Checkout Blocks */}
+          <div className="grid grid-cols-1 gap-3">
+            {/* Apple Pay Luxury Action Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!firstName || !lastName || !email || !phone || !city || !pseudo || !password) {
+                  setErrorMsg("Veuillez d'abord compléter l'ensemble du formulaire d'inscription ci-dessus.");
+                  return;
+                }
+                setErrorMsg("");
+                setWalletType("apple");
+                setWalletStep("idle");
+                setSimulatingWallet(true);
+              }}
+              className="w-full py-4 bg-slate-900 hover:bg-black text-white hover:text-slate-100 border border-white/10 rounded-xl font-sans font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99]"
+            >
+              <span className="text-lg"></span>
+              <span className="text-xs uppercase tracking-wider">S'inscrire avec Apple Pay</span>
+            </button>
+
+            {/* Google Pay Luxury Action Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!firstName || !lastName || !email || !phone || !city || !pseudo || !password) {
+                  setErrorMsg("Veuillez d'abord compléter l'ensemble du formulaire d'inscription ci-dessus.");
+                  return;
+                }
+                setErrorMsg("");
+                setWalletType("google");
+                setWalletStep("idle");
+                setSimulatingWallet(true);
+              }}
+              className="w-full py-4 bg-slate-900 hover:bg-neutral-900 border border-white/10 text-white rounded-xl font-sans font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-1">
+                <span className="text-blue-500 font-black">G</span>
+                <span className="text-red-500 font-black">o</span>
+                <span className="text-yellow-500 font-black">o</span>
+                <span className="text-blue-500 font-black">g</span>
+                <span className="text-green-500 font-black">l</span>
+                <span className="text-red-500 font-black">e</span>
+              </div>
+              <span className="text-xs uppercase tracking-wider">S'inscrire avec Google Pay</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Visual Simulated Wallet Biometric Popup Overlay */}
+      {simulatingWallet && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="w-full max-w-sm bg-slate-900 border border-gold/40 rounded-3xl p-6 shadow-[0_10px_50px_rgba(212,175,55,0.15)] relative overflow-hidden text-center"
+          >
+            {/* Shimmer background */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-gold/5 via-transparent to-white/[0.01]" />
+            
+            {/* Branding header */}
+            <div className="relative z-10 flex justify-between items-center mb-8 border-b border-white/5 pb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+                <span className="text-[10px] tracking-wider text-slate-400 font-bold uppercase">
+                  Paiement Express Sécurisé
+                </span>
+              </div>
+              <div className="text-[10px] font-mono text-gold font-bold bg-gold/10 px-2.5 py-1 rounded-full border border-gold/20">
+                1.00 €
+              </div>
+            </div>
+
+            <div className="relative z-10 space-y-6">
+              {walletType === "apple" ? (
+                <div className="flex flex-col items-center">
+                  <div className="text-white font-sans font-bold text-lg flex items-center gap-1.5 justify-center mb-1">
+                    <span> Pay</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-light">Authentification biométrique requise</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center">
+                  <div className="text-white font-sans font-bold text-lg flex items-center gap-1.5 justify-center mb-1">
+                    <span className="text-blue-400 font-bold">G</span>
+                    <span className="text-red-400 font-bold">o</span>
+                    <span className="text-yellow-400 font-bold">o</span>
+                    <span className="text-blue-400 font-bold">g</span>
+                    <span className="text-green-400 font-bold">l</span>
+                    <span className="text-red-400 font-bold">e</span>
+                    <span className="ml-1 text-white font-medium">Pay</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-light">Validation via votre compte Google</p>
+                </div>
+              )}
+
+              {/* Fingertip sensor area */}
+              <div className="py-6 flex justify-center">
+                {walletStep === "idle" && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setWalletStep("authenticating");
+                      await new Promise((r) => setTimeout(r, 1200));
+                      setWalletStep("approved");
+                      await new Promise((r) => setTimeout(r, 600));
+                      setSimulatingWallet(false);
+                      setWalletStep("idle");
+                      
+                      setLoading(true);
+                      try {
+                        await finalizeUserRegistration("simulated_wallet_payment_intent_" + Date.now());
+                      } catch (err: any) {
+                        setErrorMsg(err.message || "Erreur lors de la validation.");
+                        setLoading(false);
+                      }
+                    }}
+                    className="w-24 h-24 rounded-full border border-gold/40 bg-slate-950/80 hover:bg-gold/10 hover:border-gold/60 transition-all flex flex-col items-center justify-center cursor-pointer group shadow-[0_0_20px_rgba(212,175,55,0.05)] text-gold relative"
+                  >
+                    {/* Concentric rings pulsing background */}
+                    <div className="absolute inset-2 border border-gold/10 rounded-full animate-ping opacity-25 group-hover:opacity-45" />
+                    <Sparkles size={28} className="animate-pulse mb-1 animate-infinite" />
+                    <span className="text-[8px] uppercase tracking-wider font-extrabold text-slate-400 group-hover:text-gold transition-colors">Confirmer</span>
+                  </button>
+                )}
+
+                {walletStep === "authenticating" && (
+                  <div className="w-24 h-24 rounded-full border border-t-gold/85 border-r-gold/50 border-white/5 bg-slate-950/80 animate-spin flex items-center justify-center">
+                    <Sparkles size={20} className="text-gold animate-bounce" />
+                  </div>
+                )}
+
+                {walletStep === "approved" && (
+                  <div className="w-24 h-24 rounded-full bg-emerald-500/10 border border-emerald-500 text-emerald-400 flex items-center justify-center scale-105 transition-transform">
+                    <CheckCircle2 size={36} />
+                  </div>
+                )}
+              </div>
+
+              {/* Status information */}
+              <div className="space-y-1 font-sans">
+                <p className="text-xs text-white font-medium tracking-wide">
+                  {walletStep === "idle" && "Appuyez sur le capteur pour payer"}
+                  {walletStep === "authenticating" && "Authentification en cours..."}
+                  {walletStep === "approved" && "Paiement Autorisé"}
+                </p>
+                <p className="text-[10px] text-slate-500 font-light leading-relaxed max-w-xs mx-auto">
+                  En autorisant cette commande, vous confirmez votre abonnement annuel de 1,00 € à H-Conciergerie.
+                </p>
+              </div>
+
+              {/* Cancel Button */}
+              {walletStep === "idle" && (
+                <div className="pt-2 border-t border-white/5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSimulatingWallet(false);
+                      setWalletType(null);
+                    }}
+                    className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Annuler l'achat
+                  </button>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Network Icons & Badges */}
+      <div className="flex items-center justify-between px-1 py-1 text-slate-500 text-[10px] border-t border-slate-900 pt-3">
+        <span className="font-medium">Cartes & Portefeuilles acceptés :</span>
+        <div className="flex gap-1.5 font-mono text-[8px] font-semibold text-slate-400">
+          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded">VISA</span>
+          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded">MASTERCARD</span>
+          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded">APPLE PAY</span>
+          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded">GOOGLE PAY</span>
+        </div>
       </div>
 
       <div className="flex gap-2 items-center justify-center text-[10px] text-slate-500 font-medium pt-2">
