@@ -109,15 +109,22 @@ export default function MemberPresentation({ onBack, onSubmitMember }: MemberPre
                 Bénéficiez d'une accréditation annuelle complète auprès de notre service de conciergerie privée. Un accès direct sans intermédiaire, conçu pour répondre instantanément à vos exigences d'exception.
               </p>
               
-              <div className="flex flex-wrap gap-4 pt-2">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[11px] text-slate-300">
-                  <span className="text-gold font-black">•</span> Conciergerie 24/7 Illimitée
+              <div className="space-y-3 pt-2">
+                <div className="flex items-start gap-2.5 text-[13px] text-slate-300 leading-relaxed">
+                  <span className="text-gold font-black shrink-0 mt-0.5">•</span>
+                  <span>Devis sur mesure intégrant l'IA et réponse 24/7</span>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[11px] text-slate-300">
-                  <span className="text-gold font-black">•</span> Accès Offres Flash & Palace
+                <div className="flex items-start gap-2.5 text-[13px] text-slate-300 leading-relaxed">
+                  <span className="text-gold font-black shrink-0 mt-0.5">•</span>
+                  <span>Offres flash sur une sélection d'hôtels de luxe</span>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-[11px] text-slate-300">
-                  <span className="text-gold font-black">•</span> Ventes Privées Exclusives
+                <div className="flex items-start gap-2.5 text-[13px] text-slate-300 leading-relaxed">
+                  <span className="text-gold font-black shrink-0 mt-0.5">•</span>
+                  <span>Réservation d'hôtels et locations de voitures à des tarifs négociés sans aucune commission</span>
+                </div>
+                <div className="flex items-start gap-2.5 text-[13px] text-slate-300 leading-relaxed">
+                  <span className="text-gold font-black shrink-0 mt-0.5">•</span>
+                  <span>Ventes privées d'articles de luxe à des prix imbattables .</span>
                 </div>
               </div>
             </div>
@@ -137,7 +144,9 @@ export default function MemberPresentation({ onBack, onSubmitMember }: MemberPre
               
               <div className="pt-2">
                 <a 
-                  href="#registration-section"
+                  href="https://buy.stripe.com/bJe5kD6htcmW5fR9GT7ss01"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="block text-center w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 cursor-pointer"
                 >
                   S'inscrire ci-dessous
@@ -148,15 +157,15 @@ export default function MemberPresentation({ onBack, onSubmitMember }: MemberPre
         </div>
 
         {/* INTERVENTIONS / AVANTAGES DU PROGRAMME */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start mb-24">
+        <div className="mb-24">
           
           {/* List of Perks */}
-          <div className="lg:col-span-7 space-y-8">
-            <h2 className="text-3xl font-serif text-white tracking-widest uppercase">
+          <div className="space-y-8">
+            <h2 className="text-3xl font-serif text-white tracking-widest uppercase text-center mb-4">
               Pourquoi nous rejoindre ?
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {advantagesList.map((item, idx) => (
                 <motion.div 
                   key={idx}
@@ -170,100 +179,6 @@ export default function MemberPresentation({ onBack, onSubmitMember }: MemberPre
                   <p className="text-slate-400 text-xs font-light leading-relaxed">{item.desc}</p>
                 </motion.div>
               ))}
-            </div>
-          </div>
-
-          {/* Form Side card */}
-          <div id="registration-section" className="lg:col-span-5">
-            <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-gold/30 rounded-3xl p-8 relative shadow-2xl overflow-hidden">
-              <div className="absolute top-0 right-0 p-4">
-                <Lock className="text-gold/40" size={24} />
-              </div>
-              
-              <div className="mb-6">
-                <h3 className="text-2xl font-serif text-white mb-2">Formulaire d'Intégration</h3>
-                <p className="text-slate-400 text-xs font-light">
-                  Veuillez renseigner vos coordonnées. Un consultant de H-CONCIERGERIE prendra contact avec vous immédiatement pour valider votre statut membre.
-                </p>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Nom Complet</label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="ex: Jean de Valois"
-                    className="bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Numéro de Téléphone</label>
-                    <input 
-                      type="tel" 
-                      required
-                      placeholder="ex: +33 6 12 34 56 78"
-                      className="bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors font-mono"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Adresse Mail</label>
-                    <input 
-                      type="email" 
-                      required
-                      placeholder="ex: contact@exemple.com"
-                      className="bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Ville de Résidence</label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="ex: Paris, Dakar, Rio..."
-                    className="bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Type de Métier / Secteur</label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="ex: Chef d'entreprise, Médecin, Finance..."
-                    className="bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
-                    value={job}
-                    onChange={(e) => setJob(e.target.value)}
-                  />
-                </div>
-
-                <div className="pt-4">
-                  <button 
-                    type="submit"
-                    className="w-full bg-gold hover:bg-gold-light text-slate-950 font-black tracking-widest uppercase text-xs rounded-xl py-3.5 flex items-center justify-center gap-2 shadow-lg cursor-pointer transition-all hover:scale-[1.02]"
-                  >
-                    <Send size={14} /> Solliciter mon accès par WhatsApp
-                  </button>
-                </div>
-              </form>
-
-              <div className="mt-6 flex gap-2 items-center justify-center text-[10px] text-slate-400">
-                <ShieldCheck size={14} className="text-gold" />
-                Vos données sont strictement cryptées et confidentielles.
-              </div>
             </div>
           </div>
 

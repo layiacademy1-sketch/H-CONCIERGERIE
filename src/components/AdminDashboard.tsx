@@ -18,7 +18,7 @@ interface Member {
 
 interface AdminDashboardProps {
   onLogout: () => void;
-  additionalMembers: Array<{ name: string; city: string; job: string }>;
+  additionalMembers: Array<{ name: string; city: string; job: string; phone?: string; email?: string }>;
 }
 
 export default function AdminDashboard({ onLogout, additionalMembers }: AdminDashboardProps) {
@@ -88,40 +88,9 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       name: "Jean-Marc Devereaux",
       city: "Paris",
       job: "Chef d'Entreprise (Luxe)",
+      phone: "0767890987",
       dateJoined: "12 Avril 2026",
-      status: "VIP PLATINUM"
-    },
-    {
-      id: 2,
-      name: "Amadou Diallo",
-      city: "Dakar",
-      job: "Architecte d'Intérieur",
-      dateJoined: "05 Mai 2026",
-      status: "MEMBRE PREMIUM"
-    },
-    {
-      id: 3,
-      name: "Maria Silva",
-      city: "Rio de Janeiro",
-      job: "Designer de Mode",
-      dateJoined: "22 Mai 2026",
-      status: "MEMBRE VIP"
-    },
-    {
-      id: 4,
-      name: "Sarah Bernstein",
-      city: "New York",
-      job: "Directrice Financière",
-      dateJoined: "18 Mai 2026",
-      status: "MEMBRE ELITE"
-    },
-    {
-      id: 5,
-      name: "Laurent Garnier",
-      city: "Genève",
-      job: "Horloger d'Art",
-      dateJoined: "25 Mai 2026",
-      status: "MEMBRE FONDATEUR"
+      status: "MEMBRE"
     }
   ];
 
@@ -132,8 +101,9 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       name: m.name,
       city: m.city,
       job: m.job,
+      phone: m.phone || "",
       dateJoined: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
-      status: "NOUVEAU MEMBRE"
+      status: "MEMBRE"
     }));
 
     // Check if there are also locally saved ones in localStorage
@@ -304,7 +274,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                     ) : (
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs text-red-400 font-medium">
-                          Aucun membre adhéré localisé avec ce numéro dans les registres actifs.
+                          Membre non enregistré
                         </span>
                         <div className="flex items-center gap-1 text-red-400 font-bold uppercase text-[10px] tracking-wider shrink-0">
                           <XCircle size={16} /> non trouvé

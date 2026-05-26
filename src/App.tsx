@@ -120,7 +120,7 @@ export default function App() {
         phone: newMem.phone || "",
         email: newMem.email || "",
         dateJoined: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }),
-        status: "NOUVEAU MEMBRE"
+        status: "MEMBRE"
       },
       ...currentSaved
     ];

@@ -5,7 +5,7 @@ import { Hotel, Car, Plane, ShoppingBag, X, Sparkles } from "lucide-react";
 const advantages = [
   {
     icon: <Hotel className="text-gold" size={32} />,
-    title: "Hôtels de luxe",
+    title: "Réservation d’hôtel",
     description: "Accédez à une sélection exclusive d'hôtels 5 étoiles avec des réductions allant jusqu'à -70%.",
     image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=800"
   },
@@ -104,7 +104,7 @@ export default function Advantages({ onExploreHotels, onExploreCars }: { onExplo
                   {adv.description}
                 </p>
                  <div className="mt-auto">
-                  {adv.title === "Hôtels de luxe" && onExploreHotels ? (
+                  {adv.title === "Réservation d’hôtel" && onExploreHotels ? (
                     <button 
                       onClick={onExploreHotels}
                       className="inline-flex items-center justify-center px-6 py-3 bg-gold text-slate-950 text-xs tracking-widest uppercase font-bold rounded-full hover:bg-slate-900 hover:text-white transition-all duration-300 cursor-pointer w-full text-center"
