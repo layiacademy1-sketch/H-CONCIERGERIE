@@ -86,12 +86,12 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     setErrorMsg("");
     try {
       const { data, error } = await supabase
-        .from("members")
+        .from("membrehcon")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Error fetching from public.members:", error);
+        console.error("Error fetching from public.membrehcon:", error);
         setErrorMsg(`Erreur : ${error.message}`);
         return;
       }
@@ -100,7 +100,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
         const normalized = data.map((item: any) => {
           const namePart = item.full_name || `${item.prenom || ""} ${item.nom || ""}`.trim() || item.name || "Nom non spécifié";
           return {
-            id: item.auth_user_id || item.id,
+            id: item.id || item.auth_user_id,
             name: namePart,
             prenom: item.prenom || item.first_name || "",
             nom: item.nom || item.last_name || "",
@@ -130,12 +130,12 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     fetchMembers();
 
     if (isSupabaseConfigured()) {
-      console.log("Setting up Supabase real-time subscription for members table...");
+      console.log("Setting up Supabase real-time subscription for membrehcon table...");
       const channel = supabase
-        .channel("members-realtime")
+        .channel("membrehcon-realtime")
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "members" },
+          { event: "*", schema: "public", table: "membrehcon" },
           (payload) => {
             console.log("Real-time change detected inside AdminDashboard.tsx:", payload);
             fetchMembers();
@@ -195,16 +195,16 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     }
   };
 
-  const safeUpdateMember = async (auth_user_id: string, initialPayload: any) => {
+  const safeUpdateMember = async (id: string, initialPayload: any) => {
     let payload = { ...initialPayload };
     let attempts = 0;
     while (attempts < 15) {
       attempts++;
       try {
         const { error } = await supabase
-          .from("members")
+          .from("membrehcon")
           .update(payload)
-          .eq("auth_user_id", auth_user_id);
+          .or(`auth_user_id.eq.${id},id.eq.${id}`);
 
         if (!error) {
           return null;
@@ -235,7 +235,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     return new Error("Too many retries stripping column updates");
   };
 
-  const handleChangeMemberStatus = async (auth_user_id: string, targetStatus: "pending" | "active" | "expired") => {
+  const handleChangeMemberStatus = async (id: string, targetStatus: "pending" | "active" | "expired") => {
     const isAct = targetStatus === "active";
     const isPending = targetStatus === "pending";
     const isExpired = targetStatus === "expired";
@@ -261,7 +261,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     if (!isSupabaseConfigured()) {
       // Simulation update
       setMembers(prev => prev.map(m => {
-        if (m.id === auth_user_id) {
+        if (m.id === id) {
           return {
             ...m,
             ...payload
@@ -273,9 +273,9 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     }
 
     try {
-      const error = await safeUpdateMember(auth_user_id, payload);
+      const error = await safeUpdateMember(id, payload);
       if (error) {
-        console.error("Failed to update status in public.members:", error.message);
+        console.error("Failed to update status in public.membrehcon:", (error as any).message);
       }
       await fetchMembers();
     } catch (err) {
@@ -291,9 +291,9 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
 
     try {
       const { error } = await supabase
-        .from("members")
+        .from("membrehcon")
         .delete()
-        .eq("auth_user_id", id);
+        .or(`auth_user_id.eq.${id},id.eq.${id}`);
 
       if (error) {
         console.error("Error deleting member", error);
@@ -497,7 +497,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
         {loading && (
           <div className="flex items-center justify-center py-12 gap-2">
             <RefreshCw size={16} className="text-gold animate-spin" />
-            <span className="text-xs text-slate-400 tracking-wider">Chargement des membres depuis Supabase public.members...</span>
+            <span className="text-xs text-slate-400 tracking-wider">Chargement des membres depuis Supabase public.membrehcon...</span>
           </div>
         )}
 
@@ -607,6 +607,16 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                       </div>
 
                       <div className="mt-5 border-t border-white/5 pt-4 flex flex-col gap-3">
+                        {member.access_status !== "active" && (
+                          <button
+                            onClick={() => handleChangeMemberStatus(member.id, "active")}
+                            className="w-full bg-[#D4AF37] hover:bg-yellow-500 text-slate-950 font-black tracking-widest uppercase text-xs rounded-xl py-3 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_12px_rgba(212,175,55,0.2)] flex items-center justify-center gap-1.5"
+                          >
+                            <CheckCircle2 size={14} />
+                            <span>Activer</span>
+                          </button>
+                        )}
+
                         <div className="flex flex-col gap-1 w-full">
                           <label className="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Modifier le statut</label>
                           <select
@@ -636,7 +646,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
             ) : (
               <div className="p-12 text-center rounded-3xl bg-slate-900 border border-white/5">
                 <span className="text-slate-400 text-sm font-light block mb-2">Aucun adhérent ne correspond à vos critères de recherche.</span>
-                <p className="text-xs text-slate-600 font-mono">public.members table vide ou aucun enregistrement trouvé</p>
+                <p className="text-xs text-slate-600 font-mono">public.membrehcon table vide ou aucun enregistrement trouvé</p>
               </div>
             )}
           </div>

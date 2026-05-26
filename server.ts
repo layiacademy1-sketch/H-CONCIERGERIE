@@ -48,25 +48,35 @@ function getSupabaseAdmin() {
   return supabaseAdmin;
 }
 
-// Helper to safely write members without throwing Postgres column errors
-async function safeUpsertMembers(supabaseClient: any, payload: any, matchColumn: string = "auth_user_id") {
+// Helper to safely write members to 'membrehcon' without throwing Postgres column errors
+async function safeUpsertMembrehcon(supabaseClient: any, payload: any, primaryMatchColumn: string = "auth_user_id") {
   let currentPayload = { ...payload };
+  let currentMatchColumn = primaryMatchColumn;
   let attempts = 0;
-  while (attempts < 15) {
+  while (attempts < 20) {
     attempts++;
     try {
       const { data, error } = await supabaseClient
-        .from("members")
-        .upsert(currentPayload, { onConflict: matchColumn })
+        .from("membrehcon")
+        .upsert(currentPayload, { onConflict: currentMatchColumn })
         .select();
       
       if (!error) {
         return { data, error: null };
       }
 
-      console.warn(`Upsert attempt ${attempts} failed:`, error.message);
-      
+      console.warn(`Upsert attempt ${attempts} on membrehcon failed:`, error.message);
       const msg = error.message || "";
+
+      // Check if the conflict column itself is invalid as a key/constraint
+      if (msg.includes("column") && msg.includes(currentMatchColumn)) {
+        if (currentMatchColumn === "auth_user_id") {
+          console.log("Switching conflict column from auth_user_id to id and retrying...");
+          currentMatchColumn = "id";
+          continue;
+        }
+      }
+
       let columnMatch = msg.match(/column "([^"]+)"/i);
       if (!columnMatch) {
         columnMatch = msg.match(/has no column named "([^"]+)"/i);
@@ -79,15 +89,20 @@ async function safeUpsertMembers(supabaseClient: any, payload: any, matchColumn:
         const columnName = columnMatch[1];
         console.log(`Removing non-existent column '${columnName}' from payload and retrying...`);
         delete currentPayload[columnName];
+        
+        // If the stripped column was our current conflict column, switch to the other
+        if (columnName === currentMatchColumn) {
+          currentMatchColumn = currentMatchColumn === "auth_user_id" ? "id" : "auth_user_id";
+        }
       } else {
         return { data: null, error };
       }
     } catch (e: any) {
-      console.error("Exception in safeUpsertMembers:", e);
+      console.error("Exception in safeUpsertMembrehcon:", e);
       return { data: null, error: e };
     }
   }
-  return { data: null, error: new Error("Too many retries trying to match table columns") };
+  return { data: null, error: new Error("Too many retries trying to match table columns on membrehcon") };
 }
 
 // API Health Check
@@ -156,8 +171,9 @@ app.post("/api/register-unpaid", async (req, res) => {
     }
 
     if (adminSb) {
-      // Automatically add a row to the 'members' table with auth_user_id, email, full_name, phone, payment_status="pending" and access_status="pending"
+      // Automatically add a row to the 'membrehcon' table with auth_user_id, id, email, full_name, etc.
       const candidatesPayload: any = {
+        id: userId,
         auth_user_id: userId,
         email: memberDetails?.email || "",
         full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
@@ -178,30 +194,30 @@ app.post("/api/register-unpaid", async (req, res) => {
         created_at: memberDetails?.date_inscription || new Date().toISOString()
       };
 
-      console.log("Attempting to write to 'members' table with user:", userId);
-      const { data, error } = await safeUpsertMembers(adminSb, candidatesPayload, "auth_user_id");
+      console.log("Attempting to write to 'membrehcon' table with user:", userId);
+      const { data, error } = await safeUpsertMembrehcon(adminSb, candidatesPayload, "auth_user_id");
 
       if (error) {
-        console.error("Critical: 'members' table write failed:", error);
+        console.error("Critical: 'membrehcon' table write failed:", error);
         return res.json({
           success: true,
           isSimulated: true,
           warning: "supabase_upsert_failed",
-          details: `members: ${error.message || error.code || error}`,
+          details: `membrehcon: ${error.message || error.code || error}`,
           member: unpaidData
         });
       }
       
       const memberRecord = (data && data.length > 0) ? {
-        id: data[0].auth_user_id || data[0].id,
+        id: data[0].id || data[0].auth_user_id || userId,
         nom: data[0].nom || memberDetails?.nom || "",
         prenom: data[0].prenom || memberDetails?.prenom || "",
         email: data[0].email || memberDetails?.email || "",
-        telephone: data[0].phone || data[0].telephone || memberDetails?.telephone || "",
-        ville: data[0].city || data[0].ville || memberDetails?.ville || "",
+        telephone: data[0].telephone || data[0].phone || memberDetails?.telephone || "",
+        ville: data[0].ville || data[0].city || memberDetails?.ville || "",
         pseudo: data[0].pseudo || memberDetails?.pseudo || "",
         abonnement: data[0].abonnement || "non payé",
-        acces_membre: data[0].acces_membre || false,
+        acces_membre: data[0].acces_membre ?? false,
         paiement: data[0].paiement || "en attente",
         date_inscription: data[0].created_at || new Date().toLocaleDateString("fr-FR"),
         payment_status: data[0].payment_status || "pending",
@@ -268,12 +284,13 @@ app.post("/api/verify-payment", async (req, res) => {
       }
 
       if (adminSb) {
-        console.log("Attempting payment update for user on 'members' table:", userId);
+        console.log("Attempting payment update for user on 'membrehcon' table:", userId);
 
         const expDate = new Date();
         expDate.setFullYear(expDate.getFullYear() + 1);
 
         const membersPaidData: any = {
+          id: userId,
           auth_user_id: userId,
           email: memberDetails?.email || "",
           full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
@@ -296,15 +313,15 @@ app.post("/api/verify-payment", async (req, res) => {
           created_at: memberDetails?.date_inscription || new Date().toISOString()
         };
 
-        const { data, error } = await safeUpsertMembers(adminSb, membersPaidData, "auth_user_id");
+        const { data, error } = await safeUpsertMembrehcon(adminSb, membersPaidData, "auth_user_id");
 
         if (error) {
-          console.error("Critical: 'members' table update failed in verify-payment:", error);
+          console.error("Critical: 'membrehcon' table update failed in verify-payment:", error);
           return res.json({ 
             success: true, 
             isSimulated: true, 
             warning: "supabase_upsert_failed",
-            details: `members: ${error.message || error.code || error}`,
+            details: `membrehcon: ${error.message || error.code || error}`,
             member: {
               id: userId,
               ...membersPaidData
@@ -313,15 +330,15 @@ app.post("/api/verify-payment", async (req, res) => {
         }
         
         const memberRecord = (data && data.length > 0) ? {
-          id: data[0].auth_user_id || data[0].id,
+          id: data[0].id || data[0].auth_user_id || userId,
           nom: data[0].nom || memberDetails?.nom || "",
           prenom: data[0].prenom || memberDetails?.prenom || "",
           email: data[0].email || memberDetails?.email || "",
-          telephone: data[0].phone || data[0].telephone || memberDetails?.telephone || "",
-          ville: data[0].city || data[0].ville || memberDetails?.ville || "",
+          telephone: data[0].telephone || data[0].phone || memberDetails?.telephone || "",
+          ville: data[0].ville || data[0].city || memberDetails?.ville || "",
           pseudo: data[0].pseudo || memberDetails?.pseudo || "",
           abonnement: data[0].abonnement || "non payé",
-          acces_membre: data[0].acces_membre || false,
+          acces_membre: data[0].acces_membre ?? false,
           paiement: data[0].paiement || "payé",
           date_inscription: data[0].created_at || new Date().toLocaleDateString("fr-FR"),
           payment_status: data[0].payment_status || "paid",

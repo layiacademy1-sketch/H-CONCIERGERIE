@@ -82,7 +82,7 @@ export default function App() {
     }
   }, []);
 
-  // Synchronise member state to keep data from 'members' table completely up-to-date
+  // Synchronise member state to keep data from 'membrehcon' table completely up-to-date
   const refreshMemberData = async () => {
     if (!isSupabaseConfigured()) return;
     try {
@@ -90,16 +90,35 @@ export default function App() {
       if (!session?.user) return;
 
       const userId = session.user.id;
+      let dbMembers: any = null;
+      let membersErr: any = null;
 
-      // Fetch from 'members' table only
-      const { data: dbMembers, error: membersErr } = await supabase
-        .from("members")
+      // 1. Try querying by auth_user_id
+      const { data: attempt1, error: err1 } = await supabase
+        .from("membrehcon")
         .select("*")
         .eq("auth_user_id", userId)
         .maybeSingle();
 
+      if (!err1 && attempt1) {
+        dbMembers = attempt1;
+      } else {
+        // 2. Fallback to querying by id
+        const { data: attempt2, error: err2 } = await supabase
+          .from("membrehcon")
+          .select("*")
+          .eq("id", userId)
+          .maybeSingle();
+        
+        if (attempt2) {
+          dbMembers = attempt2;
+        } else {
+          membersErr = err1 || err2;
+        }
+      }
+
       if (membersErr) {
-        console.warn("Table 'members' not queryable during sync:", membersErr.message);
+        console.warn("Table 'membrehcon' not queryable during sync:", membersErr.message);
       }
 
       const isPaid = 
@@ -128,7 +147,7 @@ export default function App() {
 
       setMemberData(merged);
       localStorage.setItem("h_supabase_session_mock", JSON.stringify(merged));
-      console.log("Synchronized from Supabase 'members' table:", merged);
+      console.log("Synchronized from Supabase 'membrehcon' table:", merged);
     } catch (err) {
       console.error("Critical error in refreshMemberData:", err);
     }

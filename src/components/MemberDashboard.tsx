@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Compass, Zap, Lock, LogOut, Ticket, Star, Calendar, 
   Clock, ShoppingBag, MapPin, ChevronRight, Share2, Sparkles, Award, PlayCircle,
-  CreditCard, ShieldCheck, RefreshCw
+  CreditCard, ShieldCheck, RefreshCw, X
 } from "lucide-react";
 import StripePaymentForm from "./StripePaymentForm";
 
@@ -32,6 +32,14 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
   const [isActivating, setIsActivating] = useState(false);
   const [activationError, setActivationError] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showTriggerBanner, setShowTriggerBanner] = useState(false);
+  const [sqlCopied, setSqlCopied] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem("h_supabase_trigger_error_warning") === "true") {
+      setShowTriggerBanner(true);
+    }
+  }, []);
 
   // Auto-sync on mount
   useEffect(() => {
@@ -314,6 +322,122 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
         </div>
       </div>
 
+      {showTriggerBanner && (
+        <div className="max-w-7xl w-full mx-auto px-6 pt-6 animate-fade-in">
+          <div className="bg-amber-500/5 border border-[#D4AF37]/40 rounded-3xl p-6 relative overflow-hidden text-left shadow-xl">
+            <button 
+              type="button"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white cursor-pointer" 
+              onClick={() => {
+                localStorage.removeItem("h_supabase_trigger_error_warning");
+                setShowTriggerBanner(false);
+              }}
+            >
+              <X size={18} />
+            </button>
+            <div className="flex gap-4 items-start flex-col sm:flex-row">
+              <div className="w-10 h-10 rounded-full bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37] shrink-0 border border-[#D4AF37]/20 mt-1">
+                <ShieldCheck size={20} />
+              </div>
+              <div className="space-y-3 w-full">
+                <span className="bg-[#D4AF37]/20 border border-[#D4AF37]/45 rounded-lg px-2 py-0.5 text-[9px] font-black tracking-widest text-[#D4AF37] uppercase inline-block">
+                  Diagnostic Technique Supabase
+                </span>
+                <h4 className="text-base font-serif text-white tracking-wide">
+                  Correction du Trigger PostgreSQL requis pour votre table <code className="text-[#D4AF37] font-mono bg-slate-950 px-1.5 py-0.5 rounded">membrehcon</code>
+                </h4>
+                <p className="text-xs text-slate-300 font-light leading-relaxed max-w-3xl">
+                  Votre base de données Supabase possède un Trigger de création d'utilisateurs qui pointe vers l'ancienne table (<code className="font-mono bg-white/5 px-1 py-0.2 rounded text-slate-400">members</code> ou <code className="font-mono bg-white/5 px-1.5 py-0.5 rounded text-slate-400">membres</code>), ce qui cause l'erreur <strong className="text-red-400">Database error saving new user</strong> lors de l'inscription.
+                </p>
+                <p className="text-xs text-slate-350 font-light leading-relaxed">
+                  Pour résoudre cette erreur définitivement, copiez et exécutez le script SQL ci-dessous dans l'onglet <strong>SQL Editor</strong> de votre console Supabase :
+                </p>
+                
+                <div className="bg-slate-950 p-4 rounded-xl border border-white/5 space-y-2 relative font-mono text-[10px] leading-relaxed text-slate-300 overflow-x-auto max-w-3xl max-h-48">
+                  <pre className="whitespace-pre text-left">{`-- 1. Supprimer l'ancien trigger conflictuel
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+-- 2. Créer ou remplacer la fonction pour écrire dans votre table 'membrehcon'
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.membrehcon (
+    id, auth_user_id, email, full_name, first_name, last_name, pseudo, phone, city, access_status, subscription_expires_at, created_at
+  )
+  VALUES (
+    new.id,
+    new.id,
+    new.email,
+    COALESCE(new.raw_user_meta_data->>'prenom', '') || ' ' || COALESCE(new.raw_user_meta_data->>'nom', ''),
+    COALESCE(new.raw_user_meta_data->>'prenom', ''),
+    COALESCE(new.raw_user_meta_data->>'nom', ''),
+    COALESCE(new.raw_user_meta_data->>'pseudo', ''),
+    COALESCE(new.raw_user_meta_data->>'telephone', ''),
+    COALESCE(new.raw_user_meta_data->>'ville', ''),
+    'pending',
+    null,
+    now()
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 3. Recréer le trigger d'insertion automatique
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();`}</pre>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`-- 1. Supprimer l'ancien trigger conflictuel
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
+-- 2. Créer ou remplacer la fonction pour écrire dans votre table 'membrehcon'
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.membrehcon (
+    id, auth_user_id, email, full_name, first_name, last_name, pseudo, phone, city, access_status, subscription_expires_at, created_at
+  )
+  VALUES (
+    new.id,
+    new.id,
+    new.email,
+    COALESCE(new.raw_user_meta_data->>'prenom', '') || ' ' || COALESCE(new.raw_user_meta_data->>'nom', ''),
+    COALESCE(new.raw_user_meta_data->>'prenom', ''),
+    COALESCE(new.raw_user_meta_data->>'nom', ''),
+    COALESCE(new.raw_user_meta_data->>'pseudo', ''),
+    COALESCE(new.raw_user_meta_data->>'telephone', ''),
+    COALESCE(new.raw_user_meta_data->>'ville', ''),
+    'pending',
+    null,
+    now()
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 3. Recréer le trigger d'insertion automatique
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();`);
+                    setSqlCopied(true);
+                    setTimeout(() => setSqlCopied(false), 3000);
+                  }}
+                  className="bg-[#D4AF37] hover:bg-yellow-500 text-slate-950 font-extrabold tracking-widest text-[9px] uppercase px-4 py-2.5 rounded-lg transition-all cursor-pointer inline-block"
+                >
+                  {sqlCopied ? "✓ Code SQL copié !" : "Copier le code SQL"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
         
         {/* SIDE BAR LAYOUT FOR MOBILE & DESKTOP */}
@@ -372,7 +496,7 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
                 <p className="text-slate-400 text-[11px] leading-relaxed max-w-sm mx-auto font-light pt-2">
                   {(memberData as any).access_status === "expired"
                     ? "Votre accès membre n'est plus actif. Veuillez procéder au renouvellement annuel pour continuer à profiter de toutes les promotions club."
-                    : "Votre compte membre a été enregistré dans public.members avec le statut \"pending\". Notre équipe administrative examine votre demande pour validation."}
+                    : "Votre compte membre a été enregistré dans public.membrehcon avec le statut \"pending\". Notre équipe administrative examine votre demande pour validation."}
                 </p>
               </div>
               
