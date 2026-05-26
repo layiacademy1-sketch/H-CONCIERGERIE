@@ -82,6 +82,57 @@ app.post("/api/create-payment-intent", async (req, res) => {
   }
 });
 
+// API Register Unpaid Member
+app.post("/api/register-unpaid", async (req, res) => {
+  try {
+    const { userId, memberDetails } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: "L'identifiant utilisateur est requis." });
+    }
+
+    const adminSb = getSupabaseAdmin();
+    const unpaidData: any = {
+      id: userId,
+      abonnement: "non payé",
+      acces_membre: false,
+      paiement: "en attente"
+    };
+
+    if (memberDetails) {
+      unpaidData.pseudo = memberDetails.pseudo;
+      unpaidData.prenom = memberDetails.prenom;
+      unpaidData.nom = memberDetails.nom;
+      unpaidData.email = memberDetails.email;
+      unpaidData.telephone = memberDetails.telephone;
+      unpaidData.ville = memberDetails.ville;
+      unpaidData.date_inscription = memberDetails.date_inscription || new Date().toISOString();
+    }
+
+    if (adminSb) {
+      const { data, error } = await adminSb
+        .from("membres")
+        .upsert(unpaidData, { onConflict: "id" })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Supabase Admin Upsert Error:", error);
+        return res.status(500).json({ error: "Erreur d'insertion dans Supabase.", details: error.message });
+      }
+      return res.json({ success: true, member: data });
+    } else {
+      return res.json({
+        success: true,
+        isSimulated: true,
+        member: unpaidData
+      });
+    }
+  } catch (error: any) {
+    console.error("Exception in register-unpaid:", error);
+    res.status(500).json({ error: error.message || "Erreur interne lors de l'enregistrement." });
+  }
+});
+
 // API Verify/Finalize Payment
 app.post("/api/verify-payment", async (req, res) => {
   try {

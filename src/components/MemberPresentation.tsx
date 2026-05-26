@@ -21,9 +21,6 @@ interface MemberPresentationProps {
 
 // Inner Signup Billing Form
 function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: MemberPresentationProps) {
-  const stripe = useStripe();
-  const elements = useElements();
-
   const [lastName, setLastName] = useState("");
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
@@ -36,15 +33,6 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
   const [errorMsg, setErrorMsg] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // Apple & Google Pay specific states
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "wallet">("card");
-  const [walletType, setWalletType] = useState<"apple" | "google" | null>(null);
-  const [simulatingWallet, setSimulatingWallet] = useState(false);
-  const [walletStep, setWalletStep] = useState<"idle" | "authenticating" | "approved">("idle");
-  const [paymentRequest, setPaymentRequest] = useState<any>(null);
-
-  const isSimulatedFlow = !stripePromise || !stripeKey;
-
   const getApiUrl = (route: string) => {
     if (window.location.hostname.includes("netlify.app")) {
       return `/.netlify/functions/${route}`;
@@ -52,7 +40,7 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
     return `/api/${route}`;
   };
 
-  const finalizeUserRegistration = async (returnedPaymentIntentId: string) => {
+  const finalizeUserRegistration = async () => {
     // Unconfigured Supabase Fallback Simulation
     if (!isSupabaseConfigured()) {
       console.warn("Supabase is not configured yet. Running simulated registration.");
@@ -65,11 +53,10 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
         telephone: phone,
         ville: city,
         pseudo: pseudo.trim(),
-        abonnement: "payé",
-        acces_membre: true,
-        paiement: "validé",
-        date_inscription: new Date().toLocaleDateString('fr-FR'),
-        date_paiement: new Date().toLocaleDateString('fr-FR')
+        abonnement: "non payé",
+        acces_membre: false,
+        paiement: "en attente",
+        date_inscription: new Date().toLocaleDateString('fr-FR')
       };
 
       localStorage.setItem("h_supabase_session_mock", JSON.stringify(mockMember));
@@ -117,15 +104,13 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
 
     const activeUserId = authData.user.id;
 
-    // Finalize Verify/Upsert member record bypassing RLS
-    const verifyUrl = getApiUrl("verify-payment");
-    const verifyRes = await fetch(verifyUrl, {
+    // Finalize Register Unpaid Record bypassing RLS
+    const registerUrl = getApiUrl("register-unpaid");
+    const registerRes = await fetch(registerUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        paymentIntentId: returnedPaymentIntentId,
         userId: activeUserId,
-        isSimulated: isSimulatedFlow,
         memberDetails: {
           pseudo: pseudo.trim(),
           prenom: firstName,
@@ -138,11 +123,11 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
       })
     });
 
-    if (!verifyRes.ok) {
-      throw new Error("Le débit a été réalisé, mais l'enregistrement de vos privilèges a échoué.");
+    if (!registerRes.ok) {
+      throw new Error("L'authentification a réussi, mais l'enregistrement de vos privilèges a échoué.");
     }
 
-    const verifyData = await verifyRes.json();
+    const registerData = await registerRes.json();
 
     onSubmitMember({
       name: `${firstName} ${lastName}`,
@@ -157,7 +142,7 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
     localStorage.setItem("h_session_auth", "true");
 
     setTimeout(() => {
-      onSignUpSuccess(verifyData.member || {
+      onSignUpSuccess(registerData.member || {
         id: activeUserId,
         nom: lastName,
         prenom: firstName,
@@ -165,85 +150,13 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
         telephone: phone,
         ville: city,
         pseudo: pseudo.trim(),
-        abonnement: "payé",
-        acces_membre: true,
-        paiement: "validé",
-        date_inscription: new Date().toLocaleDateString('fr-FR'),
-        date_paiement: new Date().toLocaleDateString('fr-FR')
+        abonnement: "non payé",
+        acces_membre: false,
+        paiement: "en attente",
+        date_inscription: new Date().toLocaleDateString('fr-FR')
       });
     }, 1500);
   };
-
-  // Setup actual payment request button for Stripe
-  React.useEffect(() => {
-    if (stripe) {
-      const pr = stripe.paymentRequest({
-        country: "FR",
-        currency: "eur",
-        total: {
-          label: "Abonnement Club Privé H-Conciergerie",
-          amount: 100, // 1€ in cents
-        },
-        requestPayerName: true,
-        requestPayerEmail: true,
-      });
-
-      pr.canMakePayment().then((result) => {
-        if (result) {
-          setPaymentRequest(pr);
-        }
-      });
-
-      pr.on("paymentmethod", async (ev) => {
-        if (!lastName || !firstName || !email || !phone || !city || !pseudo || !password) {
-          ev.complete("fail");
-          setErrorMsg("Veuillez d'abord remplir vos informations d'identité.");
-          return;
-        }
-
-        try {
-          const intentUrl = getApiUrl("create-payment-intent");
-          const intentRes = await fetch(intentUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, userId: "transient-signup" }),
-          });
-
-          if (!intentRes.ok) {
-            ev.complete("fail");
-            throw new Error("L'initialisation de la transaction Stripe a échoué.");
-          }
-
-          const intentData = await intentRes.json();
-          const clientSecret = intentData.clientSecret;
-
-          const { paymentIntent, error: stripeConfirmErr } = await stripe.confirmCardPayment(
-            clientSecret,
-            { payment_method: ev.paymentMethod.id },
-            { handleActions: false }
-          );
-
-          if (stripeConfirmErr) {
-            ev.complete("fail");
-            throw new Error(stripeConfirmErr.message);
-          }
-
-          if (!paymentIntent || paymentIntent.status !== "succeeded") {
-            ev.complete("fail");
-            throw new Error("La transaction a été rejetée.");
-          }
-
-          ev.complete("success");
-          setLoading(true);
-          await finalizeUserRegistration(paymentIntent.id);
-        } catch (err: any) {
-          console.error(err);
-          setErrorMsg(err.message || "Le paiement mobile a échoué.");
-          setLoading(false);
-        }
-      });
-    }
-  }, [stripe, lastName, firstName, email, phone, city, pseudo, password]);
 
   const handleCustomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -279,53 +192,7 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
         }
       }
 
-      let returnedPaymentIntentId = "pi_mock_value";
-
-      // 4. Handle Stripe Transaction via Serverless backend
-      if (!isSimulatedFlow && stripe && elements) {
-        const intentUrl = getApiUrl("create-payment-intent");
-        const intentRes = await fetch(intentUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, userId: "transient-signup" }),
-        });
-
-        if (!intentRes.ok) {
-          throw new Error("L'initialisation de la transaction sécurisée Stripe a échoué.");
-        }
-
-        const intentData = await intentRes.json();
-        const clientSecret = intentData.clientSecret;
-
-        const cardElement = elements.getElement(CardElement);
-        if (!cardElement) {
-          throw new Error("Erreur de chargement du composant carte.");
-        }
-
-        const { paymentIntent, error: stripeConfirmErr } = await stripe.confirmCardPayment(clientSecret, {
-          payment_method: {
-            card: cardElement as any,
-            billing_details: {
-              name: `${firstName} ${lastName}`,
-              email
-            }
-          }
-        });
-
-        if (stripeConfirmErr) {
-          throw new Error(stripeConfirmErr.message || "Paiement rejeté par la banque.");
-        }
-
-        if (!paymentIntent || paymentIntent.status !== "succeeded") {
-          throw new Error("La validation bancaire a échoué. Veuillez réessayer.");
-        }
-
-        returnedPaymentIntentId = paymentIntent.id;
-      } else {
-        await new Promise((r) => setTimeout(r, 1000));
-      }
-
-      await finalizeUserRegistration(returnedPaymentIntentId);
+      await finalizeUserRegistration();
 
     } catch (err: any) {
       console.error(err);
@@ -369,40 +236,40 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
   }
 
   return (
-    <form onSubmit={handleCustomSubmit} className="space-y-4">
+    <form onSubmit={handleCustomSubmit} className="space-y-3">
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/25 text-xs text-red-400 font-bold font-mono text-center flex items-center justify-center gap-2">
-          <AlertCircle size={15} />
+        <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/25 text-xs text-red-400 font-bold font-mono text-center flex items-center justify-center gap-2">
+          <AlertCircle size={14} />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      {isSimulatedFlow && (
-        <div className="p-4 rounded-xl bg-gold/10 border border-gold/20 text-[11px] text-gold font-light leading-relaxed text-left">
-          <strong className="font-bold">Mode Simulation Actif</strong> : Aucune clé Stripe d'environnement n'est configurée. Vous pouvez tester le cycle complet d'inscription et de paiement sécurisé immédiatement.
+      {!isSupabaseConfigured() && (
+        <div className="p-3 rounded-xl bg-gold/10 border border-gold/20 text-[10px] text-gold font-light leading-relaxed text-left">
+          <strong className="font-bold">Mode Démo Actif</strong> : Base de données locale temporaire (hors-ligne). Votre compte sera conservé dans le navigateur.
         </div>
       )}
 
-      {/* Identity Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5 text-left">
-          <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Prénom</label>
+      {/* Identity row - side-by-side */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1 text-left">
+          <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Prénom</label>
           <input 
             type="text" 
             required
             placeholder="Prénom"
-            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-3 py-2 text-xs text-white outline-none transition-colors"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
           />
         </div>
-        <div className="flex flex-col gap-1.5 text-left">
-          <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Nom</label>
+        <div className="flex flex-col gap-1 text-left">
+          <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Nom</label>
           <input 
             type="text" 
             required
             placeholder="Nom"
-            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-3 py-2 text-xs text-white outline-none transition-colors"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
           />
@@ -410,400 +277,92 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
       </div>
 
       {/* E-mail */}
-      <div className="flex flex-col gap-1.5 text-left">
-        <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Adresse Email</label>
+      <div className="flex flex-col gap-1 text-left">
+        <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Adresse Email</label>
         <input 
           type="email" 
           required
           placeholder="exemple@email.com"
-          className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+          className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-3 py-2 text-xs text-white outline-none transition-colors"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
       </div>
 
-      {/* Phone and City */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1.5 text-left">
-          <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Téléphone</label>
+      {/* Phone and City - side-by-side */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1 text-left">
+          <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Téléphone</label>
           <input 
             type="tel" 
             required
-            placeholder="+33 6 00 00 00 00"
-            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+            placeholder="+33 6..."
+            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-3 py-2 text-xs text-white outline-none transition-colors"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
           />
         </div>
-        <div className="flex flex-col gap-1.5 text-left">
-          <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Ville</label>
+        <div className="flex flex-col gap-1 text-left">
+          <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Ville</label>
           <input 
             type="text" 
             required
-            placeholder="ex: Paris, Dakar, Moroni"
-            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+            placeholder="Ville"
+            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-3 py-2 text-xs text-white outline-none transition-colors"
             value={city}
             onChange={(e) => setCity(e.target.value)}
           />
         </div>
       </div>
 
-      {/* Pseudo (Unique name) */}
-      <div className="flex flex-col gap-1.5 text-left">
-        <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Pseudo unique</label>
-        <input 
-          type="text" 
-          required
-          placeholder="Choisissez un pseudo unique"
-          className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
-          value={pseudo}
-          onChange={(e) => setPseudo(e.target.value)}
-        />
-      </div>
-
-      {/* Password with Eye Toggles */}
-      <div className="flex flex-col gap-1.5 text-left">
-        <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Mot de passe</label>
-        <div className="relative">
+      {/* Pseudo AND Password - side-by-side to optimize viewport height */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1 text-left">
+          <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Pseudo unique</label>
           <input 
-            type={showPassword ? "text" : "password"}
+            type="text" 
             required
-            placeholder="•••••••• (6 caractères min)"
-            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl pl-4 pr-11 py-3 text-xs text-white outline-none transition-colors"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Pseudo"
+            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-3 py-2 text-xs text-white outline-none transition-colors"
+            value={pseudo}
+            onChange={(e) => setPseudo(e.target.value)}
           />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer"
-          >
-            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
         </div>
-      </div>
-
-      {/* Payment Selection Tabs */}
-      <div className="pt-6 border-t border-white/5 space-y-3 text-left">
-        <div>
-          <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Mode de règlement sécurisé</label>
-          <p className="text-[10px] text-slate-500 font-light">Sélectionnez votre moyen de paiement d'exception</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => setPaymentMethod("card")}
-            className={`py-3.5 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-              paymentMethod === "card"
-                ? "bg-gold/10 border-gold/60 text-gold shadow-[0_0_15px_rgba(212,175,55,0.15)]"
-                : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
-            }`}
-          >
-            <CreditCard size={14} />
-            Carte Bancaire
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => setPaymentMethod("wallet")}
-            className={`py-3.5 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-              paymentMethod === "wallet"
-                ? "bg-gold/10 border-gold/60 text-gold shadow-[0_0_15px_rgba(212,175,55,0.15)]"
-                : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
-            }`}
-          >
-            <Sparkles size={14} className="text-gold" />
-            Wallet Express
-          </button>
-        </div>
-      </div>
-
-      {paymentMethod === "card" && (
-        <div className="space-y-4 text-left">
-          {/* Integrated Stripe elements view credit card check with luxury preview card */}
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Carte Membre Officielle</label>
-              <p className="text-[10px] text-slate-500 font-light">Génération automatique de vos privilèges</p>
-            </div>
-
-            {/* Visual Luxury Card Front */}
-            <div className="relative w-full h-44 rounded-2xl bg-gradient-to-br from-slate-900 via-zinc-950 to-neutral-900 border border-gold/40 p-6 flex flex-col justify-between shadow-2xl overflow-hidden">
-              {/* Shimmer overlay */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-gold/5 via-transparent to-white/[0.02] pointer-events-none" />
-              
-              {/* Chip & contactless */}
-              <div className="flex justify-between items-center z-10">
-                <div className="w-10 h-7 rounded bg-gradient-to-br from-yellow-300/20 to-yellow-600/30 border border-gold/40 flex items-center justify-center overflow-hidden">
-                  <div className="grid grid-cols-3 gap-0.5 w-full h-full p-1 opacity-70">
-                    <div className="border border-gold/10"></div>
-                    <div className="border border-gold/10"></div>
-                    <div className="border border-gold/10"></div>
-                    <div className="border border-gold/10"></div>
-                    <div className="border border-gold/10"></div>
-                    <div className="border border-gold/10"></div>
-                  </div>
-                </div>
-                
-                <div className="text-right">
-                  <span className="text-[9px] tracking-[0.2em] font-bold text-gold uppercase">H-CONCIERGERIE</span>
-                  <div className="text-[7px] text-slate-500 font-serif tracking-widest mt-0.5">CLUB PRIVÉ VIP</div>
-                </div>
-              </div>
-
-              {/* Card number simulation representation */}
-              <div className="my-2 z-10 text-left">
-                <div className="font-mono text-sm tracking-[0.25em] text-white/95 font-semibold">
-                  ••••  ••••  ••••  ••••
-                </div>
-              </div>
-
-              {/* Card holder & validation */}
-              <div className="flex justify-between items-end z-10 text-left">
-                <div>
-                  <div className="text-[8px] uppercase tracking-wider text-slate-500 mb-0.5">Titulaire</div>
-                  <div className="font-mono text-[10px] tracking-wide text-white font-medium uppercase truncate max-w-[220px]">
-                    {(firstName || lastName) ? `${firstName} ${lastName}`.trim().toUpperCase() : (pseudo ? `@${pseudo.trim().toUpperCase()}` : "MEMBRE PRIVILÈGE")}
-                  </div>
-                </div>
-                
-                <div className="text-right flex items-center gap-3">
-                  {/* Mini Premium indicator */}
-                  <div className="px-2 py-1 bg-gold/15 rounded border border-gold/30 flex items-center justify-center">
-                    <span className="text-[8px] font-sans font-black tracking-wider text-gold uppercase">VIP</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Coordonnées bancaires cryptées</label>
-              
-              {isSimulatedFlow ? (
-                <div className="bg-slate-950 border border-gold/10 rounded-xl px-4 py-3.5 text-xs text-slate-400 flex items-center gap-2.5 italic">
-                  <CreditCard size={15} className="text-gold" />
-                  <span>Simulation de paiement intégrée active</span>
-                </div>
-              ) : (
-                <div className="bg-slate-950 border border-slate-800 focus-within:border-gold focus-within:ring-1 focus-within:ring-gold/30 rounded-xl px-4 py-4 transition-all">
-                  <CardElement options={cardElementOptions} />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="pt-2">
-            <button 
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black tracking-widest uppercase text-xs rounded-xl py-4 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_4px_20px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {loading ? "Création & Transaction..." : "Créer mon compte et payer 1€"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {paymentMethod === "wallet" && (
-        <div className="space-y-4 text-left">
-          <div className="p-3 bg-slate-950/60 border border-white/5 rounded-xl text-[11px] text-slate-400 leading-relaxed font-light">
-            Option d'adhésion ultra-rapide sans saisie bancaire. Votre compte conciergerie VIP sera automatiquement créé à l'adhésion biométrique sécurisée.
-          </div>
-
-          {/* Real Stripe paymentRequest button if available */}
-          {!isSimulatedFlow && paymentRequest && (
-            <div className="p-1 bg-white rounded-xl">
-              <PaymentRequestButtonElement options={{ paymentRequest }} />
-            </div>
-          )}
-
-          {/* Aesthetic Luxury Branded Fast Checkout Blocks */}
-          <div className="grid grid-cols-1 gap-3">
-            {/* Apple Pay Luxury Action Button */}
+        <div className="flex flex-col gap-1 text-left">
+          <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Mot de passe</label>
+          <div className="relative">
+            <input 
+              type={showPassword ? "text" : "password"}
+              required
+              placeholder="Min 6 car."
+              className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl pl-3 pr-9 py-2 text-xs text-white outline-none transition-colors"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
             <button
               type="button"
-              onClick={() => {
-                if (!firstName || !lastName || !email || !phone || !city || !pseudo || !password) {
-                  setErrorMsg("Veuillez d'abord compléter l'ensemble du formulaire d'inscription ci-dessus.");
-                  return;
-                }
-                setErrorMsg("");
-                setWalletType("apple");
-                setWalletStep("idle");
-                setSimulatingWallet(true);
-              }}
-              className="w-full py-4 bg-slate-900 hover:bg-black text-white hover:text-slate-100 border border-white/10 rounded-xl font-sans font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99]"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer"
             >
-              <span className="text-lg"></span>
-              <span className="text-xs uppercase tracking-wider">S'inscrire avec Apple Pay</span>
-            </button>
-
-            {/* Google Pay Luxury Action Button */}
-            <button
-              type="button"
-              onClick={() => {
-                if (!firstName || !lastName || !email || !phone || !city || !pseudo || !password) {
-                  setErrorMsg("Veuillez d'abord compléter l'ensemble du formulaire d'inscription ci-dessus.");
-                  return;
-                }
-                setErrorMsg("");
-                setWalletType("google");
-                setWalletStep("idle");
-                setSimulatingWallet(true);
-              }}
-              className="w-full py-4 bg-slate-900 hover:bg-neutral-900 border border-white/10 text-white rounded-xl font-sans font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99]"
-            >
-              <div className="flex items-center gap-1">
-                <span className="text-blue-500 font-black">G</span>
-                <span className="text-red-500 font-black">o</span>
-                <span className="text-yellow-500 font-black">o</span>
-                <span className="text-blue-500 font-black">g</span>
-                <span className="text-green-500 font-black">l</span>
-                <span className="text-red-500 font-black">e</span>
-              </div>
-              <span className="text-xs uppercase tracking-wider">S'inscrire avec Google Pay</span>
+              {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
           </div>
         </div>
-      )}
-
-      {/* Visual Simulated Wallet Biometric Popup Overlay */}
-      {simulatingWallet && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="w-full max-w-sm bg-slate-900 border border-gold/40 rounded-3xl p-6 shadow-[0_10px_50px_rgba(212,175,55,0.15)] relative overflow-hidden text-center"
-          >
-            {/* Shimmer background */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-gold/5 via-transparent to-white/[0.01]" />
-            
-            {/* Branding header */}
-            <div className="relative z-10 flex justify-between items-center mb-8 border-b border-white/5 pb-4">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
-                <span className="text-[10px] tracking-wider text-slate-400 font-bold uppercase">
-                  Paiement Express Sécurisé
-                </span>
-              </div>
-              <div className="text-[10px] font-mono text-gold font-bold bg-gold/10 px-2.5 py-1 rounded-full border border-gold/20">
-                1.00 €
-              </div>
-            </div>
-
-            <div className="relative z-10 space-y-6">
-              {walletType === "apple" ? (
-                <div className="flex flex-col items-center">
-                  <div className="text-white font-sans font-bold text-lg flex items-center gap-1.5 justify-center mb-1">
-                    <span> Pay</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 font-light">Authentification biométrique requise</p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center">
-                  <div className="text-white font-sans font-bold text-lg flex items-center gap-1.5 justify-center mb-1">
-                    <span className="text-blue-400 font-bold">G</span>
-                    <span className="text-red-400 font-bold">o</span>
-                    <span className="text-yellow-400 font-bold">o</span>
-                    <span className="text-blue-400 font-bold">g</span>
-                    <span className="text-green-400 font-bold">l</span>
-                    <span className="text-red-400 font-bold">e</span>
-                    <span className="ml-1 text-white font-medium">Pay</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 font-light">Validation via votre compte Google</p>
-                </div>
-              )}
-
-              {/* Fingertip sensor area */}
-              <div className="py-6 flex justify-center">
-                {walletStep === "idle" && (
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setWalletStep("authenticating");
-                      await new Promise((r) => setTimeout(r, 1200));
-                      setWalletStep("approved");
-                      await new Promise((r) => setTimeout(r, 600));
-                      setSimulatingWallet(false);
-                      setWalletStep("idle");
-                      
-                      setLoading(true);
-                      try {
-                        await finalizeUserRegistration("simulated_wallet_payment_intent_" + Date.now());
-                      } catch (err: any) {
-                        setErrorMsg(err.message || "Erreur lors de la validation.");
-                        setLoading(false);
-                      }
-                    }}
-                    className="w-24 h-24 rounded-full border border-gold/40 bg-slate-950/80 hover:bg-gold/10 hover:border-gold/60 transition-all flex flex-col items-center justify-center cursor-pointer group shadow-[0_0_20px_rgba(212,175,55,0.05)] text-gold relative"
-                  >
-                    {/* Concentric rings pulsing background */}
-                    <div className="absolute inset-2 border border-gold/10 rounded-full animate-ping opacity-25 group-hover:opacity-45" />
-                    <Sparkles size={28} className="animate-pulse mb-1 animate-infinite" />
-                    <span className="text-[8px] uppercase tracking-wider font-extrabold text-slate-400 group-hover:text-gold transition-colors">Confirmer</span>
-                  </button>
-                )}
-
-                {walletStep === "authenticating" && (
-                  <div className="w-24 h-24 rounded-full border border-t-gold/85 border-r-gold/50 border-white/5 bg-slate-950/80 animate-spin flex items-center justify-center">
-                    <Sparkles size={20} className="text-gold animate-bounce" />
-                  </div>
-                )}
-
-                {walletStep === "approved" && (
-                  <div className="w-24 h-24 rounded-full bg-emerald-500/10 border border-emerald-500 text-emerald-400 flex items-center justify-center scale-105 transition-transform">
-                    <CheckCircle2 size={36} />
-                  </div>
-                )}
-              </div>
-
-              {/* Status information */}
-              <div className="space-y-1 font-sans">
-                <p className="text-xs text-white font-medium tracking-wide">
-                  {walletStep === "idle" && "Appuyez sur le capteur pour payer"}
-                  {walletStep === "authenticating" && "Authentification en cours..."}
-                  {walletStep === "approved" && "Paiement Autorisé"}
-                </p>
-                <p className="text-[10px] text-slate-500 font-light leading-relaxed max-w-xs mx-auto">
-                  En autorisant cette commande, vous confirmez votre abonnement annuel de 1,00 € à H-Conciergerie.
-                </p>
-              </div>
-
-              {/* Cancel Button */}
-              {walletStep === "idle" && (
-                <div className="pt-2 border-t border-white/5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSimulatingWallet(false);
-                      setWalletType(null);
-                    }}
-                    className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 hover:text-white transition-colors cursor-pointer"
-                  >
-                    Annuler l'achat
-                  </button>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      {/* Network Icons & Badges */}
-      <div className="flex items-center justify-between px-1 py-1 text-slate-500 text-[10px] border-t border-slate-900 pt-3">
-        <span className="font-medium">Cartes & Portefeuilles acceptés :</span>
-        <div className="flex gap-1.5 font-mono text-[8px] font-semibold text-slate-400">
-          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded">VISA</span>
-          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded">MASTERCARD</span>
-          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded">APPLE PAY</span>
-          <span className="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded">GOOGLE PAY</span>
-        </div>
       </div>
 
-      <div className="flex gap-2 items-center justify-center text-[10px] text-slate-500 font-medium pt-2">
-        <ShieldCheck size={14} className="text-gold" />
-        Paiement de bout en bout crypté Stripe / SSL certifié
+      <div className="pt-6">
+        <button 
+          type="submit"
+          disabled={loading}
+          className="w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black tracking-widest uppercase text-xs rounded-xl py-4 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_4px_15px_rgba(212,175,55,0.2)] flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {loading ? "Création du compte..." : "Créer mon espace membre"}
+        </button>
+      </div>
+
+      <div className="flex gap-1.5 items-center justify-center text-[9px] text-slate-500 font-medium pt-3 border-t border-slate-900 mt-4">
+        <ShieldCheck size={12} className="text-gold" />
+        Inscription cryptée 256 bits SSL de bout en bout
       </div>
     </form>
   );
@@ -845,31 +404,21 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
             animate={{ opacity: 1, scale: 1 }}
             className="bg-slate-900/90 backdrop-blur-md border border-gold/30 rounded-3xl p-8 md:p-10 shadow-3xl relative"
           >
-            <div className="text-center mb-8">
+            <div className="text-center mb-0 sm:mb-8">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-gold/10 border border-gold/20 rounded-full text-[10px] text-gold font-bold tracking-[0.2em] uppercase mb-4">
                 <Sparkles size={11} /> Inscription Club Privé
               </div>
               <h2 className="text-2xl md:text-3xl font-serif text-white tracking-wide font-medium">Devenir Membre</h2>
               <p className="text-[11px] text-slate-400 font-light mt-2 leading-relaxed">
-                Remplissez vos informations et réglez de manière sécurisée en une seule étape.
+                Remplissez vos informations pour créer votre compte en quelques instants.
               </p>
             </div>
 
-            {stripePromise ? (
-              <Elements stripe={stripePromise}>
-                <InnerPremiumSignupForm 
-                  onBack={onBack} 
-                  onSubmitMember={onSubmitMember} 
-                  onSignUpSuccess={onSignUpSuccess} 
-                />
-              </Elements>
-            ) : (
-              <InnerPremiumSignupForm 
-                onBack={onBack} 
-                onSubmitMember={onSubmitMember} 
-                onSignUpSuccess={onSignUpSuccess} 
-              />
-            )}
+            <InnerPremiumSignupForm 
+              onBack={onBack} 
+              onSubmitMember={onSubmitMember} 
+              onSignUpSuccess={onSignUpSuccess} 
+            />
           </motion.div>
         </div>
       </div>
