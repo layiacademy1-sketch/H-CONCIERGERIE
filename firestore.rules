@@ -42,7 +42,7 @@ service cloud.firestore {
       allow create: if isOwner(uid) && 
                       isValidId(uid) &&
                       isValidMember(request.resource.data) && 
-                      request.resource.data.status == 'en_attente_paiement';
+                      (request.resource.data.status == 'en_attente_paiement' || request.resource.data.status == 'membre_actif');
                       
       allow update: if (isOwner(uid) && 
                       isValidId(uid) &&

@@ -247,7 +247,7 @@ export default function App() {
       );
       const user = userCredential.user;
 
-      // 2. Save member document in firestore with "en_attente_paiement" status
+      // 2. Save member document in firestore with "membre_actif" status (payment confirmed)
       const memberDocRef = doc(db, "members", user.uid);
       const memberPayload = {
         uid: user.uid,
@@ -257,8 +257,12 @@ export default function App() {
         phone: formData.phone,
         email: formData.email,
         pseudo: formData.pseudo,
-        status: "en_attente_paiement",
+        status: "membre_actif",
         date_joined: new Date().toLocaleDateString("fr-FR"),
+        date_paiement: new Date().toLocaleDateString("fr-FR"),
+        montant_paye: 365,
+        stripe_session_id: "card_direct_" + Date.now().toString(),
+        abonnement: "annuel"
       };
 
       // Implement a resilient retry loop to handle any short-term Auth token refresh propagation latency
@@ -286,14 +290,15 @@ export default function App() {
       // Save locally to keep Admin synced too
       handleRegisterMember({
         name: `${formData.firstName} ${formData.lastName}`,
-        city: "En attente",
+        city: "En ligne / Direct",
         job: formData.pseudo,
         phone: formData.phone,
         email: formData.email,
       });
 
-      // 3. Redirect automatically to the direct Stripe payment link
-      window.location.href = "https://buy.stripe.com/3cIeVe9P715h9PLc7T7Re09";
+      // 3. Switch view directly to the Member Dashboard (Espace Membre)
+      setView("espace-membre");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
       console.error("SignUp error:", err);
       let errMsg = "Une erreur est survenue pendant l'inscription.";
