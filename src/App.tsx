@@ -44,7 +44,6 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [showSignUpModal, setShowSignUpModal] = useState(false);
   const [registeredMembers, setRegisteredMembers] = useState<Array<{ name: string; city: string; job: string }>>([]);
 
   // Login Form States (pseudo corresponds to email, password to password)
@@ -461,7 +460,6 @@ export default function App() {
                 onSignUpSubmit={handleSignUpSubmit}
                 isLoading={isSignUpLoading}
                 signUpError={signUpError}
-                onOpenSignUpModal={() => setShowSignUpModal(true)}
               />
             </motion.div>
           ) : view === "espace-membre" ? (
@@ -880,28 +878,6 @@ export default function App() {
 
       {/* FLOATING ACTION WHATSAPP KEY */}
       <WhatsAppButton />
-
-      {/* Global Popup / Modal for the registration form */}
-      <AnimatePresence>
-        {showSignUpModal && (
-          <div 
-            className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto"
-            onClick={() => setShowSignUpModal(false)}
-          >
-            <div 
-              className="w-full max-w-2xl my-8 relative pointer-events-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <SignUpForm
-                onSubmit={handleSignUpSubmit}
-                onCancel={() => setShowSignUpModal(false)}
-                isLoading={isSignUpLoading}
-                error={signUpError}
-              />
-            </div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

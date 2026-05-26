@@ -12,7 +12,6 @@ interface MemberPresentationProps {
   onSignUpSubmit: (formData: any) => Promise<void>;
   isLoading: boolean;
   signUpError: string;
-  onOpenSignUpModal?: () => void;
 }
 
 export default function MemberPresentation({ 
@@ -20,8 +19,7 @@ export default function MemberPresentation({
   onSubmitMember, 
   onSignUpSubmit, 
   isLoading, 
-  signUpError,
-  onOpenSignUpModal
+  signUpError
 }: MemberPresentationProps) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -156,13 +154,7 @@ export default function MemberPresentation({
               
               <div className="pt-2">
                 <button 
-                  onClick={() => {
-                    if (onOpenSignUpModal) {
-                      onOpenSignUpModal();
-                    } else {
-                      setShowForm(true);
-                    }
-                  }}
+                  onClick={() => setShowForm(true)}
                   className="w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 cursor-pointer"
                 >
                   DEVENIR MEMBRE
@@ -218,7 +210,7 @@ export default function MemberPresentation({
         <AnimatePresence>
           {showForm && (
             <div 
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto"
+              className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto"
               onClick={() => setShowForm(false)}
             >
               <motion.div
@@ -226,11 +218,15 @@ export default function MemberPresentation({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="w-full max-w-2xl my-8 relative z-50 pointer-events-auto"
+                className="w-full max-w-2xl my-8 relative z-[151] pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 <SignUpForm
-                  onSubmit={onSignUpSubmit}
+                  onSubmit={async (data) => {
+                    await onSignUpSubmit(data);
+                    // Close local modal on successful registration
+                    setShowForm(false);
+                  }}
                   onCancel={() => setShowForm(false)}
                   isLoading={isLoading}
                   error={signUpError}
