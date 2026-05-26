@@ -22,6 +22,7 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
+  const [pseudo, setPseudo] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,7 +33,7 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
     setErrorMsg("");
     setLoading(true);
 
-    if (!lastName || !firstName || !email || !phone || !city || !password) {
+    if (!lastName || !firstName || !email || !phone || !city || !pseudo || !password) {
       setErrorMsg("Veuillez remplir tous les champs.");
       setLoading(false);
       return;
@@ -57,6 +58,7 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
           email: email,
           telephone: phone,
           ville: city,
+          pseudo: pseudo.trim(),
           abonnement: "non payé",
           acces_membre: false,
           paiement: "en attente",
@@ -79,6 +81,19 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
         return;
       }
 
+      // Check unique pseudo in Supabase membres table
+      const { data: existingPseudo, error: checkError } = await supabase
+        .from("membres")
+        .select("id")
+        .eq("pseudo", pseudo.trim())
+        .maybeSingle();
+
+      if (existingPseudo) {
+        setErrorMsg("Ce pseudo est déjà pris. Veuillez en choisir un autre.");
+        setLoading(false);
+        return;
+      }
+
       // 1. Supabase Auth Signup
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -88,7 +103,8 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
             nom: lastName,
             prenom: firstName,
             telephone: phone,
-            ville: city
+            ville: city,
+            pseudo: pseudo.trim()
           }
         }
       });
@@ -107,6 +123,7 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
               email: email,
               telephone: phone,
               ville: city,
+              pseudo: pseudo.trim(),
               abonnement: "non payé",
               acces_membre: false,
               paiement: "en attente",
@@ -134,6 +151,7 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
           email: email,
           telephone: phone,
           ville: city,
+          pseudo: pseudo.trim(),
           abonnement: "non payé",
           acces_membre: false,
           paiement: "en attente",
@@ -257,6 +275,18 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
                     onChange={(e) => setCity(e.target.value)}
                   />
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Pseudo</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Choisissez un pseudo unique"
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+                  value={pseudo}
+                  onChange={(e) => setPseudo(e.target.value)}
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">

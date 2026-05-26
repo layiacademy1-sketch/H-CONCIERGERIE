@@ -14,6 +14,7 @@ interface MemberDashboardProps {
     email: string;
     telephone: string;
     ville: string;
+    pseudo?: string;
     abonnement: string;
     acces_membre: boolean;
     paiement: string;
@@ -203,7 +204,7 @@ export default function MemberDashboard({ onLogout, memberData }: MemberDashboar
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-black tracking-widest uppercase text-white">
-                Espace Membre : {memberData ? `${memberData.prenom} ${memberData.nom}` : "H-Conciergerie"}
+                {memberData?.pseudo ? `Bienvenue @${memberData.pseudo}` : memberData ? `Espace Membre : ${memberData.prenom} ${memberData.nom}` : "Espace Membre"}
               </span>
               {memberData && !memberData.acces_membre ? (
                 <span className="bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest animate-pulse">
@@ -274,11 +275,11 @@ export default function MemberDashboard({ onLogout, memberData }: MemberDashboar
               </div>
               
               <h3 className="font-serif text-2xl md:text-3xl text-white tracking-wide">
-                Activez votre accès membre
+                {memberData?.pseudo ? `Bienvenue @${memberData.pseudo}` : "Activez votre accès membre"}
               </h3>
               
               <p className="text-slate-300 text-sm md:text-base font-light leading-relaxed max-w-md mx-auto">
-                Votre compte membre est créé avec succès. Pour accéder aux offres privées, activez votre abonnement annuel.
+                Votre compte membre est créé avec succès. Activez votre abonnement annuel pour accéder aux offres privées.
               </p>
               
               <div className="pt-4">
