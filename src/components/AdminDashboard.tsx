@@ -68,6 +68,10 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       setDbMembers(items);
       setLoadingDb(false);
     }, (error) => {
+      // Swallow permission/read errors during logout or if admin role is being cleared
+      if (!auth.currentUser || auth.currentUser.email !== "admin@h-conciergerie.com") {
+        return;
+      }
       import("../firebase").then(({ handleFirestoreError, OperationType }) => {
         handleFirestoreError(error, OperationType.LIST, "members");
       }).catch(() => {

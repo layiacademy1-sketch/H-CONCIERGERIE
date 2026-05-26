@@ -61,34 +61,42 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setFirebaseUser(user);
-      if (user) {
-        const docRef = doc(db, "members", user.uid);
-        const unsubDoc = onSnapshot(docRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setMemberData(data);
-            setIsLoggedIn(true);
-          } else {
-            setMemberData(null);
-            setIsLoggedIn(false);
-          }
-          setFirebaseLoading(false);
-        }, (err) => {
-          console.error("Firestore onSnapshot error:", err);
-          setFirebaseLoading(false);
-        });
-        return () => {
-          unsubDoc();
-        };
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!firebaseUser) {
+      setMemberData(null);
+      setIsLoggedIn(false);
+      setFirebaseLoading(false);
+      return;
+    }
+
+    const docRef = doc(db, "members", firebaseUser.uid);
+    const unsubDoc = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setMemberData(data);
+        setIsLoggedIn(true);
       } else {
         setMemberData(null);
         setIsLoggedIn(false);
-        setFirebaseLoading(false);
       }
+      setFirebaseLoading(false);
+    }, (err) => {
+      // Swallow permission errors during logout or if user is being cleared
+      if (!auth.currentUser) {
+        return;
+      }
+      console.error("Firestore onSnapshot error:", err);
+      setFirebaseLoading(false);
     });
 
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      unsubDoc();
+    };
+  }, [firebaseUser]);
 
   // Set up Admin session on mount
   useEffect(() => {
