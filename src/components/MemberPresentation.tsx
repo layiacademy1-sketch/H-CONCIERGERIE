@@ -210,28 +210,30 @@ export default function MemberPresentation({
         <AnimatePresence>
           {showForm && (
             <div 
-              className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto"
+              className="fixed inset-0 z-[150] overflow-y-auto bg-slate-950/85 backdrop-blur-md"
               onClick={() => setShowForm(false)}
             >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ duration: 0.2 }}
-                className="w-full max-w-2xl my-8 relative z-[151] pointer-events-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <SignUpForm
-                  onSubmit={async (data) => {
-                    await onSignUpSubmit(data);
-                    // Close local modal on successful registration
-                    setShowForm(false);
-                  }}
-                  onCancel={() => setShowForm(false)}
-                  isLoading={isLoading}
-                  error={signUpError}
-                />
-              </motion.div>
+              <div className="flex min-h-screen items-start md:items-center justify-center p-4 md:p-8">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="w-full max-w-2xl relative z-[151] pointer-events-auto my-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <SignUpForm
+                    onSubmit={async (data) => {
+                      await onSignUpSubmit(data);
+                      // Close local modal on successful registration
+                      setShowForm(false);
+                    }}
+                    onCancel={() => setShowForm(false)}
+                    isLoading={isLoading}
+                    error={signUpError}
+                  />
+                </motion.div>
+              </div>
             </div>
           )}
         </AnimatePresence>
