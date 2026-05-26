@@ -12,6 +12,7 @@ interface MemberPresentationProps {
   onSignUpSubmit: (formData: any) => Promise<void>;
   isLoading: boolean;
   signUpError: string;
+  onOpenSignUpModal?: () => void;
 }
 
 export default function MemberPresentation({ 
@@ -19,7 +20,8 @@ export default function MemberPresentation({
   onSubmitMember, 
   onSignUpSubmit, 
   isLoading, 
-  signUpError 
+  signUpError,
+  onOpenSignUpModal
 }: MemberPresentationProps) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
@@ -154,7 +156,13 @@ export default function MemberPresentation({
               
               <div className="pt-2">
                 <button 
-                  onClick={() => setShowForm(true)}
+                  onClick={() => {
+                    if (onOpenSignUpModal) {
+                      onOpenSignUpModal();
+                    } else {
+                      setShowForm(true);
+                    }
+                  }}
                   className="w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 cursor-pointer"
                 >
                   DEVENIR MEMBRE
