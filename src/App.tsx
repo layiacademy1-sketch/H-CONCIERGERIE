@@ -247,7 +247,7 @@ export default function App() {
       );
       const user = userCredential.user;
 
-      // 2. Save member document in firestore with "membre_actif" status (payment confirmed)
+      // 2. Save member document in firestore with "en_attente_paiement" status
       const memberDocRef = doc(db, "members", user.uid);
       const memberPayload = {
         uid: user.uid,
@@ -257,11 +257,11 @@ export default function App() {
         phone: formData.phone,
         email: formData.email,
         pseudo: formData.pseudo,
-        status: "membre_actif",
+        status: "en_attente_paiement",
         date_joined: new Date().toLocaleDateString("fr-FR"),
-        date_paiement: new Date().toLocaleDateString("fr-FR"),
-        montant_paye: 1,
-        stripe_session_id: "card_direct_" + Date.now().toString(),
+        date_paiement: "",
+        montant_paye: 0,
+        stripe_session_id: "",
         abonnement: "annuel"
       };
 
@@ -290,15 +290,14 @@ export default function App() {
       // Save locally to keep Admin synced too
       handleRegisterMember({
         name: `${formData.firstName} ${formData.lastName}`,
-        city: "En ligne / Direct",
+        city: "Attente Paiement",
         job: formData.pseudo,
         phone: formData.phone,
         email: formData.email,
       });
 
-      // 3. Switch view directly to the Member Dashboard (Espace Membre)
-      setView("espace-membre");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      // 3. Immediately redirect to the Stripe checkout link
+      window.location.href = "https://buy.stripe.com/3cIeVe9P715h9PLc7T7Re09";
     } catch (err: any) {
       console.error("SignUp error:", err);
       let errMsg = "Une erreur est survenue pendant l'inscription.";
