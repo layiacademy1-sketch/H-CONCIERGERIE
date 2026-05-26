@@ -13,6 +13,7 @@ import WhatsAppButton from "./components/WhatsAppButton";
 import { motion, useScroll, useSpring, AnimatePresence } from "motion/react";
 import React, { useState, useEffect } from "react";
 import { Lock, X, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { supabase, isSupabaseConfigured } from "./lib/supabase";
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -29,6 +30,7 @@ export default function App() {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [registeredMembers, setRegisteredMembers] = useState<Array<{ name: string; city: string; job: string }>>([]);
+  const [memberData, setMemberData] = useState<any>(null);
 
   // Login Form States
   const [pseudo, setPseudo] = useState("");
@@ -47,6 +49,12 @@ export default function App() {
     const sessionAuth = localStorage.getItem("h_session_auth");
     if (sessionAuth === "true") {
       setIsLoggedIn(true);
+      const savedMock = localStorage.getItem("h_supabase_session_mock");
+      if (savedMock) {
+        try {
+          setMemberData(JSON.parse(savedMock));
+        } catch (e) {}
+      }
     }
 
     const adminSessionAuth = localStorage.getItem("h_admin_auth");
@@ -61,6 +69,38 @@ export default function App() {
       } catch (e) {
         console.error(e);
       }
+    }
+
+    // Load active Supabase session if configured
+    if (isSupabaseConfigured()) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          setIsLoggedIn(true);
+          supabase
+            .from("membres")
+            .select("*")
+            .eq("id", session.user.id)
+            .single()
+            .then(({ data }) => {
+              if (data) {
+                setMemberData(data);
+              } else {
+                setMemberData({
+                  id: session.user.id,
+                  nom: session.user.user_metadata?.nom || "",
+                  prenom: session.user.user_metadata?.prenom || "",
+                  email: session.user.email,
+                  telephone: session.user.user_metadata?.telephone || "",
+                  ville: session.user.user_metadata?.ville || "",
+                  abonnement: "non payé",
+                  acces_membre: false,
+                  paiement: "en attente",
+                  date_inscription: new Date().toLocaleDateString("fr-FR")
+                });
+              }
+            });
+        }
+      });
     }
   }, []);
 
@@ -127,25 +167,102 @@ export default function App() {
   };
 
   // Member Login handler
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError("");
+
     if (pseudo.trim() === "membre" && password === "h2026") {
       setIsLoggedIn(true);
+      setMemberData(null); // legacy VIP active login bypasses Supabase rules
       setShowLoginModal(false);
       setPseudo("");
       setPassword("");
-      setLoginError("");
       localStorage.setItem("h_session_auth", "true");
       setView("espace-membre");
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      setLoginError("Identifiants incorrects. Pseudo : membre / MDP : h2026");
+      return;
+    }
+
+    // Try simulated accounts if Supabase is not configured yet
+    if (!isSupabaseConfigured()) {
+      const savedMock = localStorage.getItem("h_supabase_session_mock");
+      if (savedMock) {
+        try {
+          const parsed = JSON.parse(savedMock);
+          if (parsed.email === pseudo.trim()) {
+            setMemberData(parsed);
+            setIsLoggedIn(true);
+            setShowLoginModal(false);
+            setPseudo("");
+            setPassword("");
+            localStorage.setItem("h_session_auth", "true");
+            setView("espace-membre");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            return;
+          }
+        } catch (err) {}
+      }
+      setLoginError("Identifiants de démonstration : pseudo 'membre' et mot de passe 'h2026'.");
+      return;
+    }
+
+    // Try Supabase Auth
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: pseudo.trim(),
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data?.user) {
+        // Fetch from table `membres`
+        const { data: dbData } = await supabase
+          .from("membres")
+          .select("*")
+          .eq("id", data.user.id)
+          .single();
+
+        if (dbData) {
+          setMemberData(dbData);
+        } else {
+          setMemberData({
+            id: data.user.id,
+            nom: data.user.user_metadata?.nom || "",
+            prenom: data.user.user_metadata?.prenom || "",
+            email: data.user.email,
+            telephone: data.user.user_metadata?.telephone || "",
+            ville: data.user.user_metadata?.ville || "",
+            abonnement: "non payé",
+            acces_membre: false,
+            paiement: "en attente",
+            date_inscription: new Date().toLocaleDateString("fr-FR")
+          });
+        }
+
+        setIsLoggedIn(true);
+        setShowLoginModal(false);
+        setPseudo("");
+        setPassword("");
+        localStorage.setItem("h_session_auth", "true");
+        setView("espace-membre");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } catch (err: any) {
+      setLoginError(err.message || "Identifiants incorrects.");
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsLoggedIn(false);
+    setMemberData(null);
     localStorage.removeItem("h_session_auth");
+    localStorage.removeItem("h_supabase_session_mock");
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {}
+    }
     setView("home");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -264,6 +381,12 @@ export default function App() {
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 onSubmitMember={handleRegisterMember}
+                onSignUpSuccess={(member) => {
+                  setIsLoggedIn(true);
+                  setMemberData(member);
+                  setView("espace-membre");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
               />
             </motion.div>
           ) : view === "espace-membre" ? (
@@ -275,7 +398,7 @@ export default function App() {
               transition={{ duration: 0.5 }}
             >
               {isLoggedIn ? (
-                <MemberDashboard onLogout={handleLogout} />
+                <MemberDashboard onLogout={handleLogout} memberData={memberData} />
               ) : (
                 <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6 py-28 relative overflow-hidden">
                   {/* Luxuriously styled background decorations */}

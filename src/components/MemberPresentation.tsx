@@ -1,53 +1,151 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { 
-  CheckCircle, ArrowLeft, Star, Heart, Award, 
-  MapPin, Notebook as Journal, ShieldCheck, Mail, Send, Sparkles, Zap, Lock, Compass, Calendar, Phone, CreditCard
+  ArrowLeft, Star, Heart, Award, 
+  MapPin, Notebook as Journal, ShieldCheck, Mail, Send, Sparkles, Zap, Lock, Compass, Calendar, Phone, CreditCard,
+  Eye, EyeOff
 } from "lucide-react";
+import { supabase, isSupabaseConfigured } from "../lib/supabase";
 
 interface MemberPresentationProps {
   onBack: () => void;
   onSubmitMember: (member: { name: string; city: string; job: string; phone?: string; email?: string }) => void;
+  onSignUpSuccess: (member: any) => void;
 }
 
-export default function MemberPresentation({ onBack, onSubmitMember }: MemberPresentationProps) {
+export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuccess }: MemberPresentationProps) {
   const [showForm, setShowForm] = useState(false);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  
+  // Sign up form fields
+  const [lastName, setLastName] = useState("");
+  const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
-  const [job, setJob] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !city.trim() || !job.trim() || !phone.trim() || !email.trim()) {
-      alert("Veuillez remplir tous les champs.");
+    setErrorMsg("");
+    setLoading(true);
+
+    if (!lastName || !firstName || !email || !phone || !city || !password) {
+      setErrorMsg("Veuillez remplir tous les champs.");
+      setLoading(false);
       return;
     }
 
-    // Call callback to store member locally
-    onSubmitMember({ 
-      name: name.trim(), 
-      city: city.trim(), 
-      job: job.trim(),
-      phone: phone.trim(),
-      email: email.trim()
-    });
+    if (password.length < 6) {
+      setErrorMsg("Le mot de passe doit contenir au moins 6 caractères.");
+      setLoading(false);
+      return;
+    }
 
-    // Format WhatsApp message
-    const formattedMsg = `Bonjour, je souhaite devenir membre.
-    
-👤 Nom Complet : ${name.trim()}
-📞 Téléphone : ${phone.trim()}
-✉️ Email : ${email.trim()}
-📍 Ville : ${city.trim()}
-💼 Métier / Secteur d'activité : ${job.trim()}`;
+    try {
+      if (!isSupabaseConfigured()) {
+        console.warn("Supabase is not configured yet. Simulating registration fallback.");
+        
+        // Simuler le compte local
+        const mockUid = "mock-" + Date.now();
+        const mockMember = {
+          id: mockUid,
+          nom: lastName,
+          prenom: firstName,
+          email: email,
+          telephone: phone,
+          ville: city,
+          abonnement: "non payé",
+          acces_membre: false,
+          paiement: "en attente",
+          date_inscription: new Date().toLocaleDateString('fr-FR')
+        };
+        
+        localStorage.setItem("h_supabase_session_mock", JSON.stringify(mockMember));
+        localStorage.setItem("h_session_auth", "true");
+        
+        // Simuler onSubmitMember original pour mettre à jour les listes locales
+        onSubmitMember({
+          name: `${firstName} ${lastName}`,
+          city,
+          job: "Membre Club",
+          phone,
+          email
+        });
 
-    const encodedMsg = encodeURIComponent(formattedMsg);
-    const whatsappUrl = `https://wa.me/33756832263?text=${encodedMsg}`; // standard contact whatsapp
+        onSignUpSuccess(mockMember);
+        return;
+      }
 
-    // Open WhatsApp
-    window.open(whatsappUrl, "_blank");
+      // 1. Supabase Auth Signup
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            nom: lastName,
+            prenom: firstName,
+            telephone: phone,
+            ville: city
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.user) {
+        // 2 & 3. Enregistrer dans la table Supabase `membres`
+        const { error: insertError } = await supabase
+          .from("membres")
+          .insert([
+            {
+              id: data.user.id,
+              nom: lastName,
+              prenom: firstName,
+              email: email,
+              telephone: phone,
+              ville: city,
+              abonnement: "non payé",
+              acces_membre: false,
+              paiement: "en attente",
+              date_inscription: new Date().toISOString()
+            }
+          ]);
+
+        if (insertError) {
+          console.error("Erreur de sauvegarde de la table membres:", insertError);
+        }
+
+        // Simuler onSubmitMember original pour mettre à jour les listes locales
+        onSubmitMember({
+          name: `${firstName} ${lastName}`,
+          city,
+          job: "Membre Club",
+          phone,
+          email
+        });
+
+        onSignUpSuccess({
+          id: data.user.id,
+          nom: lastName,
+          prenom: firstName,
+          email: email,
+          telephone: phone,
+          ville: city,
+          abonnement: "non payé",
+          acces_membre: false,
+          paiement: "en attente",
+          date_inscription: new Date().toLocaleDateString('fr-FR')
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || "Une erreur s'est produite.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const advantagesList = [
@@ -59,6 +157,149 @@ export default function MemberPresentation({ onBack, onSubmitMember }: MemberPre
     { title: "Obtenir des Réductions Fortes", desc: "Jusqu’à -80 % de réduction chez nos hôtels et plein d’autres avantages." },
     { title: "Bons Plans Premium", desc: "Chaque semaine, une curation minutieuse d'adresses secrètes et de services de luxe." }
   ];
+
+  if (showForm) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white selection:bg-gold selection:text-slate-950 pt-32 pb-24 relative overflow-hidden">
+        {/* Background gradients */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gold/10 rounded-full filter blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-blue-900/10 rounded-full filter blur-[150px] pointer-events-none" />
+
+        <div className="container mx-auto px-6 max-w-xl relative z-10">
+          {/* Back Button */}
+          <button 
+            onClick={() => setShowForm(false)}
+            className="group mb-10 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#D4AF37] hover:text-white transition-colors cursor-pointer"
+          >
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+            Retour aux Tarifs
+          </button>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-900/90 backdrop-blur-md border border-gold/30 rounded-3xl p-8 md:p-10 shadow-3xl relative"
+          >
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-gold/10 border border-gold/20 rounded-full text-[10px] text-gold font-bold tracking-[0.2em] uppercase mb-4">
+                <Sparkles size={11} /> Inscription Club Privé
+              </div>
+              <h2 className="text-2xl md:text-3xl font-serif text-white tracking-wide">Devenir Membre</h2>
+              <p className="text-[11px] text-slate-400 font-light mt-2 leading-relaxed">
+                Remplissez les informations ci-dessous pour créer votre pass d'accès.
+              </p>
+            </div>
+
+            {errorMsg && (
+              <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 font-bold font-mono text-center">
+                {errorMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleSignUpSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Prénom</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="Prénom"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Nom</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="Nom"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Adresse Email</label>
+                <input 
+                  type="email" 
+                  required
+                  placeholder="exemple@email.com"
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Téléphone</label>
+                  <input 
+                    type="tel" 
+                    required
+                    placeholder="+33 6 00 00 00 00"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Ville</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="ex: Paris, Dakar, Moroni"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Mot de passe</label>
+                <div className="relative">
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="•••••••• (6 caractères min)"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl pl-4 pr-11 py-3 text-xs text-white outline-none transition-colors"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-gold hover:bg-gold-light text-slate-950 font-black tracking-widest uppercase text-xs rounded-xl py-4 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {loading ? "Création du compte..." : "Valider mon inscription"}
+                </button>
+              </div>
+            </form>
+
+            <div className="mt-8 pt-6 border-t border-white/5 flex gap-2 items-center justify-center text-[10px] text-slate-500 font-medium">
+              <ShieldCheck size={14} className="text-gold" />
+              Sécurité SSL - H-CONCIERGERIE
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-gold selection:text-slate-950 pt-32 pb-24 relative overflow-hidden">
@@ -77,7 +318,7 @@ export default function MemberPresentation({ onBack, onSubmitMember }: MemberPre
           Retour à l'accueil
         </button>
 
-        {/* TOP HERO PRENTATION */}
+        {/* TOP HERO PRESENTATION */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gold/10 border border-gold/20 rounded-full text-xs text-gold font-bold tracking-[0.2em] uppercase mb-4 animate-pulse">
             <Sparkles size={12} /> Club Privé H-Conciergerie
@@ -124,7 +365,7 @@ export default function MemberPresentation({ onBack, onSubmitMember }: MemberPre
                 </div>
                 <div className="flex items-start gap-2.5 text-[13px] text-slate-300 leading-relaxed">
                   <span className="text-gold font-black shrink-0 mt-0.5">•</span>
-                  <span>Ventes privées d'articles de luxe à des prix imbattables .</span>
+                  <span>Ventes privées d'articles de luxe à des prix imbattables.</span>
                 </div>
               </div>
             </div>
@@ -143,23 +384,19 @@ export default function MemberPresentation({ onBack, onSubmitMember }: MemberPre
               </div>
               
               <div className="pt-2">
-                <a 
-                  href="https://buy.stripe.com/bJe5kD6htcmW5fR9GT7ss01"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-center w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 cursor-pointer"
+                <button 
+                  onClick={() => setShowForm(true)}
+                  className="w-full bg-gold hover:bg-gold-light text-slate-950 font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 cursor-pointer"
                 >
                   DEVENIR MEMBRE
-                </a>
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* INTERVENTIONS / AVANTAGES DU PROGRAMME */}
+        {/* PERKS / BENEFITS */}
         <div className="mb-24">
-          
-          {/* List of Perks */}
           <div className="space-y-8">
             <h2 className="text-3xl font-serif text-white tracking-widest uppercase text-center mb-4">
               Pourquoi nous rejoindre ?
@@ -181,10 +418,9 @@ export default function MemberPresentation({ onBack, onSubmitMember }: MemberPre
               ))}
             </div>
           </div>
-
         </div>
 
-        {/* BOTTOM ACCREDITATION BANNER */}
+        {/* BOTTOM CONTACT BANNER */}
         <div className="bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div>
             <h3 className="font-serif text-xl mb-1">D'autres questions sur l'adhésion ?</h3>
