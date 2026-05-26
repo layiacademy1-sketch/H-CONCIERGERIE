@@ -9,8 +9,14 @@ import { supabase, isSupabaseConfigured } from "../lib/supabase";
 interface Member {
   id: string;
   name: string;
+  prenom?: string;
+  nom?: string;
   phone: string;
   email: string;
+  city?: string;
+  pseudo?: string;
+  abonnement?: string;
+  paiement?: string;
   payment_status: string;
   access_status: string;
   subscription_expires_at?: string;
@@ -43,8 +49,14 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
         {
           id: "sim-1",
           name: "Jean-Marc Devereaux",
+          prenom: "Jean-Marc",
+          nom: "Devereaux",
           email: "jean.marc@example.com",
           phone: "0767890987",
+          city: "Paris",
+          pseudo: "JM75",
+          abonnement: "actif",
+          paiement: "payé",
           payment_status: "paid",
           access_status: "active",
           subscription_expires_at: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString(),
@@ -53,8 +65,14 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
         {
           id: "sim-2",
           name: "Moussa Al-Amir",
+          prenom: "Moussa",
+          nom: "Al-Amir",
           email: "moussa.alamir@example.com",
           phone: "0612345678",
+          city: "Lyon",
+          pseudo: "Mouss99",
+          abonnement: "non payé",
+          paiement: "en attente",
           payment_status: "pending",
           access_status: "pending",
           subscription_expires_at: undefined,
@@ -79,16 +97,26 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       }
 
       if (data) {
-        setMembers(data.map((item: any) => ({
-          id: item.auth_user_id || item.id,
-          name: item.full_name || "Nom non spécifié",
-          email: item.email || "Email non renseigné",
-          phone: item.phone || "Non renseigné",
-          payment_status: item.payment_status || "pending",
-          access_status: item.access_status || "pending",
-          subscription_expires_at: item.subscription_expires_at,
-          created_at: item.created_at
-        })));
+        const normalized = data.map((item: any) => {
+          const namePart = item.full_name || `${item.prenom || ""} ${item.nom || ""}`.trim() || item.name || "Nom non spécifié";
+          return {
+            id: item.auth_user_id || item.id,
+            name: namePart,
+            prenom: item.prenom || item.first_name || "",
+            nom: item.nom || item.last_name || "",
+            email: item.email || "Email non renseigné",
+            phone: item.phone || item.telephone || "Non renseigné",
+            city: item.city || item.ville || "",
+            pseudo: item.pseudo || "",
+            abonnement: item.abonnement || (item.access_status === "active" ? "actif" : "non payé"),
+            paiement: item.paiement || (item.payment_status === "paid" ? "payé" : "en attente"),
+            payment_status: item.payment_status || "pending",
+            access_status: item.access_status || "pending",
+            subscription_expires_at: item.subscription_expires_at,
+            created_at: item.created_at
+          };
+        });
+        setMembers(normalized);
       }
     } catch (err: any) {
       console.error(err);
@@ -100,6 +128,25 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
 
   useEffect(() => {
     fetchMembers();
+
+    if (isSupabaseConfigured()) {
+      console.log("Setting up Supabase real-time subscription for members table...");
+      const channel = supabase
+        .channel("members-realtime")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "members" },
+          (payload) => {
+            console.log("Real-time change detected inside AdminDashboard.tsx:", payload);
+            fetchMembers();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [additionalMembers]);
 
   const handleVerifyPhone = () => {
@@ -148,18 +195,76 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     }
   };
 
-  const handleToggleStatus = async (auth_user_id: string, currentStatus: string) => {
+  const safeUpdateMember = async (auth_user_id: string, initialPayload: any) => {
+    let payload = { ...initialPayload };
+    let attempts = 0;
+    while (attempts < 15) {
+      attempts++;
+      try {
+        const { error } = await supabase
+          .from("members")
+          .update(payload)
+          .eq("auth_user_id", auth_user_id);
+
+        if (!error) {
+          return null;
+        }
+
+        console.warn(`Update attempt ${attempts} failed:`, error.message);
+        const msg = error.message || "";
+        let columnMatch = msg.match(/column "([^"]+)"/i);
+        if (!columnMatch) {
+          columnMatch = msg.match(/has no column named "([^"]+)"/i);
+        }
+        if (!columnMatch) {
+          columnMatch = msg.match(/column_name "([^"]+)"/i);
+        }
+
+        if (columnMatch && columnMatch[1]) {
+          const columnName = columnMatch[1];
+          console.log(`Removing non-existent column '${columnName}' from update payload and retrying...`);
+          delete payload[columnName];
+        } else {
+          return error;
+        }
+      } catch (e: any) {
+        console.error("Exception in safeUpdateMember:", e);
+        return e;
+      }
+    }
+    return new Error("Too many retries stripping column updates");
+  };
+
+  const handleChangeMemberStatus = async (auth_user_id: string, targetStatus: "pending" | "active" | "expired") => {
+    const isAct = targetStatus === "active";
+    const isPending = targetStatus === "pending";
+    const isExpired = targetStatus === "expired";
+
+    const expDate = new Date();
+    if (isAct) {
+      expDate.setFullYear(expDate.getFullYear() + 1);
+    } else if (isExpired) {
+      expDate.setDate(expDate.getDate() - 2); // Already expired
+    }
+
+    const payload: any = {
+      access_status: targetStatus,
+      payment_status: isAct ? "paid" : (isPending ? "pending" : "paid"),
+      subscription_expires_at: isPending ? null : expDate.toISOString(),
+      
+      // Also write french equivalents to ensure compatibility across client-side column reads
+      acces_membre: isAct,
+      paiement: isAct ? "payé" : (isPending ? "en attente" : "payé"),
+      abonnement: isAct ? "actif" : (isPending ? "non payé" : "expiré")
+    };
+
     if (!isSupabaseConfigured()) {
       // Simulation update
       setMembers(prev => prev.map(m => {
         if (m.id === auth_user_id) {
-          const newStatus = currentStatus === "active" ? "pending" : "active";
-          const isAct = newStatus === "active";
           return {
             ...m,
-            access_status: newStatus,
-            payment_status: isAct ? "paid" : "pending",
-            subscription_expires_at: isAct ? new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString() : undefined
+            ...payload
           };
         }
         return m;
@@ -167,40 +272,11 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       return;
     }
 
-    const newStatus = currentStatus === "active" ? "pending" : "active";
-    const isAct = newStatus === "active";
-    const newPaymentStatus = isAct ? "paid" : "pending";
-    const expiresAt = isAct ? new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString() : null;
-
     try {
-      // Update custom table `members`
-      const { error: err1 } = await supabase
-        .from("members")
-        .update({
-          access_status: newStatus,
-          payment_status: newPaymentStatus,
-          subscription_expires_at: expiresAt
-        })
-        .eq("auth_user_id", auth_user_id);
-
-      if (err1) {
-        console.warn("Could not update members table directly:", err1.message);
+      const error = await safeUpdateMember(auth_user_id, payload);
+      if (error) {
+        console.error("Failed to update status in public.members:", error.message);
       }
-
-      // Best effort update table `membres` to keep in sync
-      const { error: err2 } = await supabase
-        .from("membres")
-        .update({
-          acces_membre: isAct,
-          abonnement: isAct ? "payé" : "non payé",
-          paiement: isAct ? "effectué" : "en attente"
-        })
-        .eq("id", auth_user_id);
-
-      if (err2) {
-        console.warn("Could not update 'membres' table:", err2.message);
-      }
-
       await fetchMembers();
     } catch (err) {
       console.error("Failed to update member status", err);
@@ -452,13 +528,19 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                       <div>
                         <div className="flex justify-between items-start mb-4">
                           <div>
-                            {member.access_status === "pending" ? (
-                              <span className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1 text-[10px] text-amber-500 font-black tracking-widest uppercase inline-block animate-pulse">
+                            {member.access_status === "pending" && (
+                              <span className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1 text-[10px] text-amber-500 font-extrabold tracking-widest uppercase inline-block animate-pulse">
                                 En attente de validation
                               </span>
-                            ) : (
-                              <span className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-2.5 py-1 text-[10px] text-emerald-400 font-black tracking-widest uppercase inline-block">
-                                Accès Actif
+                            )}
+                            {member.access_status === "active" && (
+                              <span className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-2.5 py-1 text-[10px] text-emerald-400 font-extrabold tracking-widest uppercase inline-block">
+                                Activé
+                              </span>
+                            )}
+                            {member.access_status === "expired" && (
+                              <span className="bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1 text-[10px] text-red-500 font-extrabold tracking-widest uppercase inline-block">
+                                Expiré
                               </span>
                             )}
                           </div>
@@ -472,11 +554,12 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                           </button>
                         </div>
 
-                        <h4 className="text-lg font-serif text-white mb-3 tracking-wide group-hover:text-[#D4AF37] transition-colors">
-                          {member.name}
+                        <h4 className="text-lg font-serif text-white mb-3 tracking-wide group-hover:text-[#D4AF37] transition-colors flex items-center gap-1.5 flex-wrap">
+                          <span>{member.prenom || ""} {member.nom || ""}</span>
+                          {member.pseudo && <span className="text-xs text-slate-400">({member.pseudo})</span>}
                         </h4>
 
-                        <div className="space-y-2.5 text-xs">
+                        <div className="space-y-2.5 text-xs mb-4">
                           <div className="flex items-center gap-2 text-slate-300">
                             <Mail size={12} className="text-[#D4AF37] shrink-0" />
                             <span className="truncate text-slate-300 font-light" title={member.email}>{member.email}</span>
@@ -487,36 +570,64 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                             <span className="font-mono text-slate-300 font-light">{member.phone}</span>
                           </div>
 
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <Calendar size={12} className="text-slate-500 shrink-0" />
-                            <span className="text-[10px] text-slate-400 font-light">Créé le : <span className="font-mono text-slate-300">{formatDate(member.created_at)}</span></span>
+                          {member.city && (
+                            <div className="flex items-center gap-2 text-slate-300">
+                              <MapPin size={12} className="text-[#D4AF37] shrink-0" />
+                              <span className="text-slate-300 font-light">{member.city}</span>
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                            <div className="bg-slate-950/40 p-2 rounded-xl border border-white/5 space-y-0.5">
+                              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Abonnement</span>
+                              <span className={`text-[10px] font-black uppercase ${member.abonnement === "actif" ? "text-emerald-400" : "text-amber-500"}`}>
+                                {member.abonnement || "Aucun"}
+                              </span>
+                            </div>
+                            <div className="bg-slate-950/40 p-2 rounded-xl border border-white/5 space-y-0.5">
+                              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Paiement</span>
+                              <span className={`text-[10px] font-black uppercase ${member.paiement === "payé" ? "text-emerald-400" : "text-amber-500"}`}>
+                                {member.paiement || "Non payé"}
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="flex items-center gap-2 text-slate-400">
-                            <Clock size={12} className="text-slate-400 shrink-0" />
-                            <span className="text-[10px] text-slate-400 font-light">Expiration : <span className="font-mono text-slate-300">{formatDate(member.subscription_expires_at)}</span></span>
+                          <div className="flex items-center gap-2 text-slate-400 pt-1.5">
+                            <Calendar size={12} className="text-slate-500 shrink-0" />
+                            <span className="text-[10px] text-slate-400 font-light">Inscrit le : <span className="font-mono text-slate-300">{formatDate(member.created_at)}</span></span>
                           </div>
+
+                          {member.subscription_expires_at && (
+                            <div className="flex items-center gap-2 text-slate-400">
+                              <Clock size={12} className="text-slate-500 shrink-0" />
+                              <span className="text-[10px] text-slate-400 font-light">Expire le : <span className="font-mono text-slate-300">{formatDate(member.subscription_expires_at)}</span></span>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      <div className="mt-5 border-t border-white/5 pt-4 flex justify-between items-center gap-2">
-                        <button
-                          onClick={() => handleToggleStatus(member.id, member.access_status)}
-                          className={`text-[10px] font-extrabold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                            member.access_status === "pending"
-                              ? "bg-emerald-500 text-slate-950 hover:bg-emerald-400"
-                              : "bg-amber-500/10 hover:bg-amber-500 text-amber-500 hover:text-slate-950 border border-amber-500/40"
-                          }`}
-                        >
-                          {member.access_status === "pending" ? "Valider le membre" : "Mettre en attente"}
-                        </button>
+                      <div className="mt-5 border-t border-white/5 pt-4 flex flex-col gap-3">
+                        <div className="flex flex-col gap-1 w-full">
+                          <label className="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Modifier le statut</label>
+                          <select
+                            value={member.access_status}
+                            onChange={(e) => handleChangeMemberStatus(member.id, e.target.value as "pending" | "active" | "expired")}
+                            className="bg-slate-950 border border-white/10 text-xs text-white px-3 py-2 rounded-lg outline-none focus:border-[#D4AF37] transition-all"
+                          >
+                            <option value="pending">En attente (Validation)</option>
+                            <option value="active">Activé</option>
+                            <option value="expired">Expiré</option>
+                          </select>
+                        </div>
 
-                        <button 
-                          onClick={() => window.open(`https://wa.me/33756832263?text=Bonjour,%20en%20tant%20qu'administrateur%20H-Conciergerie%20je%20souhaite%20contacter%20le%20membre%20${encodeURIComponent(member.name)}.`)}
-                          className="bg-white/5 hover:bg-white text-slate-300 hover:text-slate-950 text-[10px] font-extrabold px-3 py-1.5 rounded-lg transition-all"
-                        >
-                          Contacter
-                        </button>
+                        <div className="flex justify-end pt-1">
+                          <button 
+                            onClick={() => window.open(`https://wa.me/33756832263?text=Bonjour,%20en%20tant%20qu'administrateur%20H-Conciergerie%20je%20souhaite%20contacter%20le%20membre%20${encodeURIComponent(member.prenom || '')}%20${encodeURIComponent(member.nom || '')}.`)}
+                            className="bg-white/5 hover:bg-white text-slate-300 hover:text-slate-950 text-[10px] font-extrabold px-3 py-2 rounded-lg transition-all"
+                          >
+                            Contacter via WhatsApp
+                          </button>
+                        </div>
                       </div>
                     </motion.div>
                   ))}

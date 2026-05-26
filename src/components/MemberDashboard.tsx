@@ -349,7 +349,7 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
 
         {/* CONTAINER WORKSPACE FOR SELECTED MENU WITH ANIME-PRESENCE */}
         <div className="lg:col-span-9">
-          {memberData && !memberData.acces_membre ? (
+          {memberData && (!memberData.acces_membre || (memberData as any).access_status !== "active") ? (
             <div className="bg-slate-900/90 border border-gold/30 rounded-3xl p-5 sm:p-8 text-center max-w-md mx-auto space-y-6 shadow-2xl relative overflow-hidden py-8 sm:py-10">
               <div className="absolute inset-0 bg-gradient-to-tr from-gold/5 via-transparent to-transparent pointer-events-none" />
               
@@ -357,12 +357,22 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
                 <Lock size={22} />
               </div>
               
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <h3 className="font-serif text-xl sm:text-2xl text-white tracking-wide">
-                  {memberData?.pseudo ? `Bienvenue @${memberData.pseudo}` : "Activez votre accès membre"}
+                  {(memberData as any).access_status === "expired" ? "Votre abonnement a expiré" : "Accès en attente"}
                 </h3>
-                <p className="text-slate-400 text-xs leading-relaxed max-w-sm mx-auto font-light">
-                  Votre compte membre a été créé avec succès. Pour débloquer la totalité de vos privilèges VIP (Offres Flash, Ventes Privées et Événements), veuillez finaliser votre souscription annuelle.
+                
+                {/* Specific user-requested sentences */}
+                <div className="text-amber-500 font-bold text-xs bg-amber-500/10 border border-amber-500/20 py-3 px-4 rounded-xl leading-relaxed text-center">
+                  {(memberData as any).access_status === "expired"
+                    ? "Votre abonnement a expiré, veuillez renouveler"
+                    : "Votre accès est en attente de validation"}
+                </div>
+
+                <p className="text-slate-400 text-[11px] leading-relaxed max-w-sm mx-auto font-light pt-2">
+                  {(memberData as any).access_status === "expired"
+                    ? "Votre accès membre n'est plus actif. Veuillez procéder au renouvellement annuel pour continuer à profiter de toutes les promotions club."
+                    : "Votre compte membre a été enregistré dans public.members avec le statut \"pending\". Notre équipe administrative examine votre demande pour validation."}
                 </p>
               </div>
               
@@ -370,29 +380,29 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
               <div className="bg-slate-950/80 border border-gold/20 p-4 rounded-xl space-y-3 text-center">
                 <div className="space-y-0.5">
                   <span className="text-[9px] uppercase font-bold tracking-widest text-gold text-center block">Réglement Sécurisé</span>
-                  <p className="text-[11px] text-slate-400 font-light">Souscription annuelle de 1,00 €</p>
+                  <p className="text-[11px] text-slate-400 font-light font-mono">Souscription annuelle de 1,00 €</p>
                 </div>
 
                 <a 
                   href="https://buy.stripe.com/3cIeVe9P715h9PLc7T7Re09"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-gradient-to-r from-gold via-yellow-400 to-amber-500 hover:from-yellow-400 hover:to-gold text-slate-950 font-bold tracking-widest uppercase text-[10px] rounded-lg py-3 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_15px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-gold via-yellow-400 to-amber-500 hover:from-yellow-400 hover:to-gold text-slate-950 font-bold tracking-widest uppercase text-[10px] rounded-lg py-3 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_15px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2 animate-pulse"
                 >
                   <CreditCard size={13} className="shrink-0" />
-                  <span>Cliquer ici pour payer (1 €)</span>
+                  <span>Cliquer ici pour renouveler / cotiser (1 €)</span>
                 </a>
 
                 <div className="flex gap-2 items-center justify-center text-[8px] text-slate-500 font-medium pt-1">
                   <ShieldCheck size={11} className="text-gold" />
-                  <span>Stripe de bout en bout crypté SSL • Apple Pay & Cartes</span>
+                  <span>Stripe sécurisé crypté SSL • Apple Pay & Cartes</span>
                 </div>
               </div>
 
               {/* NEXT STEP WARNING */}
               <div className="pt-3 border-t border-white/5 text-center">
-                <p className="text-[11px] text-slate-300 font-light leading-relaxed">
-                  Une fois le règlement Stripe effectué, votre espace membre sera validé dans un délai de moins de 24h.
+                <p className="text-[10px] text-slate-400 font-light leading-relaxed">
+                  Des questions ? Contactez directement l'administration ou synchronisez votre compte une fois validé.
                 </p>
               </div>
 

@@ -82,7 +82,7 @@ export default function App() {
     }
   }, []);
 
-  // Synchronise member state to keep data from both 'membres' and 'members' tables completely up-to-date
+  // Synchronise member state to keep data from 'members' table completely up-to-date
   const refreshMemberData = async () => {
     if (!isSupabaseConfigured()) return;
     try {
@@ -91,59 +91,44 @@ export default function App() {
 
       const userId = session.user.id;
 
-      // 1. Fetch from 'membres' table
-      const { data: dbMembres, error: membresErr } = await supabase
-        .from("membres")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
-
-      // 2. Fetch from 'members' table
+      // Fetch from 'members' table only
       const { data: dbMembers, error: membersErr } = await supabase
         .from("members")
         .select("*")
         .eq("auth_user_id", userId)
         .maybeSingle();
 
-      if (membresErr) {
-        console.warn("Table 'membres' not queryable during sync:", membresErr.message);
-      }
       if (membersErr) {
         console.warn("Table 'members' not queryable during sync:", membersErr.message);
       }
 
-      // Check for active access and payment from both systems
       const isPaid = 
         dbMembers?.payment_status === "paid" || 
-        dbMembres?.abonnement === "payé" || 
-        dbMembres?.paiement === "payé" ||
-        dbMembres?.paiement === "effectué" ||
-        dbMembres?.acces_membre === true;
+        dbMembers?.paiement === "payé";
 
       const isAuthorized = 
         dbMembers?.access_status === "active" || 
-        dbMembres?.acces_membre === true ||
-        isPaid;
+        dbMembers?.acces_membre === true;
 
       const merged = {
         id: userId,
-        nom: dbMembres?.nom || session.user.user_metadata?.nom || "",
-        prenom: dbMembres?.prenom || session.user.user_metadata?.prenom || "",
-        email: dbMembres?.email || session.user.email,
-        telephone: dbMembres?.telephone || session.user.user_metadata?.telephone || "",
-        ville: dbMembres?.ville || session.user.user_metadata?.ville || "",
-        pseudo: dbMembres?.pseudo || session.user.user_metadata?.pseudo || "",
-        abonnement: isPaid ? "payé" : (dbMembres?.abonnement || "non payé"),
+        nom: dbMembers?.nom || dbMembers?.last_name || session.user.user_metadata?.nom || "",
+        prenom: dbMembers?.prenom || dbMembers?.first_name || session.user.user_metadata?.prenom || "",
+        email: dbMembers?.email || session.user.email,
+        telephone: dbMembers?.phone || dbMembers?.telephone || session.user.user_metadata?.telephone || "",
+        ville: dbMembers?.city || dbMembers?.ville || session.user.user_metadata?.ville || "",
+        pseudo: dbMembers?.pseudo || session.user.user_metadata?.pseudo || "",
+        abonnement: dbMembers?.abonnement || (isAuthorized ? "actif" : "non payé"),
         acces_membre: isAuthorized,
-        paiement: isPaid ? "effectué" : (dbMembres?.paiement || "en attente"),
-        date_inscription: dbMembres?.date_inscription || new Date().toLocaleDateString("fr-FR"),
+        paiement: dbMembers?.paiement || (isPaid ? "payé" : "en attente"),
+        date_inscription: dbMembers?.created_at || new Date().toLocaleDateString("fr-FR"),
         payment_status: dbMembers?.payment_status || (isPaid ? "paid" : "pending"),
         access_status: dbMembers?.access_status || (isAuthorized ? "active" : "pending")
       };
 
       setMemberData(merged);
       localStorage.setItem("h_supabase_session_mock", JSON.stringify(merged));
-      console.log("Synchronized from Supabase:", merged);
+      console.log("Synchronized from Supabase 'members' table:", merged);
     } catch (err) {
       console.error("Critical error in refreshMemberData:", err);
     }

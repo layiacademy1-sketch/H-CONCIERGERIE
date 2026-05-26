@@ -1,10 +1,5 @@
 import { Handler } from "@netlify/functions";
-import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2023-10-16" as any,
-});
 
 // Helper to safely write members without throwing Postgres column errors
 async function safeUpsertMembers(supabaseClient: any, payload: any, matchColumn: string = "auth_user_id") {
@@ -68,42 +63,45 @@ export const handler: Handler = async (event, context) => {
   }
 
   try {
-    const { paymentIntentId, userId, memberDetails } = JSON.parse(event.body || "{}");
-    if (!userId || !paymentIntentId) {
+    const { userId, memberDetails } = JSON.parse(event.body || "{}");
+    if (!userId) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: "userId et paymentIntentId requis." }),
+        body: JSON.stringify({ error: "L'identifiant utilisateur est requis." }),
       };
     }
 
-    if (!process.env.STRIPE_SECRET_KEY) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: "STRIPE_SECRET_KEY non configurée" }),
-      };
+    const unpaidData: any = {
+      id: userId,
+      abonnement: "non payé",
+      acces_membre: false,
+      paiement: "en attente"
+    };
+
+    if (memberDetails) {
+      unpaidData.pseudo = memberDetails.pseudo;
+      unpaidData.prenom = memberDetails.prenom;
+      unpaidData.nom = memberDetails.nom;
+      unpaidData.email = memberDetails.email;
+      unpaidData.telephone = memberDetails.telephone;
+      unpaidData.ville = memberDetails.ville;
+      unpaidData.date_inscription = memberDetails.date_inscription || new Date().toISOString();
     }
 
-    // Retrieve payment intent to verify state from Stripe side
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-    if (paymentIntent.status !== "succeeded") {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: `Paiement invalide: statut ${paymentIntent.status}` }),
-      };
-    }
-
-    // Initialize Supabase Admin with Service Role Key
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
+      console.warn("VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing on Netlify. Falling back to local/simulation mode.");
       return {
-        statusCode: 500,
+        statusCode: 200,
         headers,
-        body: JSON.stringify({ error: "VITE_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY manquante sur Netlify." }),
+        body: JSON.stringify({
+          success: true,
+          isSimulated: true,
+          member: unpaidData
+        }),
       };
     }
 
@@ -111,10 +109,9 @@ export const handler: Handler = async (event, context) => {
       auth: { persistSession: false },
     });
 
-    const expDate = new Date();
-    expDate.setFullYear(expDate.getFullYear() + 1);
+    console.log("Netlify register-unpaid - Writing candidate payload to 'members' table for user:", userId);
 
-    const membersPaidData: any = {
+    const candidatesPayload: any = {
       auth_user_id: userId,
       email: memberDetails?.email || "",
       full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
@@ -127,33 +124,27 @@ export const handler: Handler = async (event, context) => {
       city: memberDetails?.ville || "",
       ville: memberDetails?.ville || "",
       pseudo: memberDetails?.pseudo || "",
-      payment_status: "paid",
-      // keep pending as requested until admin validates to 'active'
-      access_status: "pending", 
-      paiement: "payé",
-      abonnement: "non payé", // will be 'actif' once admin activates
+      payment_status: "pending",
+      access_status: "pending",
+      paiement: "en attente",
+      abonnement: "non payé",
       acces_membre: false,
-      subscription_expires_at: expDate.toISOString(),
       created_at: memberDetails?.date_inscription || new Date().toISOString()
     };
 
-    console.log("Updating 'members' table on Netlify verify-payment with user:", userId);
-    const { data: mData, error: mError } = await safeUpsertMembers(supabaseAdmin, membersPaidData, "auth_user_id");
+    const { data: mData, error: mError } = await safeUpsertMembers(supabaseAdmin, candidatesPayload, "auth_user_id");
 
     if (mError) {
-      console.error("Critical: 'members' table update failed on Netlify verify-payment:", mError);
+      console.error("Critical: 'members' table write failed on Netlify register-unpaid:", mError);
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ 
-          success: true, 
-          isSimulated: true, 
+        body: JSON.stringify({
+          success: true,
+          isSimulated: true,
           warning: "supabase_upsert_failed",
           details: `members: ${mError.message || mError.code || mError}`,
-          member: {
-            id: userId,
-            ...membersPaidData
-          } 
+          member: unpaidData
         }),
       };
     }
@@ -168,12 +159,11 @@ export const handler: Handler = async (event, context) => {
       pseudo: mData[0].pseudo || memberDetails?.pseudo || "",
       abonnement: mData[0].abonnement || "non payé",
       acces_membre: mData[0].acces_membre || false,
-      paiement: mData[0].paiement || "payé",
+      paiement: mData[0].paiement || "en attente",
       date_inscription: mData[0].created_at || new Date().toLocaleDateString("fr-FR"),
-      payment_status: mData[0].payment_status || "paid",
-      access_status: mData[0].access_status || "pending",
-      subscription_expires_at: mData[0].subscription_expires_at
-    } : { id: userId, ...membersPaidData };
+      payment_status: mData[0].payment_status || "pending",
+      access_status: mData[0].access_status || "pending"
+    } : unpaidData;
 
     return {
       statusCode: 200,
@@ -181,11 +171,11 @@ export const handler: Handler = async (event, context) => {
       body: JSON.stringify({ success: true, member: memberRecord }),
     };
   } catch (error: any) {
-    console.error("Netlify verification error:", error);
+    console.error("Exception in Netlify register-unpaid function:", error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: error.message || "Erreur lors de la vérification de paiement." }),
+      body: JSON.stringify({ error: error.message || "Erreur interne lors de l'enregistrement." }),
     };
   }
 };

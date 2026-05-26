@@ -30,17 +30,64 @@ function getStripe(): Stripe | null {
 let supabaseAdmin: any = null;
 function getSupabaseAdmin() {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const roleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const roleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !roleKey || roleKey === "") {
     console.warn("SUPABASE_SERVICE_ROLE_KEY is not defined. Using local mock/direct updates.");
     return null;
   }
   if (!supabaseAdmin) {
-    supabaseAdmin = createClient(url, roleKey, {
-      auth: { persistSession: false }
-    });
+    try {
+      supabaseAdmin = createClient(url, roleKey, {
+        auth: { persistSession: false }
+      });
+    } catch (e) {
+      console.error("Failed to initialize Supabase Admin client:", e);
+      return null;
+    }
   }
   return supabaseAdmin;
+}
+
+// Helper to safely write members without throwing Postgres column errors
+async function safeUpsertMembers(supabaseClient: any, payload: any, matchColumn: string = "auth_user_id") {
+  let currentPayload = { ...payload };
+  let attempts = 0;
+  while (attempts < 15) {
+    attempts++;
+    try {
+      const { data, error } = await supabaseClient
+        .from("members")
+        .upsert(currentPayload, { onConflict: matchColumn })
+        .select();
+      
+      if (!error) {
+        return { data, error: null };
+      }
+
+      console.warn(`Upsert attempt ${attempts} failed:`, error.message);
+      
+      const msg = error.message || "";
+      let columnMatch = msg.match(/column "([^"]+)"/i);
+      if (!columnMatch) {
+        columnMatch = msg.match(/has no column named "([^"]+)"/i);
+      }
+      if (!columnMatch) {
+        columnMatch = msg.match(/column_name "([^"]+)"/i);
+      }
+
+      if (columnMatch && columnMatch[1]) {
+        const columnName = columnMatch[1];
+        console.log(`Removing non-existent column '${columnName}' from payload and retrying...`);
+        delete currentPayload[columnName];
+      } else {
+        return { data: null, error };
+      }
+    } catch (e: any) {
+      console.error("Exception in safeUpsertMembers:", e);
+      return { data: null, error: e };
+    }
+  }
+  return { data: null, error: new Error("Too many retries trying to match table columns") };
 }
 
 // API Health Check
@@ -109,62 +156,58 @@ app.post("/api/register-unpaid", async (req, res) => {
     }
 
     if (adminSb) {
-      console.log("Attempting base synchronization for user:", userId);
-      
-      let errorMembres: any = null;
-      let dataMembres: any = null;
-      try {
-        const result = await adminSb
-          .from("membres")
-          .upsert(unpaidData, { onConflict: "id" })
-          .select();
-        errorMembres = result.error;
-        dataMembres = result.data;
-      } catch (e: any) {
-        errorMembres = e;
-      }
-
       // Automatically add a row to the 'members' table with auth_user_id, email, full_name, phone, payment_status="pending" and access_status="pending"
-      const membersData = {
+      const candidatesPayload: any = {
         auth_user_id: userId,
         email: memberDetails?.email || "",
         full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
         phone: memberDetails?.telephone || "",
+        telephone: memberDetails?.telephone || "",
+        prenom: memberDetails?.prenom || "",
+        nom: memberDetails?.nom || "",
+        first_name: memberDetails?.prenom || "",
+        last_name: memberDetails?.nom || "",
+        city: memberDetails?.ville || "",
+        ville: memberDetails?.ville || "",
+        pseudo: memberDetails?.pseudo || "",
         payment_status: "pending",
-        access_status: "pending"
+        access_status: "pending",
+        paiement: "en attente",
+        abonnement: "non payé",
+        acces_membre: false,
+        created_at: memberDetails?.date_inscription || new Date().toISOString()
       };
 
       console.log("Attempting to write to 'members' table with user:", userId);
-      let errorMembers: any = null;
-      try {
-        const result = await adminSb
-          .from("members")
-          .upsert(membersData, { onConflict: "auth_user_id" });
-        errorMembers = result.error;
-      } catch (e: any) {
-        errorMembers = e;
-      }
+      const { data, error } = await safeUpsertMembers(adminSb, candidatesPayload, "auth_user_id");
 
-      // If BOTH failed to write, then we warn and return simulated mode.
-      if (errorMembres && errorMembers) {
-        console.error("Critical: Both 'membres' and 'members' table writes failed:", { errorMembres, errorMembers });
+      if (error) {
+        console.error("Critical: 'members' table write failed:", error);
         return res.json({
           success: true,
           isSimulated: true,
           warning: "supabase_upsert_failed",
-          details: `membres: ${errorMembres.message || errorMembres.code || errorMembres}, members: ${errorMembers?.message || errorMembers?.code || errorMembers}`,
+          details: `members: ${error.message || error.code || error}`,
           member: unpaidData
         });
       }
-
-      if (errorMembres) {
-        console.warn("Table 'membres' write failed (ignored as 'members' succeeded):", errorMembres.message || errorMembres);
-      }
-      if (errorMembers) {
-        console.warn("Table 'members' write failed (ignored as 'membres' succeeded):", errorMembers.message || errorMembers);
-      }
       
-      const memberRecord = (dataMembres && dataMembres.length > 0) ? dataMembres[0] : unpaidData;
+      const memberRecord = (data && data.length > 0) ? {
+        id: data[0].auth_user_id || data[0].id,
+        nom: data[0].nom || memberDetails?.nom || "",
+        prenom: data[0].prenom || memberDetails?.prenom || "",
+        email: data[0].email || memberDetails?.email || "",
+        telephone: data[0].phone || data[0].telephone || memberDetails?.telephone || "",
+        ville: data[0].city || data[0].ville || memberDetails?.ville || "",
+        pseudo: data[0].pseudo || memberDetails?.pseudo || "",
+        abonnement: data[0].abonnement || "non payé",
+        acces_membre: data[0].acces_membre || false,
+        paiement: data[0].paiement || "en attente",
+        date_inscription: data[0].created_at || new Date().toLocaleDateString("fr-FR"),
+        payment_status: data[0].payment_status || "pending",
+        access_status: data[0].access_status || "pending"
+      } : unpaidData;
+
       return res.json({ success: true, member: memberRecord });
     } else {
       return res.json({
@@ -225,62 +268,67 @@ app.post("/api/verify-payment", async (req, res) => {
       }
 
       if (adminSb) {
-        console.log("Attempting payment update for user:", userId);
-        
-        let errorMembres: any = null;
-        let dataMembres: any = null;
-        try {
-          const result = await adminSb
-            .from("membres")
-            .upsert(updatedData, { onConflict: "id" })
-            .select();
-          errorMembres = result.error;
-          dataMembres = result.data;
-        } catch (e: any) {
-          errorMembres = e;
-        }
+        console.log("Attempting payment update for user on 'members' table:", userId);
 
-        // Also update the 'members' table if it exists
-        const membersPaidData = {
+        const expDate = new Date();
+        expDate.setFullYear(expDate.getFullYear() + 1);
+
+        const membersPaidData: any = {
           auth_user_id: userId,
           email: memberDetails?.email || "",
           full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
           phone: memberDetails?.telephone || "",
+          telephone: memberDetails?.telephone || "",
+          prenom: memberDetails?.prenom || "",
+          nom: memberDetails?.nom || "",
+          first_name: memberDetails?.prenom || "",
+          last_name: memberDetails?.nom || "",
+          city: memberDetails?.ville || "",
+          ville: memberDetails?.ville || "",
+          pseudo: memberDetails?.pseudo || "",
           payment_status: "paid",
-          access_status: "active"
+          // keep pending as requested until admin validates to 'active'
+          access_status: "pending", 
+          paiement: "payé",
+          abonnement: "non payé", // will be 'actif' once admin activates
+          acces_membre: false,
+          subscription_expires_at: expDate.toISOString(),
+          created_at: memberDetails?.date_inscription || new Date().toISOString()
         };
-        console.log("Updating 'members' table on payment verification with user:", userId);
-        let errorMembers: any = null;
-        try {
-          const result = await adminSb
-            .from("members")
-            .upsert(membersPaidData, { onConflict: "auth_user_id" });
-          errorMembers = result.error;
-        } catch (e: any) {
-          errorMembers = e;
-        }
 
-        // If BOTH failed, then we show/return simulation fallback
-        if (errorMembres && errorMembers) {
-          console.error("Critical: Both 'membres' and 'members' table updates failed:", { errorMembres, errorMembers });
-          
+        const { data, error } = await safeUpsertMembers(adminSb, membersPaidData, "auth_user_id");
+
+        if (error) {
+          console.error("Critical: 'members' table update failed in verify-payment:", error);
           return res.json({ 
             success: true, 
             isSimulated: true, 
             warning: "supabase_upsert_failed",
-            details: `membres: ${errorMembres.message || errorMembres.code || errorMembres}, members: ${errorMembers?.message || errorMembers?.code || errorMembers}`,
-            member: updatedData 
+            details: `members: ${error.message || error.code || error}`,
+            member: {
+              id: userId,
+              ...membersPaidData
+            } 
           });
         }
-
-        if (errorMembres) {
-          console.warn("Table 'membres' update failed (ignored as 'members' succeeded):", errorMembres.message || errorMembres);
-        }
-        if (errorMembers) {
-          console.warn("Table 'members' update failed (ignored as 'membres' succeeded):", errorMembers.message || errorMembers);
-        }
         
-        const memberRecord = (dataMembres && dataMembres.length > 0) ? dataMembres[0] : updatedData;
+        const memberRecord = (data && data.length > 0) ? {
+          id: data[0].auth_user_id || data[0].id,
+          nom: data[0].nom || memberDetails?.nom || "",
+          prenom: data[0].prenom || memberDetails?.prenom || "",
+          email: data[0].email || memberDetails?.email || "",
+          telephone: data[0].phone || data[0].telephone || memberDetails?.telephone || "",
+          ville: data[0].city || data[0].ville || memberDetails?.ville || "",
+          pseudo: data[0].pseudo || memberDetails?.pseudo || "",
+          abonnement: data[0].abonnement || "non payé",
+          acces_membre: data[0].acces_membre || false,
+          paiement: data[0].paiement || "payé",
+          date_inscription: data[0].created_at || new Date().toLocaleDateString("fr-FR"),
+          payment_status: data[0].payment_status || "paid",
+          access_status: data[0].access_status || "pending",
+          subscription_expires_at: data[0].subscription_expires_at
+        } : { id: userId, ...membersPaidData };
+
         return res.json({ success: true, member: memberRecord });
       } else {
         // If Supabase Admin Client is missing, report success and let client update mock localStorage
