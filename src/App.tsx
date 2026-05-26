@@ -400,7 +400,14 @@ export default function App() {
               transition={{ duration: 0.5 }}
             >
               {isLoggedIn ? (
-                <MemberDashboard onLogout={handleLogout} memberData={memberData} />
+                <MemberDashboard 
+                  onLogout={handleLogout} 
+                  memberData={memberData} 
+                  onPaymentSuccess={(updated) => {
+                    setMemberData(updated);
+                    localStorage.setItem("h_supabase_session_mock", JSON.stringify(updated));
+                  }}
+                />
               ) : (
                 <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6 py-28 relative overflow-hidden">
                   {/* Luxuriously styled background decorations */}

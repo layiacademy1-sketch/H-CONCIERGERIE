@@ -4,6 +4,7 @@ import {
   Compass, Zap, Lock, LogOut, Ticket, Star, Calendar, 
   Clock, ShoppingBag, MapPin, ChevronRight, Share2, Sparkles, Award, PlayCircle
 } from "lucide-react";
+import StripePaymentForm from "./StripePaymentForm";
 
 interface MemberDashboardProps {
   onLogout: () => void;
@@ -20,9 +21,10 @@ interface MemberDashboardProps {
     paiement: string;
     date_inscription: string;
   } | null;
+  onPaymentSuccess?: (updatedMemberData: any) => void;
 }
 
-export default function MemberDashboard({ onLogout, memberData }: MemberDashboardProps) {
+export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess }: MemberDashboardProps) {
   const [activeTab, setActiveTab] = useState<"flash" | "ventes" | "events">("flash");
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
@@ -268,9 +270,9 @@ export default function MemberDashboard({ onLogout, memberData }: MemberDashboar
         {/* CONTAINER WORKSPACE FOR SELECTED MENU WITH ANIME-PRESENCE */}
         <div className="lg:col-span-9">
           {memberData && !memberData.acces_membre ? (
-            <div className="bg-slate-900/90 border border-gold/30 rounded-3xl p-8 md:p-12 text-center max-w-2xl mx-auto space-y-6 shadow-2xl relative overflow-hidden py-16">
+            <div className="bg-slate-900/90 border border-gold/30 rounded-3xl p-8 md:p-12 text-center max-w-xl mx-auto space-y-6 shadow-2xl relative overflow-hidden py-12">
               <div className="absolute inset-0 bg-gradient-to-tr from-gold/5 via-transparent to-transparent pointer-events-none" />
-              <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center text-gold border border-gold/20 mx-auto animate-bounce">
+              <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center text-gold border border-gold/20 mx-auto">
                 <Lock size={30} />
               </div>
               
@@ -278,24 +280,17 @@ export default function MemberDashboard({ onLogout, memberData }: MemberDashboar
                 {memberData?.pseudo ? `Bienvenue @${memberData.pseudo}` : "Activez votre accès membre"}
               </h3>
               
-              <p className="text-slate-300 text-sm md:text-base font-light leading-relaxed max-w-md mx-auto">
+              <p className="text-slate-300 text-sm leading-relaxed max-w-sm mx-auto font-light">
                 Votre compte membre est créé avec succès. Activez votre abonnement annuel pour accéder aux offres privées.
               </p>
               
-              <div className="pt-4">
-                <a 
-                  href="https://buy.stripe.com/bJe5kD6htcmW5fR9GT7ss01"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center bg-gold hover:bg-gold-light text-[#0A0D14] font-black tracking-widest uppercase text-xs rounded-xl px-8 py-4 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.25)] hover:scale-[1.02] active:scale-95 cursor-pointer"
-                >
-                  Payer l’accès membre 1 an — 365€
-                </a>
+              <div className="pt-4 border-t border-white/5">
+                <StripePaymentForm 
+                  userId={memberData.id} 
+                  email={memberData.email} 
+                  onPaymentSuccess={onPaymentSuccess || (() => {})} 
+                />
               </div>
-              
-              <p className="text-[10px] text-slate-500 font-medium">
-                Paiement ultra-sécurisé via Stripe. Activation instantanée de vos privilèges de conciergerie.
-              </p>
             </div>
           ) : (
             <AnimatePresence mode="wait">
