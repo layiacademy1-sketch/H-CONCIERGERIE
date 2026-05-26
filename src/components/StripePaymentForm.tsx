@@ -208,7 +208,7 @@ function BillingForm({ userId, email, onPaymentSuccess }: StripePaymentFormProps
         </div>
         <h4 className="font-serif text-xl text-white">Félicitations</h4>
         <p className="text-xs text-slate-300 font-light max-w-sm mx-auto">
-          Votre transaction de 365,00 € a été validée avec succès. Activation immédiate de vos privilèges de conciergerie privée...
+          Votre transaction de 1,00 € a été validée avec succès. Activation immédiate de vos privilèges de conciergerie privée...
         </p>
       </div>
     );
@@ -263,7 +263,7 @@ function BillingForm({ userId, email, onPaymentSuccess }: StripePaymentFormProps
           {loading ? (
             "Traitement sécurisé..."
           ) : (
-            `Payer l’accès membre 1 an — 365€`
+            `Payer l’accès membre 1 an — 1€`
           )}
         </button>
       </div>

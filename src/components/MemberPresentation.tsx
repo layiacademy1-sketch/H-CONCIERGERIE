@@ -3,9 +3,15 @@ import { motion } from "motion/react";
 import { 
   ArrowLeft, Star, Heart, Award, 
   MapPin, Notebook as Journal, ShieldCheck, Mail, Send, Sparkles, Zap, Lock, Compass, Calendar, Phone, CreditCard,
-  Eye, EyeOff
+  Eye, EyeOff, AlertCircle, CheckCircle2
 } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "../lib/supabase";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+
+// Retrieve Stripe Publishable Key
+const stripeKey = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || "";
+const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 interface MemberPresentationProps {
   onBack: () => void;
@@ -13,10 +19,11 @@ interface MemberPresentationProps {
   onSignUpSuccess: (member: any) => void;
 }
 
-export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuccess }: MemberPresentationProps) {
-  const [showForm, setShowForm] = useState(false);
-  
-  // Sign up form fields
+// Inner Signup Billing Form
+function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: MemberPresentationProps) {
+  const stripe = useStripe();
+  const elements = useElements();
+
   const [lastName, setLastName] = useState("");
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,14 +34,25 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [success, setSuccess] = useState(false);
 
-  const handleSignUpSubmit = async (e: React.FormEvent) => {
+  const isSimulatedFlow = !stripePromise || !stripeKey;
+
+  const getApiUrl = (route: string) => {
+    if (window.location.hostname.includes("netlify.app")) {
+      return `/.netlify/functions/${route}`;
+    }
+    return `/api/${route}`;
+  };
+
+  const handleCustomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
     setLoading(true);
 
+    // 1. Core Field Validation
     if (!lastName || !firstName || !email || !phone || !city || !pseudo || !password) {
-      setErrorMsg("Veuillez remplir tous les champs.");
+      setErrorMsg("Veuillez remplir tous les champs du formulaire.");
       setLoading(false);
       return;
     }
@@ -46,42 +64,51 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
     }
 
     try {
+      // 2. Unconfigured Supabase Fallback Simulation
       if (!isSupabaseConfigured()) {
-        console.warn("Supabase is not configured yet. Simulating registration fallback.");
+        console.warn("Supabase is not configured yet. Running simulated payment & registration.");
         
-        // Simuler le compte local
-        const mockUid = "mock-" + Date.now();
-        const mockMember = {
-          id: mockUid,
-          nom: lastName,
-          prenom: firstName,
-          email: email,
-          telephone: phone,
-          ville: city,
-          pseudo: pseudo.trim(),
-          abonnement: "non payé",
-          acces_membre: false,
-          paiement: "en attente",
-          date_inscription: new Date().toLocaleDateString('fr-FR')
-        };
-        
-        localStorage.setItem("h_supabase_session_mock", JSON.stringify(mockMember));
-        localStorage.setItem("h_session_auth", "true");
-        
-        // Simuler onSubmitMember original pour mettre à jour les listes locales
-        onSubmitMember({
-          name: `${firstName} ${lastName}`,
-          city,
-          job: "Membre Club",
-          phone,
-          email
-        });
+        setTimeout(async () => {
+          const mockUid = "mock-uuid-" + Date.now();
+          const mockMember = {
+            id: mockUid,
+            nom: lastName,
+            prenom: firstName,
+            email: email,
+            telephone: phone,
+            ville: city,
+            pseudo: pseudo.trim(),
+            abonnement: "payé",
+            acces_membre: true,
+            paiement: "validé",
+            date_inscription: new Date().toLocaleDateString('fr-FR'),
+            date_paiement: new Date().toLocaleDateString('fr-FR')
+          };
 
-        onSignUpSuccess(mockMember);
+          // Save simulation states locally
+          localStorage.setItem("h_supabase_session_mock", JSON.stringify(mockMember));
+          localStorage.setItem("h_session_auth", "true");
+
+          onSubmitMember({
+            name: `${firstName} ${lastName}`,
+            city,
+            job: "Membre Club VIP",
+            phone,
+            email
+          });
+
+          setSuccess(true);
+          setLoading(false);
+
+          setTimeout(() => {
+            onSignUpSuccess(mockMember);
+          }, 1500);
+        }, 1500);
         return;
       }
 
-      // Check unique pseudo in Supabase membres table
+      // 3. True Supabase Checked Flow
+      // Validate unique pseudo
       const { data: existingPseudo, error: checkError } = await supabase
         .from("membres")
         .select("id")
@@ -94,8 +121,58 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
         return;
       }
 
-      // 1. Supabase Auth Signup
-      const { data, error } = await supabase.auth.signUp({
+      let returnedPaymentIntentId = "pi_mock_value";
+
+      // 4. Handle Stripe Transaction via Serverless backend
+      if (!isSimulatedFlow && stripe && elements) {
+        // Fetch payment intent from server
+        const intentUrl = getApiUrl("create-payment-intent");
+        const intentRes = await fetch(intentUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, userId: "transient-signup" }),
+        });
+
+        if (!intentRes.ok) {
+          throw new Error("L'initialisation de la transaction sécurisée Stripe a échoué.");
+        }
+
+        const intentData = await intentRes.json();
+        const clientSecret = intentData.clientSecret;
+
+        // Obtain card details
+        const cardElement = elements.getElement(CardElement);
+        if (!cardElement) {
+          throw new Error("Erreur de chargement du composant carte.");
+        }
+
+        // Trigger payment confirmation
+        const { paymentIntent, error: stripeConfirmErr } = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: {
+            card: cardElement as any,
+            billing_details: {
+              name: `${firstName} ${lastName}`,
+              email
+            }
+          }
+        });
+
+        if (stripeConfirmErr) {
+          throw new Error(stripeConfirmErr.message || "Paiement rejeté par la banque.");
+        }
+
+        if (!paymentIntent || paymentIntent.status !== "succeeded") {
+          throw new Error("La validation bancaire a échoué. Veuillez réessayer.");
+        }
+
+        returnedPaymentIntentId = paymentIntent.id;
+      } else {
+        // Simple artificial simulation timeout delay
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+
+      // 5. Create Supabase Auth Account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -109,60 +186,267 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
         }
       });
 
-      if (error) throw error;
+      if (authError) {
+        throw new Error(`Échec d'authentification: ${authError.message}`);
+      }
 
-      if (data?.user) {
-        // 2 & 3. Enregistrer dans la table Supabase `membres`
-        const { error: insertError } = await supabase
-          .from("membres")
-          .insert({
-            id: data.user.id,
+      if (!authData?.user) {
+        throw new Error("La création d'utilisateur auth Supabase a échoué.");
+      }
+
+      const activeUserId = authData.user.id;
+
+      // 6. Finalize Verify/Upsert member record in Supabase (Service Role bypass RLS)
+      const verifyUrl = getApiUrl("verify-payment");
+      const verifyRes = await fetch(verifyUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentIntentId: returnedPaymentIntentId,
+          userId: activeUserId,
+          isSimulated: isSimulatedFlow,
+          memberDetails: {
             pseudo: pseudo.trim(),
             prenom: firstName,
             nom: lastName,
             email: email,
             telephone: phone,
             ville: city,
-            abonnement: "non payé",
-            acces_membre: false,
-            paiement: "en attente",
             date_inscription: new Date().toISOString()
-          });
+          }
+        })
+      });
 
-        if (insertError) {
-          console.error("Erreur de sauvegarde de la table membres:", insertError);
-        }
+      if (!verifyRes.ok) {
+        throw new Error("Le débit a été réalisé, mais l'enregistrement de vos privilèges a échoué. Contactez notre assistance.");
+      }
 
-        // Simuler onSubmitMember original pour mettre à jour les listes locales
-        onSubmitMember({
-          name: `${firstName} ${lastName}`,
-          city,
-          job: "Membre Club",
-          phone,
-          email
-        });
+      const verifyData = await verifyRes.json();
 
-        onSignUpSuccess({
-          id: data.user.id,
+      onSubmitMember({
+        name: `${firstName} ${lastName}`,
+        city,
+        job: "Membre Club VIP",
+        phone,
+        email
+      });
+
+      setSuccess(true);
+      setLoading(false);
+
+      // Save credentials login session locally
+      localStorage.setItem("h_session_auth", "true");
+
+      setTimeout(() => {
+        onSignUpSuccess(verifyData.member || {
+          id: activeUserId,
           nom: lastName,
           prenom: firstName,
-          email: email,
+          email,
           telephone: phone,
           ville: city,
           pseudo: pseudo.trim(),
-          abonnement: "non payé",
-          acces_membre: false,
-          paiement: "en attente",
-          date_inscription: new Date().toLocaleDateString('fr-FR')
+          abonnement: "payé",
+          acces_membre: true,
+          paiement: "validé",
+          date_inscription: new Date().toLocaleDateString('fr-FR'),
+          date_paiement: new Date().toLocaleDateString('fr-FR')
         });
-      }
+      }, 1500);
+
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || "Une erreur s'est produite.");
-    } finally {
+      setErrorMsg(err.message || "Une erreur s'est produite lors de la validation.");
       setLoading(false);
     }
   };
+
+  const cardElementOptions = {
+    iconStyle: "solid" as const,
+    style: {
+      base: {
+        color: "#ffffff",
+        fontFamily: '"Inter", sans-serif',
+        fontSmoothing: "antialiased",
+        fontSize: "14px",
+        "::placeholder": {
+          color: "#64748b"
+        },
+        iconColor: "#D4AF37"
+      },
+      invalid: {
+        color: "#ef4444",
+        iconColor: "#ef4444"
+      }
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="text-center py-16 px-6 space-y-6">
+        <div className="w-20 h-20 bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 rounded-full flex items-center justify-center mx-auto scale-110 animate-bounce">
+          <CheckCircle2 size={40} />
+        </div>
+        <h3 className="font-serif text-3xl text-white tracking-wide">Paiement Accepté</h3>
+        <p className="text-slate-300 text-sm max-w-md mx-auto leading-relaxed font-light">
+          Votre abonnement annuel a été validé avec succès. Nous préparons votre accès à l'Espace Privé Membres...
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleCustomSubmit} className="space-y-4">
+      {errorMsg && (
+        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/25 text-xs text-red-400 font-bold font-mono text-center flex items-center justify-center gap-2">
+          <AlertCircle size={15} />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
+      {isSimulatedFlow && (
+        <div className="p-4 rounded-xl bg-gold/10 border border-gold/20 text-[11px] text-gold font-light leading-relaxed text-left">
+          <strong className="font-bold">Mode Simulation Actif</strong> : Aucune clé Stripe d'environnement n'est configurée. Vous pouvez tester le cycle complet d'inscription et de paiement sécurisé immédiatement.
+        </div>
+      )}
+
+      {/* Identity Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1.5 text-left">
+          <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Prénom</label>
+          <input 
+            type="text" 
+            required
+            placeholder="Prénom"
+            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5 text-left">
+          <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Nom</label>
+          <input 
+            type="text" 
+            required
+            placeholder="Nom"
+            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* E-mail */}
+      <div className="flex flex-col gap-1.5 text-left">
+        <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Adresse Email</label>
+        <input 
+          type="email" 
+          required
+          placeholder="exemple@email.com"
+          className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+
+      {/* Phone and City */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1.5 text-left">
+          <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Téléphone</label>
+          <input 
+            type="tel" 
+            required
+            placeholder="+33 6 00 00 00 00"
+            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5 text-left">
+          <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Ville</label>
+          <input 
+            type="text" 
+            required
+            placeholder="ex: Paris, Dakar, Moroni"
+            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Pseudo (Unique name) */}
+      <div className="flex flex-col gap-1.5 text-left">
+        <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Pseudo unique</label>
+        <input 
+          type="text" 
+          required
+          placeholder="Choisissez un pseudo unique"
+          className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
+          value={pseudo}
+          onChange={(e) => setPseudo(e.target.value)}
+        />
+      </div>
+
+      {/* Password with Eye Toggles */}
+      <div className="flex flex-col gap-1.5 text-left">
+        <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Mot de passe</label>
+        <div className="relative">
+          <input 
+            type={showPassword ? "text" : "password"}
+            required
+            placeholder="•••••••• (6 caractères min)"
+            className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl pl-4 pr-11 py-3 text-xs text-white outline-none transition-colors"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer"
+          >
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Integrated Stripe elements view credit card check */}
+      <div className="pt-4 border-t border-white/5 space-y-1.5 text-left">
+        <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Coordonnées bancaires cryptées</label>
+        
+        {isSimulatedFlow ? (
+          <div className="bg-slate-950 border border-gold/10 rounded-xl px-4 py-3 text-xs text-slate-400 flex items-center gap-2 italic">
+            <CreditCard size={15} className="text-gold" />
+            <span>Simulation de paiement intégrée active</span>
+          </div>
+        ) : (
+          <div className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-3.5 focus-within:border-gold transition-colors">
+            <CardElement options={cardElementOptions} />
+          </div>
+        )}
+      </div>
+
+      <div className="pt-6">
+        <button 
+          type="submit"
+          disabled={loading}
+          className="w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black tracking-widest uppercase text-xs rounded-xl py-4 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_4px_20px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {loading ? "Création & Transaction..." : "Créer mon compte et payer 1€"}
+        </button>
+      </div>
+
+      <div className="flex gap-2 items-center justify-center text-[10px] text-slate-500 font-medium pt-2">
+        <ShieldCheck size={14} className="text-gold" />
+        Paiement de bout en bout crypté Stripe / SSL certifié
+      </div>
+    </form>
+  );
+}
+
+// Wrapper component managing Stripe elements load state
+export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuccess }: MemberPresentationProps) {
+  const [showForm, setShowForm] = useState(false);
 
   const advantagesList = [
     { title: "Accès aux Offres Flash", desc: "Soyez informés en temps réel de nos opportunités de vols privés et d'hôtels prestigieux." },
@@ -200,129 +484,27 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-gold/10 border border-gold/20 rounded-full text-[10px] text-gold font-bold tracking-[0.2em] uppercase mb-4">
                 <Sparkles size={11} /> Inscription Club Privé
               </div>
-              <h2 className="text-2xl md:text-3xl font-serif text-white tracking-wide">Devenir Membre</h2>
+              <h2 className="text-2xl md:text-3xl font-serif text-white tracking-wide font-medium">Devenir Membre</h2>
               <p className="text-[11px] text-slate-400 font-light mt-2 leading-relaxed">
-                Remplissez les informations ci-dessous pour créer votre pass d'accès.
+                Remplissez vos informations et réglez de manière sécurisée en une seule étape.
               </p>
             </div>
 
-            {errorMsg && (
-              <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-xs text-red-400 font-bold font-mono text-center">
-                {errorMsg}
-              </div>
+            {stripePromise ? (
+              <Elements stripe={stripePromise}>
+                <InnerPremiumSignupForm 
+                  onBack={onBack} 
+                  onSubmitMember={onSubmitMember} 
+                  onSignUpSuccess={onSignUpSuccess} 
+                />
+              </Elements>
+            ) : (
+              <InnerPremiumSignupForm 
+                onBack={onBack} 
+                onSubmitMember={onSubmitMember} 
+                onSignUpSuccess={onSignUpSuccess} 
+              />
             )}
-
-            <form onSubmit={handleSignUpSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Prénom</label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="Prénom"
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Nom</label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="Nom"
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Adresse Email</label>
-                <input 
-                  type="email" 
-                  required
-                  placeholder="exemple@email.com"
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Téléphone</label>
-                  <input 
-                    type="tel" 
-                    required
-                    placeholder="+33 6 00 00 00 00"
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Ville</label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="ex: Paris, Dakar, Moroni"
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Pseudo</label>
-                <input 
-                  type="text" 
-                  required
-                  placeholder="Choisissez un pseudo unique"
-                  className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors"
-                  value={pseudo}
-                  onChange={(e) => setPseudo(e.target.value)}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Mot de passe</label>
-                <div className="relative">
-                  <input 
-                    type={showPassword ? "text" : "password"}
-                    required
-                    placeholder="•••••••• (6 caractères min)"
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl pl-4 pr-11 py-3 text-xs text-white outline-none transition-colors"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="pt-4">
-                <button 
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gold hover:bg-gold-light text-slate-950 font-black tracking-widest uppercase text-xs rounded-xl py-4 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {loading ? "Création du compte..." : "Valider mon inscription"}
-                </button>
-              </div>
-            </form>
-
-            <div className="mt-8 pt-6 border-t border-white/5 flex gap-2 items-center justify-center text-[10px] text-slate-500 font-medium">
-              <ShieldCheck size={14} className="text-gold" />
-              Sécurité SSL - H-CONCIERGERIE
-            </div>
           </motion.div>
         </div>
       </div>
@@ -404,10 +586,10 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
               
               <div className="space-y-1">
                 <div className="text-5xl font-serif text-gold-gradient font-bold tracking-tight">
-                  365 € <span className="text-lg text-slate-400 font-light">/ an</span>
+                  1 € <span className="text-lg text-slate-400 font-light">/ an</span>
                 </div>
                 <div className="text-xs text-slate-300 font-semibold tracking-wide bg-gold/10 border border-gold/10 inline-block px-3 py-1 rounded-full">
-                  Soit seulement <strong className="text-white">1 € par jour</strong>
+                  Accès d'exception garanti
                 </div>
               </div>
               
@@ -426,7 +608,7 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
         {/* PERKS / BENEFITS */}
         <div className="mb-24">
           <div className="space-y-8">
-            <h2 className="text-3xl font-serif text-white tracking-widest uppercase text-center mb-4">
+            <h2 className="text-3xl font-serif text-white tracking-widest uppercase text-center mb-4 font-normal">
               Pourquoi nous rejoindre ?
             </h2>
             
@@ -440,7 +622,7 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
                   <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center text-gold mb-4 font-serif font-bold text-xs select-none">
                     0{idx + 1}
                   </div>
-                  <h4 className="font-serif text-lg text-white mb-2">{item.title}</h4>
+                  <h4 className="font-serif text-lg text-white mb-2 font-medium">{item.title}</h4>
                   <p className="text-slate-400 text-xs font-light leading-relaxed">{item.desc}</p>
                 </motion.div>
               ))}
@@ -451,7 +633,7 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
         {/* BOTTOM CONTACT BANNER */}
         <div className="bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div>
-            <h3 className="font-serif text-xl mb-1">D'autres questions sur l'adhésion ?</h3>
+            <h3 className="font-serif text-xl mb-1 font-medium">D'autres questions sur l'adhésion ?</h3>
             <p className="text-slate-400 text-xs font-light">Discutez directement avec un représentant de notre service des relations membres.</p>
           </div>
           <button 

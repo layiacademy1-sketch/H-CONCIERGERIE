@@ -44,9 +44,9 @@ export const handler: Handler = async (event, context) => {
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 36500, // 365 € in cents
+      amount: 100, // 1 € in cents
       currency: "eur",
-      description: "Abonnement Club Privé H-Conciergerie (1 an - 365€)",
+      description: "Abonnement Club Privé H-Conciergerie (1 an - 1€)",
       metadata: {
         userId,
         email: email || "",

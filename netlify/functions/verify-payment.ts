@@ -26,7 +26,7 @@ export const handler: Handler = async (event, context) => {
   }
 
   try {
-    const { paymentIntentId, userId } = JSON.parse(event.body || "{}");
+    const { paymentIntentId, userId, memberDetails } = JSON.parse(event.body || "{}");
     if (!userId || !paymentIntentId) {
       return {
         statusCode: 400,
@@ -69,18 +69,28 @@ export const handler: Handler = async (event, context) => {
       auth: { persistSession: false },
     });
 
-    const updatedData = {
+    const updatedData: any = {
+      id: userId,
       abonnement: "payé",
       acces_membre: true,
       paiement: "validé",
       date_paiement: new Date().toISOString(),
     };
 
-    // Update members table in Supabase bypass RLS
+    if (memberDetails) {
+      updatedData.pseudo = memberDetails.pseudo;
+      updatedData.prenom = memberDetails.prenom;
+      updatedData.nom = memberDetails.nom;
+      updatedData.email = memberDetails.email;
+      updatedData.telephone = memberDetails.telephone;
+      updatedData.ville = memberDetails.ville;
+      updatedData.date_inscription = memberDetails.date_inscription || new Date().toISOString();
+    }
+
+    // Upsert members table in Supabase bypass RLS
     const { data, error } = await supabaseAdmin
       .from("membres")
-      .update(updatedData)
-      .eq("id", userId)
+      .upsert(updatedData, { onConflict: "id" })
       .select()
       .single();
 

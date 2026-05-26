@@ -66,9 +66,9 @@ app.post("/api/create-payment-intent", async (req, res) => {
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 36500, // 365 € in cents
+      amount: 100, // 1 € in cents
       currency: "eur",
-      description: "Abonnement Club Privé H-Conciergerie (1 an - 365€)",
+      description: "Abonnement Club Privé H-Conciergerie (1 an - 1€)",
       metadata: {
         userId,
         email: email || ""
@@ -85,7 +85,7 @@ app.post("/api/create-payment-intent", async (req, res) => {
 // API Verify/Finalize Payment
 app.post("/api/verify-payment", async (req, res) => {
   try {
-    const { paymentIntentId, userId, isSimulated } = req.body;
+    const { paymentIntentId, userId, isSimulated, memberDetails } = req.body;
     if (!userId) {
       return res.status(400).json({ error: "L'identifiant utilisateur est requis." });
     }
@@ -109,24 +109,34 @@ app.post("/api/verify-payment", async (req, res) => {
 
     if (paymentSuccess) {
       const adminSb = getSupabaseAdmin();
-      const updatedData = {
+      const updatedData: any = {
+        id: userId,
         abonnement: "payé",
         acces_membre: true,
         paiement: "validé",
         date_paiement: new Date().toISOString()
       };
 
+      if (memberDetails) {
+        updatedData.pseudo = memberDetails.pseudo;
+        updatedData.prenom = memberDetails.prenom;
+        updatedData.nom = memberDetails.nom;
+        updatedData.email = memberDetails.email;
+        updatedData.telephone = memberDetails.telephone;
+        updatedData.ville = memberDetails.ville;
+        updatedData.date_inscription = memberDetails.date_inscription || new Date().toISOString();
+      }
+
       if (adminSb) {
-        // Securely update the user record with bypassing RLS (via Service Role)
+        // Securely upsert the user record bypassing RLS (via Service Role)
         const { data, error } = await adminSb
           .from("membres")
-          .update(updatedData)
-          .eq("id", userId)
+          .upsert(updatedData, { onConflict: "id" })
           .select()
           .single();
 
         if (error) {
-          console.error("Supabase Admin Update Error:", error);
+          console.error("Supabase Admin Upsert Error:", error);
           return res.status(500).json({ error: "Erreur de mise à jour des privilèges dans Supabase.", details: error.message });
         }
         return res.json({ success: true, member: data });
@@ -136,7 +146,6 @@ app.post("/api/verify-payment", async (req, res) => {
           success: true,
           isSimulated: true,
           member: {
-            id: userId,
             ...updatedData
           }
         });
