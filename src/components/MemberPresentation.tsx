@@ -124,7 +124,16 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
     });
 
     if (!registerRes.ok) {
-      throw new Error("L'authentification a réussi, mais l'enregistrement de vos privilèges a échoué.");
+      let detailMsg = "L'authentification a réussi, mais l'enregistrement de vos privilèges a échoué.";
+      try {
+        const errData = await registerRes.json();
+        if (errData && errData.details) {
+          detailMsg += ` (Détails Supabase: ${errData.details})`;
+        } else if (errData && errData.error) {
+          detailMsg += ` (Erreur: ${errData.error})`;
+        }
+      } catch (e) {}
+      throw new Error(detailMsg);
     }
 
     const registerData = await registerRes.json();
@@ -179,16 +188,20 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
     try {
       // Check for pseudo availability in Supabase if configured
       if (isSupabaseConfigured()) {
-        const { data: existingPseudo, error: checkError } = await supabase
-          .from("membres")
-          .select("id")
-          .eq("pseudo", pseudo.trim())
-          .maybeSingle();
+        try {
+          const { data: existingPseudo, error: checkError } = await supabase
+            .from("membres")
+            .select("id")
+            .eq("pseudo", pseudo.trim())
+            .maybeSingle();
 
-        if (existingPseudo) {
-          setErrorMsg("Ce pseudo est déjà pris. Veuillez en choisir un autre.");
-          setLoading(false);
-          return;
+          if (!checkError && existingPseudo) {
+            setErrorMsg("Ce pseudo est déjà pris. Veuillez en choisir un autre.");
+            setLoading(false);
+            return;
+          }
+        } catch (dbErr) {
+          console.warn("Erreur d'accès à la table 'membres' lors de la vérification du pseudo, ignorée pour résilience:", dbErr);
         }
       }
 
@@ -251,7 +264,7 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
       )}
 
       {/* Identity row - side-by-side */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1 text-left">
           <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Prénom</label>
           <input 
@@ -290,7 +303,7 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
       </div>
 
       {/* Phone and City - side-by-side */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1 text-left">
           <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Téléphone</label>
           <input 
@@ -316,7 +329,7 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
       </div>
 
       {/* Pseudo AND Password - side-by-side to optimize viewport height */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1 text-left">
           <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Pseudo unique</label>
           <input 
@@ -329,7 +342,7 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
           />
         </div>
         <div className="flex flex-col gap-1 text-left">
-          <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">Mot de passe</label>
+          <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400 font-sans">Mot de passe</label>
           <div className="relative">
             <input 
               type={showPassword ? "text" : "password"}
@@ -404,7 +417,7 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
             animate={{ opacity: 1, scale: 1 }}
             className="bg-slate-900/90 backdrop-blur-md border border-gold/30 rounded-3xl p-8 md:p-10 shadow-3xl relative"
           >
-            <div className="text-center mb-0 sm:mb-8">
+            <div className="text-center mb-6 sm:mb-8">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-gold/10 border border-gold/20 rounded-full text-[10px] text-gold font-bold tracking-[0.2em] uppercase mb-4">
                 <Sparkles size={11} /> Inscription Club Privé
               </div>

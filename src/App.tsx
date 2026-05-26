@@ -76,34 +76,85 @@ export default function App() {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
           setIsLoggedIn(true);
-          supabase
-            .from("membres")
-            .select("*")
-            .eq("id", session.user.id)
-            .single()
-            .then(({ data }) => {
-              if (data) {
-                setMemberData(data);
-              } else {
-                setMemberData({
-                  id: session.user.id,
-                  nom: session.user.user_metadata?.nom || "",
-                  prenom: session.user.user_metadata?.prenom || "",
-                  email: session.user.email,
-                  telephone: session.user.user_metadata?.telephone || "",
-                  ville: session.user.user_metadata?.ville || "",
-                  pseudo: session.user.user_metadata?.pseudo || "",
-                  abonnement: "non payé",
-                  acces_membre: false,
-                  paiement: "en attente",
-                  date_inscription: new Date().toLocaleDateString("fr-FR")
-                });
-              }
-            });
+          refreshMemberData();
         }
       });
     }
   }, []);
+
+  // Synchronise member state to keep data from both 'membres' and 'members' tables completely up-to-date
+  const refreshMemberData = async () => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const userId = session.user.id;
+
+      // 1. Fetch from 'membres' table
+      const { data: dbMembres, error: membresErr } = await supabase
+        .from("membres")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+
+      // 2. Fetch from 'members' table
+      const { data: dbMembers, error: membersErr } = await supabase
+        .from("members")
+        .select("*")
+        .eq("auth_user_id", userId)
+        .maybeSingle();
+
+      if (membresErr) {
+        console.warn("Table 'membres' not queryable during sync:", membresErr.message);
+      }
+      if (membersErr) {
+        console.warn("Table 'members' not queryable during sync:", membersErr.message);
+      }
+
+      // Check for active access and payment from both systems
+      const isPaid = 
+        dbMembers?.payment_status === "paid" || 
+        dbMembres?.abonnement === "payé" || 
+        dbMembres?.paiement === "payé" ||
+        dbMembres?.paiement === "effectué" ||
+        dbMembres?.acces_membre === true;
+
+      const isAuthorized = 
+        dbMembers?.access_status === "active" || 
+        dbMembres?.acces_membre === true ||
+        isPaid;
+
+      const merged = {
+        id: userId,
+        nom: dbMembres?.nom || session.user.user_metadata?.nom || "",
+        prenom: dbMembres?.prenom || session.user.user_metadata?.prenom || "",
+        email: dbMembres?.email || session.user.email,
+        telephone: dbMembres?.telephone || session.user.user_metadata?.telephone || "",
+        ville: dbMembres?.ville || session.user.user_metadata?.ville || "",
+        pseudo: dbMembres?.pseudo || session.user.user_metadata?.pseudo || "",
+        abonnement: isPaid ? "payé" : (dbMembres?.abonnement || "non payé"),
+        acces_membre: isAuthorized,
+        paiement: isPaid ? "effectué" : (dbMembres?.paiement || "en attente"),
+        date_inscription: dbMembres?.date_inscription || new Date().toLocaleDateString("fr-FR"),
+        payment_status: dbMembers?.payment_status || (isPaid ? "paid" : "pending"),
+        access_status: dbMembers?.access_status || (isAuthorized ? "active" : "pending")
+      };
+
+      setMemberData(merged);
+      localStorage.setItem("h_supabase_session_mock", JSON.stringify(merged));
+      console.log("Synchronized from Supabase:", merged);
+    } catch (err) {
+      console.error("Critical error in refreshMemberData:", err);
+    }
+  };
+
+  // Sync whenever view changes to Espace Membre
+  useEffect(() => {
+    if (view === "espace-membre" && isLoggedIn) {
+      refreshMemberData();
+    }
+  }, [view, isLoggedIn]);
 
   // Handle initial view resolution from URL ?view= query parameter
   useEffect(() => {
@@ -407,6 +458,7 @@ export default function App() {
                     setMemberData(updated);
                     localStorage.setItem("h_supabase_session_mock", JSON.stringify(updated));
                   }}
+                  onRefresh={refreshMemberData}
                 />
               ) : (
                 <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6 py-28 relative overflow-hidden">

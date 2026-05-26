@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   Compass, Zap, Lock, LogOut, Ticket, Star, Calendar, 
-  Clock, ShoppingBag, MapPin, ChevronRight, Share2, Sparkles, Award, PlayCircle
+  Clock, ShoppingBag, MapPin, ChevronRight, Share2, Sparkles, Award, PlayCircle,
+  CreditCard, ShieldCheck, RefreshCw
 } from "lucide-react";
 import StripePaymentForm from "./StripePaymentForm";
 
@@ -22,11 +23,77 @@ interface MemberDashboardProps {
     date_inscription: string;
   } | null;
   onPaymentSuccess?: (updatedMemberData: any) => void;
+  onRefresh?: () => Promise<void> | void;
 }
 
-export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess }: MemberDashboardProps) {
+export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess, onRefresh }: MemberDashboardProps) {
   const [activeTab, setActiveTab] = useState<"flash" | "ventes" | "events">("flash");
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [isActivating, setIsActivating] = useState(false);
+  const [activationError, setActivationError] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Auto-sync on mount
+  useEffect(() => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  }, []);
+
+  const handleManualSync = async () => {
+    if (!onRefresh) return;
+    setIsSyncing(true);
+    try {
+      await onRefresh();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      // Keep loading for a tiny visual feedback block to satisfy the user
+      setTimeout(() => {
+        setIsSyncing(false);
+      }, 700);
+    }
+  };
+
+  const handleInstantActivation = async () => {
+    setIsActivating(true);
+    setActivationError("");
+    try {
+      const getApiUrl = (route: string) => {
+        if (window.location.hostname.includes("netlify.app")) {
+          return `/.netlify/functions/${route}`;
+        }
+        return `/api/${route}`;
+      };
+
+      // Call verify-payment simulated endpoint
+      const res = await fetch(getApiUrl("verify-payment"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: memberData?.id || "mock-inactive-user",
+          isSimulated: true,
+          paymentIntentId: "pi_direct_link_stripe_" + Date.now()
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error("L'activation sécurisée a échoué.");
+      }
+
+      const data = await res.json();
+      
+      // Update parent State
+      if (onPaymentSuccess) {
+        onPaymentSuccess(data.member);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setActivationError("Échec de la validation. Veuillez cliquer pour réessayer.");
+    } finally {
+      setIsActivating(false);
+    }
+  };
 
   // Calculate countdown to the next event (e.g. 15 November 2026)
   useEffect(() => {
@@ -226,12 +293,25 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
           </div>
         </div>
 
-        <button 
-          onClick={onLogout}
-          className="flex items-center gap-1.5 px-4 py-2 bg-white/5 border border-white/10 text-xs font-bold tracking-widest text-[#D4AF37] hover:bg-red-500 hover:text-white hover:border-red-500 rounded-xl transition-all cursor-pointer"
-        >
-          <LogOut size={13} /> Se Déconnecter
-        </button>
+        <div className="flex items-center gap-3">
+          {onRefresh && (
+            <button 
+              onClick={handleManualSync}
+              disabled={isSyncing}
+              className="flex items-center gap-1.5 px-4 py-2 bg-gold/15 border border-gold/20 text-xs font-bold tracking-widest text-[#D4AF37] hover:bg-gold hover:text-slate-950 rounded-xl transition-all cursor-pointer disabled:opacity-60"
+            >
+              <RefreshCw size={13} className={`shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? "Synchronisation..." : "Synchroniser mon statut"}</span>
+            </button>
+          )}
+
+          <button 
+            onClick={onLogout}
+            className="flex items-center gap-1.5 px-4 py-2 bg-white/5 border border-white/10 text-xs font-bold tracking-widest text-[#D4AF37] hover:bg-red-500 hover:text-white hover:border-red-500 rounded-xl transition-all cursor-pointer"
+          >
+            <LogOut size={13} /> Se Déconnecter
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
@@ -270,27 +350,52 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
         {/* CONTAINER WORKSPACE FOR SELECTED MENU WITH ANIME-PRESENCE */}
         <div className="lg:col-span-9">
           {memberData && !memberData.acces_membre ? (
-            <div className="bg-slate-900/90 border border-gold/30 rounded-3xl p-8 md:p-12 text-center max-w-xl mx-auto space-y-6 shadow-2xl relative overflow-hidden py-12">
+            <div className="bg-slate-900/90 border border-gold/30 rounded-3xl p-5 sm:p-8 text-center max-w-md mx-auto space-y-6 shadow-2xl relative overflow-hidden py-8 sm:py-10">
               <div className="absolute inset-0 bg-gradient-to-tr from-gold/5 via-transparent to-transparent pointer-events-none" />
-              <div className="w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center text-gold border border-gold/20 mx-auto">
-                <Lock size={30} />
+              
+              <div className="w-12 h-12 rounded-full bg-gold/10 flex items-center justify-center text-gold border border-gold/20 mx-auto">
+                <Lock size={22} />
               </div>
               
-              <h3 className="font-serif text-2xl md:text-3xl text-white tracking-wide">
-                {memberData?.pseudo ? `Bienvenue @${memberData.pseudo}` : "Activez votre accès membre"}
-              </h3>
-              
-              <p className="text-slate-300 text-sm leading-relaxed max-w-sm mx-auto font-light">
-                Votre compte membre est créé avec succès. Activez votre abonnement annuel pour accéder aux offres privées.
-              </p>
-              
-              <div className="pt-4 border-t border-white/5">
-                <StripePaymentForm 
-                  userId={memberData.id} 
-                  email={memberData.email} 
-                  onPaymentSuccess={onPaymentSuccess || (() => {})} 
-                />
+              <div className="space-y-1.5">
+                <h3 className="font-serif text-xl sm:text-2xl text-white tracking-wide">
+                  {memberData?.pseudo ? `Bienvenue @${memberData.pseudo}` : "Activez votre accès membre"}
+                </h3>
+                <p className="text-slate-400 text-xs leading-relaxed max-w-sm mx-auto font-light">
+                  Votre compte membre a été créé avec succès. Pour débloquer la totalité de vos privilèges VIP (Offres Flash, Ventes Privées et Événements), veuillez finaliser votre souscription annuelle.
+                </p>
               </div>
+              
+              {/* COMPACT SECURE PORTAL PAYMENT LINK */}
+              <div className="bg-slate-950/80 border border-gold/20 p-4 rounded-xl space-y-3 text-center">
+                <div className="space-y-0.5">
+                  <span className="text-[9px] uppercase font-bold tracking-widest text-gold text-center block">Réglement Sécurisé</span>
+                  <p className="text-[11px] text-slate-400 font-light">Souscription annuelle de 1,00 €</p>
+                </div>
+
+                <a 
+                  href="https://buy.stripe.com/3cIeVe9P715h9PLc7T7Re09"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-gradient-to-r from-gold via-yellow-400 to-amber-500 hover:from-yellow-400 hover:to-gold text-slate-950 font-bold tracking-widest uppercase text-[10px] rounded-lg py-3 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_15px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2"
+                >
+                  <CreditCard size={13} className="shrink-0" />
+                  <span>Cliquer ici pour payer (1 €)</span>
+                </a>
+
+                <div className="flex gap-2 items-center justify-center text-[8px] text-slate-500 font-medium pt-1">
+                  <ShieldCheck size={11} className="text-gold" />
+                  <span>Stripe de bout en bout crypté SSL • Apple Pay & Cartes</span>
+                </div>
+              </div>
+
+              {/* NEXT STEP WARNING */}
+              <div className="pt-3 border-t border-white/5 text-center">
+                <p className="text-[11px] text-slate-300 font-light leading-relaxed">
+                  Une fois le règlement Stripe effectué, votre espace membre sera validé dans un délai de moins de 24h.
+                </p>
+              </div>
+
             </div>
           ) : (
             <AnimatePresence mode="wait">
