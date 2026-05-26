@@ -32,6 +32,36 @@ export default function SignUpForm({ onSubmit, onCancel, isLoading, error }: Sig
       return;
     }
 
+    if (firstName.trim().length < 2) {
+      setValidationError("Le prénom doit contenir au moins 2 caractères.");
+      return;
+    }
+
+    if (lastName.trim().length < 2) {
+      setValidationError("Le nom de famille doit contenir au moins 2 caractères.");
+      return;
+    }
+
+    if (phoneNumber.trim().length < 5) {
+      setValidationError("Le numéro de téléphone doit contenir au moins 5 caractères.");
+      return;
+    }
+
+    if (phoneNumber.trim().length > 30) {
+      setValidationError("Le numéro de téléphone est trop long (maximum 30 caractères).");
+      return;
+    }
+
+    if (pseudoName.trim().length < 2) {
+      setValidationError("Le nom d'utilisateur (pseudo) doit contenir au moins 2 caractères.");
+      return;
+    }
+
+    if (pseudoName.trim().length > 50) {
+      setValidationError("Le nom d'utilisateur (pseudo) est trop long (maximum 50 caractères).");
+      return;
+    }
+
     if (password.length < 6) {
       setValidationError("Le mot de passe doit contenir au moins 6 caractères.");
       return;

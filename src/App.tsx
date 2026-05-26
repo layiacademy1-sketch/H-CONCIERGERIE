@@ -251,7 +251,28 @@ export default function App() {
         status: "en_attente_paiement",
         date_joined: new Date().toLocaleDateString("fr-FR"),
       };
-      await setDoc(memberDocRef, memberPayload);
+
+      // Implement a resilient retry loop to handle any short-term Auth token refresh propagation latency
+      let retries = 3;
+      let lastError: any = null;
+      while (retries > 0) {
+        try {
+          await setDoc(memberDocRef, memberPayload);
+          lastError = null;
+          break;
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`Firestore setDoc connection attempt failed, retrying in 150ms... (${retries} retries remaining)`, err);
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          retries--;
+        }
+      }
+
+      if (lastError) {
+        const { handleFirestoreError, OperationType } = await import("./firebase");
+        handleFirestoreError(lastError, OperationType.CREATE, `members/${user.uid}`);
+        return;
+      }
 
       // Save locally to keep Admin synced too
       handleRegisterMember({
@@ -266,7 +287,19 @@ export default function App() {
       window.location.href = "https://buy.stripe.com/3cIeVe9P715h9PLc7T7Re09";
     } catch (err: any) {
       console.error("SignUp error:", err);
-      setSignUpError(err.message || "Une erreur est survenue pendant l'inscription.");
+      let errMsg = "Une erreur est survenue pendant l'inscription.";
+      if (err.code === "auth/email-already-in-use") {
+        errMsg = "Cette adresse email est déjà enregistrée. Veuillez utiliser une autre adresse ou vous connecter dans notre l'Espace Membre.";
+      } else if (err.code === "auth/weak-password") {
+        errMsg = "Le mot de passe est trop faible. Il doit contenir au moins 6 caractères.";
+      } else if (err.code === "auth/invalid-email") {
+        errMsg = "L'adresse email saisie n'est pas valide.";
+      } else if (err.message && (err.message.includes("permission-denied") || err.message.includes("permissions"))) {
+        errMsg = "Erreur d'accréditation sécurisée (Firestore). Nos serveurs n'ont pas pu valider votre identité. Veuillez réessayer d'ici quelques instants.";
+      } else {
+        errMsg = err.message || errMsg;
+      }
+      setSignUpError(errMsg);
     } finally {
       setIsSignUpLoading(false);
     }

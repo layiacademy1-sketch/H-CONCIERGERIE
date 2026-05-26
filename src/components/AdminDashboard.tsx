@@ -5,8 +5,9 @@ import {
   MapPin, Briefcase, Filter, RefreshCw, Star, Trash2, Phone, Mail, CheckCircle2, XCircle, ShieldCheck,
   CreditCard, Clock, Lock
 } from "lucide-react";
-import { db } from "../firebase";
+import { db, auth } from "../firebase";
 import { collection, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { onAuthStateChanged } from "firebase/auth";
 
 interface Member {
   id: string | number;
@@ -29,6 +30,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
   const [members, setMembers] = useState<Member[]>([]);
   const [dbMembers, setDbMembers] = useState<any[]>([]);
   const [loadingDb, setLoadingDb] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(auth.currentUser);
 
   // Phone Verification States
   const [verifyPhoneInput, setVerifyPhoneInput] = useState("");
@@ -38,8 +40,22 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     member?: Member;
   } | null>(null);
 
+  // Sync Auth User state
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
   // Real-time Firestore sync
   useEffect(() => {
+    // Only subscribe to members collection if verified as admin to avoid unauthenticated list errors!
+    if (!currentUser || currentUser.email !== "admin@h-conciergerie.com") {
+      setLoadingDb(false);
+      return;
+    }
+
     const listRef = collection(db, "members");
     const unsubscribe = onSnapshot(listRef, (snapshot) => {
       const items: any[] = [];
@@ -52,12 +68,16 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       setDbMembers(items);
       setLoadingDb(false);
     }, (error) => {
-      console.error("Firestore onSnapshot error:", error);
+      import("../firebase").then(({ handleFirestoreError, OperationType }) => {
+        handleFirestoreError(error, OperationType.LIST, "members");
+      }).catch(() => {
+        console.error("Firestore onSnapshot error:", error);
+      });
       setLoadingDb(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser]);
 
   const handleChangeStatus = async (memberId: string, newStatus: string) => {
     try {
