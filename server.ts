@@ -30,18 +30,25 @@ function getStripe(): Stripe | null {
 let supabaseAdmin: any = null;
 let isAuthAdminDisabled = false;
 function getSupabaseAdmin() {
-  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const rawUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const roleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
                   process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 
                   process.env.VITE_SUPABASE_ANON_KEY || 
                   process.env.SUPABASE_ANON_KEY;
-  if (!url || !roleKey || roleKey === "") {
+  if (!rawUrl || !roleKey || roleKey === "") {
     console.warn("No Supabase URL or Key found. Using local mock/direct updates.");
     return null;
   }
+  
+  // Sanitize the URL exactly as on client side to avoid 404s
+  let cleanedUrl = rawUrl.trim();
+  cleanedUrl = cleanedUrl.replace(/\/rest\/v1\/?$/, "");
+  cleanedUrl = cleanedUrl.replace(/\/auth\/v1\/?$/, "");
+  cleanedUrl = cleanedUrl.replace(/\/+$/, "");
+
   if (!supabaseAdmin) {
     try {
-      supabaseAdmin = createClient(url, roleKey, {
+      supabaseAdmin = createClient(cleanedUrl, roleKey, {
         auth: { persistSession: false }
       });
     } catch (e) {

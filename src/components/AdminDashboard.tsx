@@ -57,17 +57,32 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     setLoading(true);
     setErrorMsg("");
     try {
-      const res = await fetch("/api/admin/members");
-      if (!res.ok) {
-        throw new Error(`Erreur serveur de récupération: HTTP ${res.status}`);
-      }
-      
-      const result = await res.json();
-      if (result.error) {
-        throw new Error(result.error);
+      let dbData: any[] = [];
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase
+          .from("membrehcon")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error(error);
+          setErrorMsg(`Erreur Supabase : ${error.message || JSON.stringify(error)}`);
+          setLoading(false);
+          return;
+        }
+        dbData = data || [];
+      } else {
+        const res = await fetch("/api/admin/members");
+        if (!res.ok) {
+          throw new Error(`Erreur serveur de récupération: HTTP ${res.status}`);
+        }
+        const result = await res.json();
+        if (result.error) {
+          throw new Error(result.error);
+        }
+        dbData = result.data || [];
       }
 
-      const dbData = result.data || [];
       const normalized = dbData.map((item: any) => {
         const namePart = item.full_name || `${item.prenom || ""} ${item.nom || ""}`.trim() || item.name || "Nom non spécifié";
         return {
@@ -240,16 +255,29 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     }
 
     try {
-      const error = await safeUpdateMember(id, payload);
+      setErrorMsg("");
+      const { error } = await supabase
+        .from("membrehcon")
+        .update(payload)
+        .eq("id", id);
+
       if (error) {
-        console.error("Critique: Échec de l'insertion Supabase ou RLS dans 'membrehcon':", error.message || error);
+        console.error(error);
         setErrorMsg(`Erreur Supabase : ${error.message || JSON.stringify(error)}`);
+        
+        // Attempt fallback safeUpdateMember via server-side session to bypass client-side RLS rules
+        const fallbackErr = await safeUpdateMember(id, payload);
+        if (fallbackErr) {
+          console.error("Critique fallback: Échec de mise à jour: ", fallbackErr);
+        } else {
+          setErrorMsg("");
+        }
       } else {
         setErrorMsg("");
       }
       await fetchMembers();
     } catch (err: any) {
-      console.error("Failed to update member status", err);
+      console.error(err);
       setErrorMsg(`Erreur réseau / Supabase inattendue : ${err.message || err}`);
     }
   };
