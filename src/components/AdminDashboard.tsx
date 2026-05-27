@@ -79,10 +79,11 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
           phone: item.phone || item.telephone || "Non renseigné",
           city: item.city || item.ville || "",
           pseudo: item.pseudo || "",
-          abonnement: item.abonnement || (item.access_status === "active" ? "actif" : "non payé"),
+          abonnement: item.abonnement || (item.statut === "actif" || item.access_status === "active" ? "actif" : "non payé"),
           paiement: item.paiement || (item.payment_status === "paid" ? "payé" : "en attente"),
           payment_status: item.payment_status || "pending",
           access_status: item.access_status || "pending",
+          statut: item.statut || "en_attente",
           subscription_expires_at: item.subscription_expires_at,
           created_at: item.created_at
         };
@@ -194,29 +195,32 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     if (targetStatus === "active" || targetStatus === "actif") {
       const expDateString = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
       payload = {
-        access_status: 'actif',
+        statut: "actif",
+        access_status: "actif",
         acces_membre: true,
-        paiement: 'payé',
-        abonnement: 'actif',
-        payment_status: 'paid',
+        paiement: "payé",
+        abonnement: "actif",
+        payment_status: "paid",
         subscription_expires_at: expDateString
       };
     } else if (targetStatus === "pending" || targetStatus === "en_attente") {
       payload = {
-        access_status: 'en_attente',
+        statut: "en_attente",
+        access_status: "en_attente",
         acces_membre: false,
-        paiement: 'en attente',
-        abonnement: 'non payé',
-        payment_status: 'pending',
+        paiement: "en attente",
+        abonnement: "non payé",
+        payment_status: "pending",
         subscription_expires_at: null
       };
     } else {
       payload = {
-        access_status: 'expired',
+        statut: "expired",
+        access_status: "expired",
         acces_membre: false,
-        paiement: 'payé',
-        abonnement: 'expiré',
-        payment_status: 'paid',
+        paiement: "payé",
+        abonnement: "expiré",
+        payment_status: "paid",
         subscription_expires_at: new Date(Date.now() - 24 * 3600 * 1000).toISOString().split('T')[0]
       };
     }
@@ -238,11 +242,15 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     try {
       const error = await safeUpdateMember(id, payload);
       if (error) {
-        console.error("Failed to update status in public.membrehcon:", (error as any).message);
+        console.error("Critique: Échec de l'insertion Supabase ou RLS dans 'membrehcon':", error.message || error);
+        setErrorMsg(`Erreur Supabase : ${error.message || JSON.stringify(error)}`);
+      } else {
+        setErrorMsg("");
       }
       await fetchMembers();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to update member status", err);
+      setErrorMsg(`Erreur réseau / Supabase inattendue : ${err.message || err}`);
     }
   };
 
@@ -291,7 +299,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       }
     }
 
-    const isMemberActive = member.access_status === "active" || member.access_status === "actif";
+    const isMemberActive = member.statut === "actif";
 
     if (activeTab === "pending") {
       return !isMemberActive;
@@ -338,12 +346,23 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
           </div>
         </div>
 
-        <button 
-          onClick={onLogout}
-          className="flex items-center gap-1.5 px-4 py-2 bg-white/5 border border-white/10 text-xs font-bold tracking-widest text-slate-300 hover:bg-rose-600 hover:text-white hover:border-rose-600 rounded-xl transition-all cursor-pointer"
-        >
-          Se déconnecter de l'admin
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={fetchMembers}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-4 py-2 bg-gold/10 hover:bg-[#D4AF37] border border-[#D4AF37]/30 text-xs font-bold tracking-widest text-[#D4AF37] hover:text-slate-950 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            <span>Actualiser</span>
+          </button>
+
+          <button 
+            onClick={onLogout}
+            className="flex items-center gap-1.5 px-4 py-2 bg-white/5 border border-white/10 text-xs font-bold tracking-widest text-slate-300 hover:bg-rose-600 hover:text-white hover:border-rose-600 rounded-xl transition-all cursor-pointer"
+          >
+            Se déconnecter de l'admin
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-10 space-y-8">
@@ -372,7 +391,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
             <div>
               <span className="text-[10px] font-black tracking-widest text-amber-500 uppercase block mb-1">Membres en attente</span>
               <span className="text-4xl font-serif text-amber-500 font-bold">
-                {members.filter(m => m.access_status !== "active" && m.access_status !== "actif").length}
+                {members.filter(m => m.statut !== "actif").length}
               </span>
             </div>
             <p className="text-[10px] text-slate-400 mt-4 font-light">
@@ -388,7 +407,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
             <div>
               <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase block mb-1">Membres validés</span>
               <span className="text-4xl font-serif text-emerald-400 font-bold">
-                {members.filter(m => m.access_status === "active" || m.access_status === "actif").length}
+                {members.filter(m => m.statut === "actif").length}
               </span>
             </div>
             <p className="text-[10px] text-slate-400 mt-4 font-light">
@@ -528,8 +547,9 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
 
         {/* error message display */}
         {errorMsg && (
-          <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-sm text-red-400 font-light text-center">
-            {errorMsg}
+          <div className="bg-red-955/60 border border-red-500/30 p-5 rounded-2xl text-xs md:text-sm text-red-400 font-semibold flex items-center justify-center gap-3 shadow-lg max-w-lg mx-auto w-full">
+            <ShieldAlert size={18} className="text-red-500 animate-bounce shrink-0" />
+            <span>{errorMsg}</span>
           </div>
         )}
 
@@ -561,7 +581,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                   activeTab === "pending" ? "text-[#D4AF37]" : "text-slate-400 hover:text-white"
                 }`}
               >
-                <span>Membres en attente ({members.filter(m => m.access_status !== "active" && m.access_status !== "actif").length})</span>
+                <span>Membres en attente ({members.filter(m => m.statut !== "actif").length})</span>
                 {activeTab === "pending" && (
                   <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37]" />
                 )}
@@ -572,7 +592,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                   activeTab === "active" ? "text-[#D4AF37]" : "text-slate-400 hover:text-white"
                 }`}
               >
-                <span>Membres validés ({members.filter(m => m.access_status === "active" || m.access_status === "actif").length})</span>
+                <span>Membres validés ({members.filter(m => m.statut === "actif").length})</span>
                 {activeTab === "active" && (
                   <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37]" />
                 )}
@@ -594,18 +614,18 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                       <div>
                         <div className="flex justify-between items-start mb-4">
                           <div>
-                            {member.access_status !== "active" && member.access_status !== "actif" && member.access_status !== "expired" && (
+                            {member.statut !== "actif" && member.statut !== "expired" && (
                               <span className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1 text-[10px] text-amber-500 font-extrabold tracking-widest uppercase inline-block animate-pulse">
                                 Membre en attente
                               </span>
                             )}
-                            {(member.access_status === "active" || member.access_status === "actif") && (
+                            {member.statut === "actif" && (
                               <span className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-2.5 py-1 text-[10px] text-emerald-400 font-extrabold tracking-widest uppercase inline-block font-bold">
                                 Membre validé
                               </span>
                             )}
-                            {member.access_status === "expired" && (
-                              <span className="bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1 text-[10px] text-red-500 font-extrabold tracking-widest uppercase inline-block">
+                            {member.statut === "expired" && (
+                              <span className="bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1 text-[10px] text-red-500 font-extrabold tracking-widest uppercase inline-block font-bold">
                                 Expiré
                               </span>
                             )}
@@ -626,57 +646,50 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                         </h4>
 
                         <div className="space-y-2.5 text-xs mb-4">
-                          <div className="flex items-center gap-2 text-slate-300">
-                            <Mail size={12} className="text-[#D4AF37] shrink-0" />
-                            <span className="truncate text-slate-300 font-light" title={member.email}>{member.email}</span>
+                          <div className="flex justify-between border-b border-white/5 pb-1">
+                            <span className="text-slate-500">Email :</span>
+                            <span className="font-medium text-slate-300 truncate max-w-[180px]" title={member.email}>{member.email}</span>
                           </div>
                           
-                          <div className="flex items-center gap-2 text-slate-300">
-                            <Phone size={12} className="text-[#D4AF37] shrink-0" />
-                            <span className="font-mono text-slate-300 font-light">{member.phone}</span>
+                          <div className="flex justify-between border-b border-white/5 pb-1">
+                            <span className="text-slate-500">Nom :</span>
+                            <span className="font-semibold text-slate-100">{member.nom || "—"}</span>
                           </div>
 
-                          {member.city && (
-                            <div className="flex items-center gap-2 text-slate-300">
-                              <MapPin size={12} className="text-[#D4AF37] shrink-0" />
-                              <span className="text-slate-300 font-light">{member.city}</span>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
-                            <div className="bg-slate-950/40 p-2 rounded-xl border border-white/5 space-y-0.5">
-                              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Abonnement</span>
-                              <span className={`text-[10px] font-black uppercase ${member.abonnement === "actif" ? "text-emerald-400" : "text-amber-500"}`}>
-                                {member.abonnement || "Aucun"}
-                              </span>
-                            </div>
-                            <div className="bg-slate-950/40 p-2 rounded-xl border border-white/5 space-y-0.5">
-                              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Paiement</span>
-                              <span className={`text-[10px] font-black uppercase ${member.paiement === "payé" ? "text-emerald-400" : "text-amber-500"}`}>
-                                {member.paiement || "Non payé"}
-                              </span>
-                            </div>
+                          <div className="flex justify-between border-b border-white/5 pb-1">
+                            <span className="text-slate-500">Prénom :</span>
+                            <span className="font-semibold text-slate-100">{member.prenom || "—"}</span>
                           </div>
 
-                          <div className="flex items-center gap-2 text-slate-400 pt-1.5">
-                            <Calendar size={12} className="text-slate-500 shrink-0" />
-                            <span className="text-[10px] text-slate-400 font-light">Inscrit le : <span className="font-mono text-slate-300">{formatDate(member.created_at)}</span></span>
+                          <div className="flex justify-between border-b border-white/5 pb-1">
+                            <span className="text-slate-500">Téléphone :</span>
+                            <span className="font-mono text-slate-300">{member.phone || "—"}</span>
                           </div>
 
-                          {member.subscription_expires_at && (
-                            <div className="flex items-center gap-2 text-slate-400">
-                              <Clock size={12} className="text-slate-500 shrink-0" />
-                              <span className="text-[10px] text-slate-400 font-light">Expire le : <span className="font-mono text-slate-300">{formatDate(member.subscription_expires_at)}</span></span>
-                            </div>
-                          )}
+                          <div className="flex justify-between border-b border-white/5 pb-1">
+                            <span className="text-slate-500">Ville :</span>
+                            <span className="font-medium text-slate-300">{member.city || "—"}</span>
+                          </div>
+
+                          <div className="flex justify-between border-b border-white/5 pb-1">
+                            <span className="text-slate-500">Statut :</span>
+                            <span className={`text-[10px] font-black uppercase ${member.statut === "actif" ? "text-emerald-400" : "text-amber-500"}`}>
+                              {member.statut || "en_attente"}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between border-b border-white/5 pb-1">
+                            <span className="text-slate-500">Date d'inscription :</span>
+                            <span className="text-slate-400 font-mono">{formatDate(member.created_at)}</span>
+                          </div>
                         </div>
                       </div>
 
                       <div className="mt-5 border-t border-white/5 pt-4 flex flex-col gap-3">
-                        {member.access_status !== "active" && member.access_status !== "actif" ? (
+                        {member.statut !== "actif" ? (
                           <button
                             onClick={() => handleChangeMemberStatus(member.id, "active")}
-                            className="w-full bg-[#D4AF37] hover:bg-yellow-500 text-slate-950 font-black tracking-widest uppercase text-xs rounded-xl py-3.5 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_12px_rgba(212,175,55,0.2)] flex items-center justify-center gap-1.5 font-black"
+                            className="w-full bg-[#D4AF37] hover:bg-yellow-500 text-slate-950 font-black tracking-widest uppercase text-xs rounded-xl py-3.5 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_12px_rgba(212,175,55,0.2)] flex items-center justify-center gap-1.5 font-bold"
                           >
                             <CheckCircle2 size={14} />
                             <span>Valider le membre</span>
@@ -694,7 +707,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                         <div className="flex flex-col gap-1 w-full">
                           <label className="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Modifier le statut</label>
                           <select
-                            value={member.access_status === "actif" || member.access_status === "active" ? "active" : member.access_status === "expired" ? "expired" : "pending"}
+                            value={member.statut === "actif" ? "active" : member.statut === "expired" ? "expired" : "pending"}
                             onChange={(e) => handleChangeMemberStatus(member.id, e.target.value === "active" ? "active" : e.target.value === "expired" ? "expired" : "pending")}
                             className="bg-slate-950 border border-white/10 text-xs text-white px-3 py-2 rounded-lg outline-none focus:border-[#D4AF37] transition-all cursor-pointer"
                           >

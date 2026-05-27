@@ -121,11 +121,48 @@ export default function App() {
         console.warn("Table 'membrehcon' not queryable during sync:", membersErr.message);
       }
 
+      if (!dbMembers) {
+        console.log("Profile not found in 'membrehcon' table for logged-in user. Automatically creating default en_attente profile...");
+        try {
+          const registerUrl = window.location.hostname.includes("netlify.app")
+            ? "/.netlify/functions/register-unpaid"
+            : "/api/register-unpaid";
+
+          const registerRes = await fetch(registerUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: userId,
+              memberDetails: {
+                pseudo: session.user.user_metadata?.pseudo || session.user.email?.split("@")[0] || "membre",
+                prenom: session.user.user_metadata?.prenom || session.user.user_metadata?.first_name || "",
+                nom: session.user.user_metadata?.nom || session.user.user_metadata?.last_name || "",
+                email: session.user.email || "",
+                telephone: session.user.user_metadata?.telephone || session.user.user_metadata?.phone || "",
+                ville: session.user.user_metadata?.ville || session.user.user_metadata?.city || "",
+                date_inscription: session.user.created_at || new Date().toISOString()
+              }
+            })
+          });
+
+          if (registerRes.ok) {
+            const data = await registerRes.json();
+            if (data?.success && data?.member) {
+              dbMembers = data.member;
+              console.log("Auto-creation successful inside refreshMemberData:", dbMembers);
+            }
+          }
+        } catch (autoErr) {
+          console.error("Auto-creation has failed inside refreshMemberData", autoErr);
+        }
+      }
+
       const isPaid = 
         dbMembers?.payment_status === "paid" || 
         dbMembers?.paiement === "payé";
 
       const isAuthorized = 
+        dbMembers?.statut === "actif" ||
         dbMembers?.access_status === "active" || 
         dbMembers?.access_status === "actif" || 
         dbMembers?.acces_membre === true;
@@ -143,7 +180,8 @@ export default function App() {
         paiement: dbMembers?.paiement || (isPaid ? "payé" : "en attente"),
         date_inscription: dbMembers?.created_at || new Date().toLocaleDateString("fr-FR"),
         payment_status: dbMembers?.payment_status || (isPaid ? "paid" : "pending"),
-        access_status: dbMembers?.access_status || (isAuthorized ? "active" : "pending")
+        access_status: dbMembers?.access_status || (isAuthorized ? "active" : "pending"),
+        statut: dbMembers?.statut || "en_attente"
       };
 
       setMemberData(merged);
@@ -295,6 +333,41 @@ export default function App() {
           }
         }
 
+        if (!dbData) {
+          console.log("No profile in 'membrehcon' table for logged-in user on login submit. Syncing...");
+          try {
+            const registerUrl = window.location.hostname.includes("netlify.app")
+              ? "/.netlify/functions/register-unpaid"
+              : "/api/register-unpaid";
+
+            const registerRes = await fetch(registerUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                userId: data.user.id,
+                memberDetails: {
+                  pseudo: data.user.user_metadata?.pseudo || data.user.email?.split("@")[0] || "membre",
+                  prenom: data.user.user_metadata?.prenom || data.user.user_metadata?.first_name || "",
+                  nom: data.user.user_metadata?.nom || data.user.user_metadata?.last_name || "",
+                  email: data.user.email || "",
+                  telephone: data.user.user_metadata?.telephone || data.user.user_metadata?.phone || "",
+                  ville: data.user.user_metadata?.ville || data.user.user_metadata?.city || "",
+                  date_inscription: data.user.created_at || new Date().toISOString()
+                }
+              })
+            });
+
+            if (registerRes.ok) {
+              const resJson = await registerRes.json();
+              if (resJson?.success && resJson?.member) {
+                dbData = resJson.member;
+              }
+            }
+          } catch (err) {
+            console.error("Auto creation failure in login submit:", err);
+          }
+        }
+
         if (dbData) {
           setMemberData({
             id: dbData.id || dbData.auth_user_id || data.user.id,
@@ -309,7 +382,8 @@ export default function App() {
             paiement: dbData.paiement || "en attente",
             date_inscription: dbData.created_at || new Date().toLocaleDateString("fr-FR"),
             payment_status: dbData.payment_status || "pending",
-            access_status: dbData.access_status || "pending"
+            access_status: dbData.access_status || "pending",
+            statut: dbData.statut || "en_attente"
           });
         } else {
           setMemberData({
@@ -325,7 +399,8 @@ export default function App() {
             paiement: "en attente",
             date_inscription: new Date().toLocaleDateString("fr-FR"),
             payment_status: "pending",
-            access_status: "pending"
+            access_status: "pending",
+            statut: "en_attente"
           });
         }
 

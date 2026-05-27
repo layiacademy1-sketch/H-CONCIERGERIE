@@ -28,11 +28,15 @@ function getStripe(): Stripe | null {
 }
 
 let supabaseAdmin: any = null;
+let isAuthAdminDisabled = false;
 function getSupabaseAdmin() {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const roleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+  const roleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+                  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 
+                  process.env.VITE_SUPABASE_ANON_KEY || 
+                  process.env.SUPABASE_ANON_KEY;
   if (!url || !roleKey || roleKey === "") {
-    console.warn("SUPABASE_SERVICE_ROLE_KEY is not defined. Using local mock/direct updates.");
+    console.warn("No Supabase URL or Key found. Using local mock/direct updates.");
     return null;
   }
   if (!supabaseAdmin) {
@@ -41,7 +45,7 @@ function getSupabaseAdmin() {
         auth: { persistSession: false }
       });
     } catch (e) {
-      console.error("Failed to initialize Supabase Admin client:", e);
+      console.error("Failed to initialize Supabase client:", e);
       return null;
     }
   }
@@ -98,6 +102,25 @@ async function safeUpsertMembrehcon(supabaseClient: any, payload: any, primaryMa
 
       console.warn(`Upsert attempt ${attempts} on membrehcon failed:`, error.message);
       const msg = error.message || "";
+
+      // Fallback on conflict constraint mismatches
+      if (
+        msg.toLowerCase().includes("unique or exclusion constraint") ||
+        msg.toLowerCase().includes("on conflict") ||
+        msg.toLowerCase().includes("conflict target") ||
+        msg.toLowerCase().includes("pk") ||
+        msg.toLowerCase().includes("primary key")
+      ) {
+        if (currentMatchColumn === "id") {
+          console.log("ON CONFLICT failure with 'id', retrying with 'auth_user_id'...");
+          currentMatchColumn = "auth_user_id";
+          continue;
+        } else if (currentMatchColumn === "auth_user_id") {
+          console.log("ON CONFLICT failure with 'auth_user_id', retrying with 'email'...");
+          currentMatchColumn = "email";
+          continue;
+        }
+      }
 
       const columnName = extractColumnFromErrorMessage(msg);
       if (columnName) {
@@ -183,6 +206,7 @@ app.post("/api/register-unpaid", async (req, res) => {
       // Automatically add a row to the 'membrehcon' table with id, email, full_name, etc.
       const candidatesPayload: any = {
         id: userId,
+        auth_user_id: userId,
         email: memberDetails?.email || "",
         full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
         phone: memberDetails?.telephone || "",
@@ -254,17 +278,18 @@ app.get("/api/admin/members", async (req, res) => {
       return res.json({ success: true, isSimulated: true, data: [] });
     }
 
-    const { data, error } = await adminSb
+    // Fetch existing rows from the membrehcon table as requested
+    const { data: registeredMembers, error } = await adminSb
       .from("membrehcon")
       .select("*")
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error in GET /api/admin/members:", error);
+      console.error("Error in GET /api/admin/members fetching membrehcon:", error);
       return res.status(500).json({ error: error.message });
     }
 
-    return res.json({ success: true, data });
+    return res.json({ success: true, data: registeredMembers || [] });
   } catch (error: any) {
     console.error("Exception in GET /api/admin/members:", error);
     res.status(500).json({ error: error.message || "Erreur interne" });
@@ -401,6 +426,7 @@ app.post("/api/verify-payment", async (req, res) => {
 
         const membersPaidData: any = {
           id: userId,
+          auth_user_id: userId,
           email: memberDetails?.email || "",
           full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
           phone: memberDetails?.telephone || "",
