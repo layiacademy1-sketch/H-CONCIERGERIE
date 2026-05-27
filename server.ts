@@ -80,7 +80,7 @@ function extractColumnFromErrorMessage(msg: string): string | null {
 }
 
 // Helper to safely write members to 'membrehcon' without throwing Postgres column errors
-async function safeUpsertMembrehcon(supabaseClient: any, payload: any, primaryMatchColumn: string = "auth_user_id") {
+async function safeUpsertMembrehcon(supabaseClient: any, payload: any, primaryMatchColumn: string = "id") {
   let currentPayload = { ...payload };
   let currentMatchColumn = primaryMatchColumn;
   let attempts = 0;
@@ -99,24 +99,10 @@ async function safeUpsertMembrehcon(supabaseClient: any, payload: any, primaryMa
       console.warn(`Upsert attempt ${attempts} on membrehcon failed:`, error.message);
       const msg = error.message || "";
 
-      // Check if the conflict column itself is invalid as a key/constraint
-      if (msg.includes("column") && msg.includes(currentMatchColumn)) {
-        if (currentMatchColumn === "auth_user_id") {
-          console.log("Switching conflict column from auth_user_id to id and retrying...");
-          currentMatchColumn = "id";
-          continue;
-        }
-      }
-
       const columnName = extractColumnFromErrorMessage(msg);
       if (columnName) {
         console.log(`Removing non-existent column '${columnName}' from payload and retrying...`);
         delete currentPayload[columnName];
-        
-        // If the stripped column was our current conflict column, switch to the other
-        if (columnName === currentMatchColumn) {
-          currentMatchColumn = currentMatchColumn === "auth_user_id" ? "id" : "auth_user_id";
-        }
       } else {
         return { data: null, error };
       }
@@ -194,10 +180,9 @@ app.post("/api/register-unpaid", async (req, res) => {
     }
 
     if (adminSb) {
-      // Automatically add a row to the 'membrehcon' table with auth_user_id, id, email, full_name, etc.
+      // Automatically add a row to the 'membrehcon' table with id, email, full_name, etc.
       const candidatesPayload: any = {
         id: userId,
-        auth_user_id: userId,
         email: memberDetails?.email || "",
         full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
         phone: memberDetails?.telephone || "",
@@ -218,7 +203,7 @@ app.post("/api/register-unpaid", async (req, res) => {
       };
 
       console.log("Attempting to write to 'membrehcon' table with user:", userId);
-      const { data, error } = await safeUpsertMembrehcon(adminSb, candidatesPayload, "auth_user_id");
+      const { data, error } = await safeUpsertMembrehcon(adminSb, candidatesPayload, "id");
 
       if (error) {
         console.error("Critical: 'membrehcon' table write failed:", error);
@@ -232,7 +217,7 @@ app.post("/api/register-unpaid", async (req, res) => {
       }
       
       const memberRecord = (data && data.length > 0) ? {
-        id: data[0].id || data[0].auth_user_id || userId,
+        id: data[0].id || userId,
         nom: data[0].nom || memberDetails?.nom || "",
         prenom: data[0].prenom || memberDetails?.prenom || "",
         email: data[0].email || memberDetails?.email || "",
@@ -299,7 +284,7 @@ app.post("/api/admin/update-member", async (req, res) => {
       return res.json({ success: true, isSimulated: true });
     }
 
-    // Try updating by auth_user_id or id using safeUpdate logic
+    // Try updating by id using safeUpdate logic
     let currentPayload = { ...payload };
     let attempts = 0;
     while (attempts < 15) {
@@ -307,7 +292,7 @@ app.post("/api/admin/update-member", async (req, res) => {
       const { data, error } = await adminSb
         .from("membrehcon")
         .update(currentPayload)
-        .or(`auth_user_id.eq.${id},id.eq.${id}`)
+        .eq("id", id)
         .select();
 
       if (!error) {
@@ -349,7 +334,7 @@ app.post("/api/admin/delete-member", async (req, res) => {
     const { error } = await adminSb
       .from("membrehcon")
       .delete()
-      .or(`auth_user_id.eq.${id},id.eq.${id}`);
+      .eq("id", id);
 
     if (error) {
       console.error("Error in delete member:", error);
@@ -416,7 +401,6 @@ app.post("/api/verify-payment", async (req, res) => {
 
         const membersPaidData: any = {
           id: userId,
-          auth_user_id: userId,
           email: memberDetails?.email || "",
           full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
           phone: memberDetails?.telephone || "",
@@ -438,7 +422,7 @@ app.post("/api/verify-payment", async (req, res) => {
           created_at: memberDetails?.date_inscription || new Date().toISOString()
         };
 
-        const { data, error } = await safeUpsertMembrehcon(adminSb, membersPaidData, "auth_user_id");
+        const { data, error } = await safeUpsertMembrehcon(adminSb, membersPaidData, "id");
 
         if (error) {
           console.error("Critical: 'membrehcon' table update failed in verify-payment:", error);
@@ -455,7 +439,7 @@ app.post("/api/verify-payment", async (req, res) => {
         }
         
         const memberRecord = (data && data.length > 0) ? {
-          id: data[0].id || data[0].auth_user_id || userId,
+          id: data[0].id || userId,
           nom: data[0].nom || memberDetails?.nom || "",
           prenom: data[0].prenom || memberDetails?.prenom || "",
           email: data[0].email || memberDetails?.email || "",

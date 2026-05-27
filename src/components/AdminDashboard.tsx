@@ -25,7 +25,7 @@ interface Member {
 
 interface AdminDashboardProps {
   onLogout: () => void;
-  additionalMembers: Array<{ name: string; city: string; job: string; phone?: string; email?: string }>;
+  additionalMembers?: Array<{ name: string; city: string; job: string; phone?: string; email?: string }>;
 }
 
 export default function AdminDashboard({ onLogout, additionalMembers }: AdminDashboardProps) {
@@ -33,6 +33,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [activeTab, setActiveTab] = useState<"pending" | "active">("pending");
 
   // Phone Verification States
   const [verifyPhoneInput, setVerifyPhoneInput] = useState("");
@@ -43,45 +44,6 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
   } | null>(null);
 
   const fetchMembers = async () => {
-    if (!isSupabaseConfigured()) {
-      // Offline fallback simulation data
-      setMembers([
-        {
-          id: "sim-1",
-          name: "Jean-Marc Devereaux",
-          prenom: "Jean-Marc",
-          nom: "Devereaux",
-          email: "jean.marc@example.com",
-          phone: "0767890987",
-          city: "Paris",
-          pseudo: "JM75",
-          abonnement: "actif",
-          paiement: "payé",
-          payment_status: "paid",
-          access_status: "active",
-          subscription_expires_at: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString(),
-          created_at: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString()
-        },
-        {
-          id: "sim-2",
-          name: "Moussa Al-Amir",
-          prenom: "Moussa",
-          nom: "Al-Amir",
-          email: "moussa.alamir@example.com",
-          phone: "0612345678",
-          city: "Lyon",
-          pseudo: "Mouss99",
-          abonnement: "non payé",
-          paiement: "en attente",
-          payment_status: "pending",
-          access_status: "pending",
-          subscription_expires_at: undefined,
-          created_at: new Date().toISOString()
-        }
-      ]);
-      return;
-    }
-
     setLoading(true);
     setErrorMsg("");
     try {
@@ -99,7 +61,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       const normalized = dbData.map((item: any) => {
         const namePart = item.full_name || `${item.prenom || ""} ${item.nom || ""}`.trim() || item.name || "Nom non spécifié";
         return {
-          id: item.id || item.auth_user_id,
+          id: item.id,
           name: namePart,
           prenom: item.prenom || item.first_name || "",
           nom: item.nom || item.last_name || "",
@@ -116,66 +78,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
         };
       });
 
-      // Also merge in additional custom mock session user if any local storage backup exists
-      const savedMock = localStorage.getItem("h_supabase_session_mock");
-      let localMembers: Member[] = [];
-      if (savedMock) {
-        try {
-          const parsed = JSON.parse(savedMock);
-          if (parsed && parsed.email) {
-            localMembers.push({
-              id: parsed.id || "local-session",
-              name: `${parsed.prenom || ""} ${parsed.nom || ""}`.trim() || parsed.pseudo || "Membre",
-              prenom: parsed.prenom || "",
-              nom: parsed.nom || "",
-              email: parsed.email,
-              phone: parsed.telephone || parsed.phone || "Non renseigné",
-              city: parsed.ville || parsed.city || "",
-              pseudo: parsed.pseudo || "",
-              abonnement: parsed.abonnement || "non payé",
-              paiement: parsed.paiement || "en attente",
-              payment_status: parsed.payment_status || "pending",
-              access_status: parsed.access_status || "pending",
-              created_at: parsed.created_at || new Date().toISOString()
-            });
-          }
-        } catch (e) {}
-      }
-
-      // Merge additional custom elements array
-      if (additionalMembers && additionalMembers.length > 0) {
-        additionalMembers.forEach((item, index) => {
-          localMembers.push({
-            id: `local-custom-${index}-${item.email || ''}`,
-            name: item.name,
-            prenom: item.name.split(" ")[0] || "",
-            nom: item.name.split(" ").slice(1).join(" ") || "",
-            email: item.email || "Email non renseigné",
-            phone: item.phone || "Non renseigné",
-            city: item.city || "",
-            pseudo: "",
-            abonnement: "non payé",
-            paiement: "en attente",
-            payment_status: "pending",
-            access_status: "pending",
-            created_at: new Date().toISOString()
-          });
-        });
-      }
-
-      const combined = [...normalized];
-      localMembers.forEach(lm => {
-        const alreadyInDb = combined.some(m => 
-          (m.email && m.email !== "Email non renseigné" && m.email.toLowerCase() === lm.email.toLowerCase()) ||
-          (m.phone && m.phone !== "Non renseigné" && m.phone.replace(/\s+/g, "") === lm.phone.replace(/\s+/g, "")) ||
-          (m.id === lm.id)
-        );
-        if (!alreadyInDb) {
-          combined.push(lm);
-        }
-      });
-
-      setMembers(combined);
+      setMembers(normalized);
     } catch (err: any) {
       console.error(err);
       setErrorMsg(`Erreur lors de la récupération : ${err.message || err}`);
@@ -277,27 +180,36 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
   };
 
   const handleChangeMemberStatus = async (id: string, targetStatus: "pending" | "active" | "expired") => {
-    const isAct = targetStatus === "active";
-    const isPending = targetStatus === "pending";
-    const isExpired = targetStatus === "expired";
-
-    const expDate = new Date();
-    if (isAct) {
-      expDate.setFullYear(expDate.getFullYear() + 1);
-    } else if (isExpired) {
-      expDate.setDate(expDate.getDate() - 2); // Already expired
+    let payload: any = {};
+    if (targetStatus === "active") {
+      const expDateString = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0];
+      payload = {
+        access_status: 'active',
+        acces_membre: true,
+        paiement: 'payé',
+        abonnement: 'actif',
+        payment_status: 'paid',
+        subscription_expires_at: expDateString
+      };
+    } else if (targetStatus === "pending") {
+      payload = {
+        access_status: 'pending',
+        acces_membre: false,
+        paiement: 'en attente',
+        abonnement: 'non payé',
+        payment_status: 'pending',
+        subscription_expires_at: null
+      };
+    } else {
+      payload = {
+        access_status: 'expired',
+        acces_membre: false,
+        paiement: 'payé',
+        abonnement: 'expiré',
+        payment_status: 'paid',
+        subscription_expires_at: new Date(Date.now() - 24 * 3600 * 1000).toISOString().split('T')[0]
+      };
     }
-
-    const payload: any = {
-      access_status: targetStatus,
-      payment_status: isAct ? "paid" : (isPending ? "pending" : "paid"),
-      subscription_expires_at: isPending ? null : expDate.toISOString(),
-      
-      // Also write french equivalents to ensure compatibility across client-side column reads
-      acces_membre: isAct,
-      paiement: isAct ? "payé" : (isPending ? "en attente" : "payé"),
-      abonnement: isAct ? "actif" : (isPending ? "non payé" : "expiré")
-    };
 
     if (!isSupabaseConfigured() || id.startsWith("local-custom-") || id === "local-session") {
       // Simulation update
@@ -310,18 +222,6 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
         }
         return m;
       }));
-
-      // Update local storage too if it's the session mock
-      if (id === "local-session") {
-        const savedMock = localStorage.getItem("h_supabase_session_mock");
-        if (savedMock) {
-          try {
-            const parsed = JSON.parse(savedMock);
-            const updated = { ...parsed, ...payload };
-            localStorage.setItem("h_supabase_session_mock", JSON.stringify(updated));
-          } catch (e) {}
-        }
-      }
       return;
     }
 
@@ -339,9 +239,6 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
   const handleDeleteMember = async (id: string) => {
     if (!isSupabaseConfigured() || id.startsWith("local-custom-") || id === "local-session") {
       setMembers(prev => prev.filter(m => m.id !== id));
-      if (id === "local-session") {
-        localStorage.removeItem("h_supabase_session_mock");
-      }
       return;
     }
 
@@ -366,13 +263,20 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     }
   };
 
-  // Filtering based on search query (by member name or email)
+  // Filtering based on search query and active tab selection
   const filteredMembers = members.filter(member => {
     const matchesSearch = 
       member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.phone.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+    
+    if (!matchesSearch) return false;
+
+    if (activeTab === "pending") {
+      return member.access_status !== "active";
+    } else {
+      return member.access_status === "active";
+    }
   });
 
   const formatDate = (dateStr?: string) => {
@@ -564,7 +468,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
 
         {/* MEMBERS DATABASE TABLE / CARD VIEW */}
         {!loading && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-white font-serif text-lg tracking-widest uppercase flex items-center gap-2">
                 <Users size={18} className="text-[#D4AF37]" /> Annuaire des Membres
@@ -572,6 +476,32 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
               <span className="text-[10px] uppercase font-bold text-slate-500 tracking-widest">
                 Résultat : {filteredMembers.length} de {members.length}
               </span>
+            </div>
+
+            {/* Elegant Luxury Tabs */}
+            <div className="flex border-b border-white/5 gap-6 mb-2">
+              <button
+                onClick={() => setActiveTab("pending")}
+                className={`pb-3 text-xs font-bold uppercase tracking-widest relative transition-all duration-300 cursor-pointer ${
+                  activeTab === "pending" ? "text-[#D4AF37]" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <span>En attente ({members.filter(m => m.access_status !== "active").length})</span>
+                {activeTab === "pending" && (
+                  <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37]" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab("active")}
+                className={`pb-3 text-xs font-bold uppercase tracking-widest relative transition-all duration-300 cursor-pointer ${
+                  activeTab === "active" ? "text-[#D4AF37]" : "text-slate-400 hover:text-white"
+                }`}
+              >
+                <span>Membres validés ({members.filter(m => m.access_status === "active").length})</span>
+                {activeTab === "active" && (
+                  <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37]" />
+                )}
+              </button>
             </div>
 
             {filteredMembers.length > 0 ? (
