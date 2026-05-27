@@ -262,7 +262,7 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
   ];
 
   // 1. Check for Pending Access status
-  if (memberData && (((memberData as any).access_status === "pending" || !memberData.acces_membre) && (memberData as any).access_status !== "expired")) {
+  if (memberData && (((memberData as any).access_status === "pending" || (memberData as any).access_status === "en_attente" || !memberData.acces_membre) && (memberData as any).access_status !== "expired")) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center px-6 relative overflow-hidden">
         {/* Luxuriously styled background decorations to match H-CONCIERGERIE aesthetic */}
@@ -274,7 +274,7 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
           </div>
 
           <p className="text-sm md:text-base font-serif text-slate-100 leading-relaxed font-semibold max-w-lg mx-auto">
-            Votre accès est en attente de validation. Votre espace sera validé après vérification du paiement.
+            Votre accès est actuellement en attente de validation par l’administration.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">

@@ -195,7 +195,7 @@ app.post("/api/register-unpaid", async (req, res) => {
         ville: memberDetails?.ville || "",
         pseudo: memberDetails?.pseudo || "",
         payment_status: "pending",
-        access_status: "pending",
+        access_status: "en_attente",
         paiement: "en attente",
         abonnement: "non payé",
         acces_membre: false,
@@ -414,7 +414,7 @@ app.post("/api/verify-payment", async (req, res) => {
           pseudo: memberDetails?.pseudo || "",
           payment_status: "paid",
           // keep pending as requested until admin validates to 'active'
-          access_status: "pending", 
+          access_status: "en_attente", 
           paiement: "payé",
           abonnement: "non payé", // will be 'actif' once admin activates
           acces_membre: false,

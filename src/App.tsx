@@ -127,6 +127,7 @@ export default function App() {
 
       const isAuthorized = 
         dbMembers?.access_status === "active" || 
+        dbMembers?.access_status === "actif" || 
         dbMembers?.acces_membre === true;
 
       const merged = {
