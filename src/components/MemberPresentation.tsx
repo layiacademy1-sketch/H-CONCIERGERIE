@@ -583,16 +583,15 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
               
               <div className="space-y-1">
                 <div className="text-5xl font-serif text-gold-gradient font-bold tracking-tight">
-                  1 € <span className="text-lg text-slate-400 font-light">/ an</span>
-                </div>
-                <div className="text-xs text-slate-300 font-semibold tracking-wide bg-gold/10 border border-gold/10 inline-block px-3 py-1 rounded-full">
-                  Accès d'exception garanti
+                  365 € <span className="text-lg text-slate-400 font-light">/ an</span>
                 </div>
               </div>
               
               <div className="pt-2">
                 <button 
-                  onClick={() => setShowForm(true)}
+                  onClick={() => {
+                    window.location.href = "https://buy.stripe.com/bJe5kD6htcmW5fR9GT7ss01";
+                  }}
                   className="w-full bg-gold hover:bg-gold-light text-slate-950 font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 cursor-pointer"
                 >
                   DEVENIR MEMBRE

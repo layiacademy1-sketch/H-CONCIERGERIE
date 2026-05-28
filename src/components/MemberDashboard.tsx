@@ -321,7 +321,7 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
           <div className="bg-slate-950/80 border border-gold/20 p-5 rounded-xl space-y-3 text-center max-w-md mx-auto">
             <div className="space-y-0.5">
               <span className="text-[9px] uppercase font-bold tracking-widest text-gold text-center block">Cotisation annuelle de renouvellement</span>
-              <p className="text-sm text-white font-serif">1,00 €</p>
+              <p className="text-sm text-white font-serif">365,00 €</p>
             </div>
 
             <a 
@@ -331,7 +331,7 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
               className="w-full bg-gradient-to-r from-gold via-yellow-400 to-amber-500 hover:from-yellow-400 hover:to-gold text-slate-950 font-black tracking-widest uppercase text-xs rounded-xl py-3.5 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_15px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2"
             >
               <CreditCard size={14} className="shrink-0" />
-              <span>Renouveler ma cotisation (1 €)</span>
+              <span>Renouveler ma cotisation (365 €)</span>
             </a>
           </div>
 
@@ -479,7 +479,7 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
               <div className="bg-slate-950/80 border border-gold/20 p-4 rounded-xl space-y-3 text-center">
                 <div className="space-y-0.5">
                   <span className="text-[9px] uppercase font-bold tracking-widest text-gold text-center block">Réglement Sécurisé</span>
-                  <p className="text-[11px] text-slate-400 font-light font-mono">Souscription annuelle de 1,00 €</p>
+                  <p className="text-[11px] text-slate-400 font-light font-mono">Souscription annuelle de 365,00 €</p>
                 </div>
 
                 <a 
@@ -489,7 +489,7 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
                   className="w-full bg-gradient-to-r from-gold via-yellow-400 to-amber-500 hover:from-yellow-400 hover:to-gold text-slate-950 font-bold tracking-widest uppercase text-[10px] rounded-lg py-3 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_15px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2 animate-pulse"
                 >
                   <CreditCard size={13} className="shrink-0" />
-                  <span>Cliquer ici pour renouveler / cotiser (1 €)</span>
+                  <span>Cliquer ici pour renouveler / cotiser (365 €)</span>
                 </a>
 
                 <div className="flex gap-2 items-center justify-center text-[8px] text-slate-500 font-medium pt-1">

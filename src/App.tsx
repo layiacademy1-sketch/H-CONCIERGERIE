@@ -91,34 +91,18 @@ export default function App() {
 
       const userId = session.user.id;
       let dbMembers: any = null;
-      let membersErr: any = null;
 
-      // 1. Try querying by auth_user_id
-      const { data: attempt1, error: err1 } = await supabase
+      // Query from membrehcon table by primary key id
+      const { data: queryData, error: queryErr } = await supabase
         .from("membrehcon")
         .select("*")
-        .eq("auth_user_id", userId)
+        .eq("id", userId)
         .maybeSingle();
 
-      if (!err1 && attempt1) {
-        dbMembers = attempt1;
+      if (queryErr) {
+        console.error("Error querying 'membrehcon':", queryErr);
       } else {
-        // 2. Fallback to querying by id
-        const { data: attempt2, error: err2 } = await supabase
-          .from("membrehcon")
-          .select("*")
-          .eq("id", userId)
-          .maybeSingle();
-        
-        if (attempt2) {
-          dbMembers = attempt2;
-        } else {
-          membersErr = err1 || err2;
-        }
-      }
-
-      if (membersErr) {
-        console.warn("Table 'membrehcon' not queryable during sync:", membersErr.message);
+        dbMembers = queryData;
       }
 
       if (!dbMembers) {
@@ -311,26 +295,17 @@ export default function App() {
       if (error) throw error;
 
       if (data?.user) {
-        // Fetch from table `membrehcon`
+        // Fetch from table `membrehcon` by id directly
         let dbData: any = null;
         
-        const { data: attempt1 } = await supabase
+        const { data: memberData, error: memberErr } = await supabase
           .from("membrehcon")
           .select("*")
-          .eq("auth_user_id", data.user.id)
+          .eq("id", data.user.id)
           .maybeSingle();
 
-        if (attempt1) {
-          dbData = attempt1;
-        } else {
-          const { data: attempt2 } = await supabase
-            .from("membrehcon")
-            .select("*")
-            .eq("id", data.user.id)
-            .maybeSingle();
-          if (attempt2) {
-            dbData = attempt2;
-          }
+        if (!memberErr && memberData) {
+          dbData = memberData;
         }
 
         if (!dbData) {

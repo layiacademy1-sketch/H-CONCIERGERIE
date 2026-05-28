@@ -126,27 +126,16 @@ export const handler: Handler = async (event, context) => {
 
     const candidatesPayload: any = {
       id: userId,
-      auth_user_id: userId,
       email: memberDetails?.email || "",
-      full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
-      phone: memberDetails?.telephone || "",
-      telephone: memberDetails?.telephone || "",
       prenom: memberDetails?.prenom || "",
       nom: memberDetails?.nom || "",
-      first_name: memberDetails?.prenom || "",
-      last_name: memberDetails?.nom || "",
-      city: memberDetails?.ville || "",
+      telephone: memberDetails?.telephone || "",
       ville: memberDetails?.ville || "",
-      pseudo: memberDetails?.pseudo || "",
-      payment_status: "pending",
-      access_status: "pending",
-      paiement: "en attente",
-      abonnement: "non payé",
-      acces_membre: false,
+      statut: "en_attente",
       created_at: memberDetails?.date_inscription || new Date().toISOString()
     };
 
-    const { data: mData, error: mError } = await safeUpsertMembrehcon(supabaseAdmin, candidatesPayload, "auth_user_id");
+    const { data: mData, error: mError } = await safeUpsertMembrehcon(supabaseAdmin, candidatesPayload, "id");
 
     if (mError) {
       console.error("Critical: 'membrehcon' table write failed on Netlify register-unpaid:", mError);

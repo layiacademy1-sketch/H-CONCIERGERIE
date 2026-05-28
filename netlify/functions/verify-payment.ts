@@ -129,30 +129,17 @@ export const handler: Handler = async (event, context) => {
 
     const membersPaidData: any = {
       id: userId,
-      auth_user_id: userId,
       email: memberDetails?.email || "",
-      full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
-      phone: memberDetails?.telephone || "",
-      telephone: memberDetails?.telephone || "",
       prenom: memberDetails?.prenom || "",
       nom: memberDetails?.nom || "",
-      first_name: memberDetails?.prenom || "",
-      last_name: memberDetails?.nom || "",
-      city: memberDetails?.ville || "",
+      telephone: memberDetails?.telephone || "",
       ville: memberDetails?.ville || "",
-      pseudo: memberDetails?.pseudo || "",
-      payment_status: "paid",
-      // keep pending as requested until admin validates to 'active'
-      access_status: "pending", 
-      paiement: "payé",
-      abonnement: "non payé", // will be 'actif' once admin activates
-      acces_membre: false,
-      subscription_expires_at: expDate.toISOString(),
+      statut: "en_attente",
       created_at: memberDetails?.date_inscription || new Date().toISOString()
     };
 
     console.log("Updating 'membrehcon' table on Netlify verify-payment with user:", userId);
-    const { data: mData, error: mError } = await safeUpsertMembrehcon(supabaseAdmin, membersPaidData, "auth_user_id");
+    const { data: mData, error: mError } = await safeUpsertMembrehcon(supabaseAdmin, membersPaidData, "id");
 
     if (mError) {
       console.error("Critical: 'membrehcon' table update failed on Netlify verify-payment:", mError);

@@ -256,9 +256,19 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
 
     try {
       setErrorMsg("");
+      
+      // Filter payload to contain only existing columns in the table 'membrehcon'
+      const cleanPayload: any = {};
+      const allowedColumns = ["id", "email", "nom", "prenom", "telephone", "ville", "statut", "created_at"];
+      for (const col of allowedColumns) {
+        if (payload[col] !== undefined) {
+          cleanPayload[col] = payload[col];
+        }
+      }
+
       const { error } = await supabase
         .from("membrehcon")
-        .update(payload)
+        .update(cleanPayload)
         .eq("id", id);
 
       if (error) {
@@ -266,7 +276,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
         setErrorMsg(`Erreur Supabase : ${error.message || JSON.stringify(error)}`);
         
         // Attempt fallback safeUpdateMember via server-side session to bypass client-side RLS rules
-        const fallbackErr = await safeUpdateMember(id, payload);
+        const fallbackErr = await safeUpdateMember(id, cleanPayload);
         if (fallbackErr) {
           console.error("Critique fallback: Échec de mise à jour: ", fallbackErr);
         } else {

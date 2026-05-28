@@ -167,9 +167,9 @@ app.post("/api/create-payment-intent", async (req, res) => {
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 100, // 1 € in cents
+      amount: 36500, // 365 € in cents
       currency: "eur",
-      description: "Abonnement Club Privé H-Conciergerie (1 an - 1€)",
+      description: "Abonnement Club Privé H-Conciergerie (1 an - 365€)",
       metadata: {
         userId,
         email: email || ""
@@ -210,26 +210,15 @@ app.post("/api/register-unpaid", async (req, res) => {
     }
 
     if (adminSb) {
-      // Automatically add a row to the 'membrehcon' table with id, email, full_name, etc.
+      // Automatically add a row to the 'membrehcon' table with strictly existing columns
       const candidatesPayload: any = {
         id: userId,
-        auth_user_id: userId,
         email: memberDetails?.email || "",
-        full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
-        phone: memberDetails?.telephone || "",
-        telephone: memberDetails?.telephone || "",
         prenom: memberDetails?.prenom || "",
         nom: memberDetails?.nom || "",
-        first_name: memberDetails?.prenom || "",
-        last_name: memberDetails?.nom || "",
-        city: memberDetails?.ville || "",
+        telephone: memberDetails?.telephone || "",
         ville: memberDetails?.ville || "",
-        pseudo: memberDetails?.pseudo || "",
-        payment_status: "pending",
-        access_status: "en_attente",
-        paiement: "en attente",
-        abonnement: "non payé",
-        acces_membre: false,
+        statut: "en_attente",
         created_at: memberDetails?.date_inscription || new Date().toISOString()
       };
 
@@ -316,8 +305,17 @@ app.post("/api/admin/update-member", async (req, res) => {
       return res.json({ success: true, isSimulated: true });
     }
 
+    // Filter payload to contain only existing columns in the table 'membrehcon'
+    const cleanPayload: any = {};
+    const allowedColumns = ["id", "email", "nom", "prenom", "telephone", "ville", "statut", "created_at"];
+    for (const col of allowedColumns) {
+      if (payload && payload[col] !== undefined) {
+        cleanPayload[col] = payload[col];
+      }
+    }
+
     // Try updating by id using safeUpdate logic
-    let currentPayload = { ...payload };
+    let currentPayload = { ...cleanPayload };
     let attempts = 0;
     while (attempts < 15) {
       attempts++;
@@ -433,25 +431,12 @@ app.post("/api/verify-payment", async (req, res) => {
 
         const membersPaidData: any = {
           id: userId,
-          auth_user_id: userId,
           email: memberDetails?.email || "",
-          full_name: memberDetails ? `${memberDetails.prenom || ""} ${memberDetails.nom || ""}`.trim() : "",
-          phone: memberDetails?.telephone || "",
-          telephone: memberDetails?.telephone || "",
           prenom: memberDetails?.prenom || "",
           nom: memberDetails?.nom || "",
-          first_name: memberDetails?.prenom || "",
-          last_name: memberDetails?.nom || "",
-          city: memberDetails?.ville || "",
+          telephone: memberDetails?.telephone || "",
           ville: memberDetails?.ville || "",
-          pseudo: memberDetails?.pseudo || "",
-          payment_status: "paid",
-          // keep pending as requested until admin validates to 'active'
-          access_status: "en_attente", 
-          paiement: "payé",
-          abonnement: "non payé", // will be 'actif' once admin activates
-          acces_membre: false,
-          subscription_expires_at: expDate.toISOString(),
+          statut: "en_attente",
           created_at: memberDetails?.date_inscription || new Date().toISOString()
         };
 
