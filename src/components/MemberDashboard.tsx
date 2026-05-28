@@ -391,7 +391,7 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
         </div>
 
         <div className="flex items-center gap-3">
-          {memberData?.pseudo?.trim().toLowerCase() === "layi" ? (
+          {memberData?.pseudo?.trim().toLowerCase() === "layi" || memberData?.pseudo?.trim().toLowerCase() === "karim" ? (
             <div className="px-4 py-2 bg-gold/10 border border-gold/20 text-xs font-semibold tracking-wide text-slate-300 rounded-xl flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>vous êtes membre jusqu'au 28/05/2027</span>

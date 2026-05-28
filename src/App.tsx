@@ -84,13 +84,13 @@ export default function App() {
 
   // Synchronise member state to keep data from 'membrehcon' table completely up-to-date
   const refreshMemberData = async () => {
-    // Keep 'layi' special profile status intact
-    if (memberData?.pseudo === "layi") return;
+    // Keep 'layi' and 'karim' special profile status intact
+    if (memberData?.pseudo === "layi" || memberData?.pseudo === "karim") return;
     try {
       const savedMockStr = localStorage.getItem("h_supabase_session_mock");
       if (savedMockStr) {
         const parsed = JSON.parse(savedMockStr);
-        if (parsed?.pseudo === "layi") {
+        if (parsed?.pseudo === "layi" || parsed?.pseudo === "karim") {
           setMemberData(parsed);
           return;
         }
@@ -292,6 +292,35 @@ export default function App() {
       return;
     }
 
+    if (pseudo.trim().toLowerCase() === "karim" && password === "comores") {
+      setIsLoggedIn(true);
+      const customData = {
+        id: "karim-profile-active",
+        nom: "Karim",
+        prenom: "Karim",
+        email: "karim@example.com",
+        telephone: "+33 6 00 00 00 00",
+        ville: "Paris",
+        pseudo: "karim",
+        abonnement: "actif",
+        acces_membre: true,
+        paiement: "payé",
+        date_inscription: new Date().toLocaleDateString("fr-FR"),
+        payment_status: "paid",
+        access_status: "active",
+        statut: "actif"
+      };
+      setMemberData(customData);
+      setShowLoginModal(false);
+      setPseudo("");
+      setPassword("");
+      localStorage.setItem("h_session_auth", "true");
+      localStorage.setItem("h_supabase_session_mock", JSON.stringify(customData));
+      setView("espace-membre");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     if (pseudo.trim() === "membre" && password === "h2026") {
       setIsLoggedIn(true);
       setMemberData(null); // legacy VIP active login bypasses Supabase rules
@@ -450,14 +479,15 @@ export default function App() {
 
   const handleAdminLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminPseudo.trim() === "admin" && adminPassword === "comores") {
+    const cleanPseudo = adminPseudo.trim().toLowerCase();
+    if ((cleanPseudo === "admin" || cleanPseudo === "hconciergerie") && adminPassword === "comores") {
       setIsAdminLoggedIn(true);
       setAdminPseudo("");
       setAdminPassword("");
       setAdminLoginError("");
       localStorage.setItem("h_admin_auth", "true");
     } else {
-      setAdminLoginError("Identifiants incorrects. Pseudo : admin / MDP : comores");
+      setAdminLoginError("Identifiants incorrects. Pseudo : hconciergerie / MDP : comores");
     }
   };
 
@@ -711,7 +741,7 @@ export default function App() {
                         <input 
                           type="text" 
                           required
-                          placeholder="ex: admin"
+                          placeholder="ex: hconciergerie"
                           className="w-full bg-slate-950 border border-slate-800 focus:border-gold rounded-xl px-4 py-3.5 text-xs text-white outline-none transition-colors"
                           value={adminPseudo}
                           onChange={(e) => setAdminPseudo(e.target.value)}
