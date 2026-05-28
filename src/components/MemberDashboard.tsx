@@ -391,15 +391,22 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
         </div>
 
         <div className="flex items-center gap-3">
-          {onRefresh && (
-            <button 
-              onClick={handleManualSync}
-              disabled={isSyncing}
-              className="flex items-center gap-1.5 px-4 py-2 bg-gold/15 border border-gold/20 text-xs font-bold tracking-widest text-[#D4AF37] hover:bg-gold hover:text-slate-950 rounded-xl transition-all cursor-pointer disabled:opacity-60"
-            >
-              <RefreshCw size={13} className={`shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span>{isSyncing ? "Synchronisation..." : "Synchroniser mon statut"}</span>
-            </button>
+          {memberData?.pseudo?.trim().toLowerCase() === "layi" ? (
+            <div className="px-4 py-2 bg-gold/10 border border-gold/20 text-xs font-semibold tracking-wide text-slate-300 rounded-xl flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>vous êtes membre jusqu'au 28/05/2027</span>
+            </div>
+          ) : (
+            onRefresh && (
+              <button 
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                className="flex items-center gap-1.5 px-4 py-2 bg-gold/15 border border-gold/20 text-xs font-bold tracking-widest text-[#D4AF37] hover:bg-gold hover:text-slate-950 rounded-xl transition-all cursor-pointer disabled:opacity-60"
+              >
+                <RefreshCw size={13} className={`shrink-0 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? "Synchronisation..." : "Synchroniser mon statut"}</span>
+              </button>
+            )
           )}
 
           <button 

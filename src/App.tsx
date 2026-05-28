@@ -84,6 +84,19 @@ export default function App() {
 
   // Synchronise member state to keep data from 'membrehcon' table completely up-to-date
   const refreshMemberData = async () => {
+    // Keep 'layi' special profile status intact
+    if (memberData?.pseudo === "layi") return;
+    try {
+      const savedMockStr = localStorage.getItem("h_supabase_session_mock");
+      if (savedMockStr) {
+        const parsed = JSON.parse(savedMockStr);
+        if (parsed?.pseudo === "layi") {
+          setMemberData(parsed);
+          return;
+        }
+      }
+    } catch (e) {}
+
     if (!isSupabaseConfigured()) return;
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -249,6 +262,35 @@ export default function App() {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
+
+    if (pseudo.trim().toLowerCase() === "layi" && password === "agency") {
+      setIsLoggedIn(true);
+      const customData = {
+        id: "layi-profile-active",
+        nom: "Layi",
+        prenom: "Layi",
+        email: "layiacademy.1@gmail.com",
+        telephone: "+33 6 00 00 00 00",
+        ville: "Paris",
+        pseudo: "layi",
+        abonnement: "actif",
+        acces_membre: true,
+        paiement: "payé",
+        date_inscription: new Date().toLocaleDateString("fr-FR"),
+        payment_status: "paid",
+        access_status: "active",
+        statut: "actif"
+      };
+      setMemberData(customData);
+      setShowLoginModal(false);
+      setPseudo("");
+      setPassword("");
+      localStorage.setItem("h_session_auth", "true");
+      localStorage.setItem("h_supabase_session_mock", JSON.stringify(customData));
+      setView("espace-membre");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
 
     if (pseudo.trim() === "membre" && password === "h2026") {
       setIsLoggedIn(true);
