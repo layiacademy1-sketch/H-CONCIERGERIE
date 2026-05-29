@@ -359,9 +359,7 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
             Intégrez l'Inaccessible. <br/>
             <span className="text-gold-gradient font-semibold">Devenez Membre.</span>
           </h1>
-          <p className="text-slate-400 font-light text-base md:text-lg leading-relaxed">
-            Rejoignez un cercle prestigieux et profitez d'expériences uniques de voyage, de conciergerie haut de gamme et d'avantages financiers sans précédent partout à travers le monde.
-          </p>
+          {/* Paragraph removed */}
         </div>
 
         {/* PREMIUM MEMBERSHIP PRICING PRESENTATION */}
