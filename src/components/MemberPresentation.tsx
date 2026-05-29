@@ -585,6 +585,9 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
                 <div className="text-5xl font-serif text-gold-gradient font-bold tracking-tight">
                   365 € <span className="text-lg text-slate-400 font-light">/ an</span>
                 </div>
+                <div className="text-xs text-slate-400 font-mono tracking-wider mt-1">
+                  soit 1€/j
+                </div>
               </div>
               
               <div className="pt-2">
