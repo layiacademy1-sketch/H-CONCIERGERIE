@@ -5,13 +5,7 @@ import {
   MapPin, Notebook as Journal, ShieldCheck, Mail, Send, Sparkles, Zap, Lock, Compass, Calendar, Phone, CreditCard,
   Eye, EyeOff, AlertCircle, CheckCircle2
 } from "lucide-react";
-import { supabase, isSupabaseConfigured } from "../lib/supabase";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, CardElement, useStripe, useElements, PaymentRequestButtonElement } from "@stripe/react-stripe-js";
 
-// Retrieve Stripe Publishable Key
-const stripeKey = (import.meta as any).env?.VITE_STRIPE_PUBLISHABLE_KEY || "";
-const stripePromise = stripeKey ? loadStripe(stripeKey) : null;
 
 interface MemberPresentationProps {
   onBack: () => void;
@@ -41,145 +35,34 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
   };
 
   const finalizeUserRegistration = async () => {
-    // Unconfigured Supabase Fallback Simulation
-    if (!isSupabaseConfigured()) {
-      console.warn("Supabase is not configured yet. Running simulated registration.");
-      const mockUid = "mock-uuid-" + Date.now();
-      const mockMember = {
-        id: mockUid,
-        nom: lastName,
-        prenom: firstName,
-        email: email,
-        telephone: phone,
-        ville: city,
-        pseudo: pseudo.trim(),
-        abonnement: "non payé",
-        acces_membre: false,
-        paiement: "en attente",
-        date_inscription: new Date().toLocaleDateString('fr-FR')
-      };
+    const activeUserId = "mem-" + Math.random().toString(36).substr(2, 9);
+    const registerUrl = getApiUrl("register-unpaid");
 
-      localStorage.setItem("h_supabase_session_mock", JSON.stringify(mockMember));
-      localStorage.setItem("h_session_auth", "true");
-
-      onSubmitMember({
-        name: `${firstName} ${lastName}`,
-        city,
-        job: "Membre Club VIP",
-        phone,
-        email
-      });
-
-      setSuccess(true);
-      setLoading(false);
-
-      setTimeout(() => {
-        onSignUpSuccess(mockMember);
-      }, 1500);
-      return;
-    }
-
-    // Create or Sign in Supabase Auth Account
-    let authData;
-    let authError;
     try {
-      const result = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            nom: lastName,
+      const registerRes = await fetch(registerUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: activeUserId,
+          memberDetails: {
+            pseudo: pseudo.trim(),
+            password: password,
             prenom: firstName,
+            nom: lastName,
+            email: email,
             telephone: phone,
             ville: city,
-            pseudo: pseudo.trim()
+            date_inscription: new Date().toISOString()
           }
-        }
-      });
-      authData = result.data;
-      authError = result.error;
-    } catch (e: any) {
-      authError = e;
-    }
-
-    let currentUser = authData?.user;
-
-    if (authError && (
-      authError.message?.toLowerCase().includes("already registered") || 
-      authError.message?.toLowerCase().includes("already exists") || 
-      authError.status === 422 || 
-      authError.message?.toLowerCase().includes("taken")
-    )) {
-      console.log("User already registered. Trying to log in with provided password...");
-      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password
+        })
       });
 
-      if (loginError) {
-        throw new Error("Cet email est déjà enregistré, et le mot de passe saisi est incorrect.");
+      if (!registerRes.ok) {
+        const errJson = await registerRes.json().catch(() => ({}));
+        throw new Error(errJson.error || "L'enregistrement sur le serveur a échoué.");
       }
 
-      currentUser = loginData?.user;
-      authError = null;
-    }
-
-    let activeUserId = currentUser?.id;
-
-    if (authError) {
-      if (authError.message?.toLowerCase().includes("database error") || authError.message?.toLowerCase().includes("saving new user")) {
-        console.warn("Detected Supabase trigger database error! Gracefully switching to direct api registration bypass.");
-        activeUserId = "sim_" + Math.random().toString(36).substr(2, 9);
-        authError = null;
-      } else {
-        throw new Error(`Échec d'authentification: ${authError.message}`);
-      }
-    }
-
-    if (!activeUserId) {
-      throw new Error("La création ou connexion d'utilisateur Supabase a échoué.");
-    }
-
-    // Finalize Register Unpaid Record bypassing RLS
-    const registerUrl = getApiUrl("register-unpaid");
-    const registerRes = await fetch(registerUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: activeUserId,
-        memberDetails: {
-          pseudo: pseudo.trim(),
-          prenom: firstName,
-          nom: lastName,
-          email: email,
-          telephone: phone,
-          ville: city,
-          date_inscription: new Date().toISOString()
-        }
-      })
-    });
-
-    if (!registerRes.ok) {
-      console.warn("L'enregistrement backend a échoué (serveur non joignable ou problème de table). Activation du mode simulation locale pour éviter les blocages.");
-      
-      const mockMember = {
-        id: activeUserId,
-        nom: lastName,
-        prenom: firstName,
-        email,
-        telephone: phone,
-        ville: city,
-        pseudo: pseudo.trim(),
-        abonnement: "non payé",
-        acces_membre: false,
-        paiement: "en attente",
-        date_inscription: new Date().toLocaleDateString('fr-FR'),
-        payment_status: "pending",
-        access_status: "pending"
-      };
-
-      localStorage.setItem("h_supabase_session_mock", JSON.stringify(mockMember));
-      localStorage.setItem("h_session_auth", "true");
+      const registerData = await registerRes.json();
 
       onSubmitMember({
         name: `${firstName} ${lastName}`,
@@ -191,50 +74,19 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
 
       setSuccess(true);
       setLoading(false);
+      localStorage.setItem("h_session_auth", "true");
+
+      const finalMember = registerData.member;
+      localStorage.setItem("h_supabase_session_mock", JSON.stringify(finalMember));
 
       setTimeout(() => {
-        onSignUpSuccess(mockMember);
+        onSignUpSuccess(finalMember);
       }, 1500);
-      return;
+
+    } catch (err: any) {
+      console.error("Registration error:", err);
+      throw err;
     }
-
-    const registerData = await registerRes.json();
-
-    onSubmitMember({
-      name: `${firstName} ${lastName}`,
-      city,
-      job: "Membre Club VIP",
-      phone,
-      email
-    });
-
-    setSuccess(true);
-    setLoading(false);
-    localStorage.setItem("h_session_auth", "true");
-
-    const finalMember = registerData.member || {
-      id: activeUserId,
-      nom: lastName,
-      prenom: firstName,
-      email,
-      telephone: phone,
-      ville: city,
-      pseudo: pseudo.trim(),
-      abonnement: "non payé",
-      acces_membre: false,
-      paiement: "en attente",
-      date_inscription: new Date().toLocaleDateString('fr-FR'),
-      payment_status: "pending",
-      access_status: "pending"
-    };
-
-    if (activeUserId.startsWith("sim_")) {
-      localStorage.setItem("h_supabase_session_mock", JSON.stringify(finalMember));
-    }
-
-    setTimeout(() => {
-      onSignUpSuccess(finalMember);
-    }, 1500);
   };
 
   const handleCustomSubmit = async (e: React.FormEvent) => {
@@ -256,29 +108,8 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
     }
 
     try {
-      // Check for pseudo availability in Supabase if configured
-      if (isSupabaseConfigured()) {
-        try {
-          const { data: existingPseudo, error: checkError } = await supabase
-            .from("membrehcon")
-            .select("id")
-            .eq("pseudo", pseudo.trim())
-            .maybeSingle();
-
-          if (!checkError && existingPseudo) {
-            setErrorMsg("Ce pseudo est déjà pris. Veuillez en choisir un autre.");
-            setLoading(false);
-            return;
-          }
-        } catch (dbErr) {
-          console.warn("Erreur d'accès à la table 'membrehcon' lors de la vérification du pseudo, ignorée pour résilience:", dbErr);
-        }
-      }
-
       await finalizeUserRegistration();
-
     } catch (err: any) {
-      console.error(err);
       setErrorMsg(err.message || "Une erreur s'est produite lors de la validation.");
       setLoading(false);
     }
@@ -324,12 +155,6 @@ function InnerPremiumSignupForm({ onBack, onSubmitMember, onSignUpSuccess }: Mem
         <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/25 text-xs text-red-400 font-bold font-mono text-center flex items-center justify-center gap-2">
           <AlertCircle size={14} />
           <span>{errorMsg}</span>
-        </div>
-      )}
-
-      {!isSupabaseConfigured() && (
-        <div className="p-3 rounded-xl bg-gold/10 border border-gold/20 text-[10px] text-gold font-light leading-relaxed text-left">
-          <strong className="font-bold">Mode Démo Actif</strong> : Base de données locale temporaire (hors-ligne). Votre compte sera conservé dans le navigateur.
         </div>
       )}
 
@@ -586,19 +411,17 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
                   365 € <span className="text-lg text-slate-400 font-light">/ an</span>
                 </div>
                 <div className="text-xs text-slate-400 font-mono tracking-wider mt-1">
-                  soit 1€/j
+                  soit 1€ par jour
                 </div>
               </div>
               
               <div className="pt-2">
-                <a 
-                  href="https://buy.stripe.com/bJe5kD6htcmW5fR9GT7ss01"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-full bg-gold hover:bg-gold-light text-slate-950 font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 text-center cursor-pointer font-bold font-sans"
+                <button 
+                  onClick={() => setShowForm(true)}
+                  className="w-full bg-gold hover:bg-gold-light text-[#0A0D14] font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 text-center cursor-pointer font-extrabold font-sans"
                 >
                   DEVENIR MEMBRE
-                </a>
+                </button>
               </div>
             </div>
           </div>

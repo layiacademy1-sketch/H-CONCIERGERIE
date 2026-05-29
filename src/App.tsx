@@ -82,7 +82,7 @@ export default function App() {
     }
   }, []);
 
-  // Synchronise member state to keep data from 'membrehcon' table completely up-to-date
+  // Synchronise member state to keep data completely up-to-date from local JSON database
   const refreshMemberData = async () => {
     // Keep 'layi' and 'karim' special profile status intact
     if (memberData?.pseudo === "layi" || memberData?.pseudo === "karim") return;
@@ -94,98 +94,22 @@ export default function App() {
           setMemberData(parsed);
           return;
         }
-      }
-    } catch (e) {}
 
-    if (!isSupabaseConfigured()) return;
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-
-      const userId = session.user.id;
-      let dbMembers: any = null;
-
-      // Query from membrehcon table by primary key id
-      const { data: queryData, error: queryErr } = await supabase
-        .from("membrehcon")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (queryErr) {
-        console.error("Error querying 'membrehcon':", queryErr);
-      } else {
-        dbMembers = queryData;
-      }
-
-      if (!dbMembers) {
-        console.log("Profile not found in 'membrehcon' table for logged-in user. Automatically creating default en_attente profile...");
-        try {
-          const registerUrl = window.location.hostname.includes("netlify.app")
-            ? "/.netlify/functions/register-unpaid"
-            : "/api/register-unpaid";
-
-          const registerRes = await fetch(registerUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: userId,
-              memberDetails: {
-                pseudo: session.user.user_metadata?.pseudo || session.user.email?.split("@")[0] || "membre",
-                prenom: session.user.user_metadata?.prenom || session.user.user_metadata?.first_name || "",
-                nom: session.user.user_metadata?.nom || session.user.user_metadata?.last_name || "",
-                email: session.user.email || "",
-                telephone: session.user.user_metadata?.telephone || session.user.user_metadata?.phone || "",
-                ville: session.user.user_metadata?.ville || session.user.user_metadata?.city || "",
-                date_inscription: session.user.created_at || new Date().toISOString()
-              }
-            })
-          });
-
-          if (registerRes.ok) {
-            const data = await registerRes.json();
-            if (data?.success && data?.member) {
-              dbMembers = data.member;
-              console.log("Auto-creation successful inside refreshMemberData:", dbMembers);
+        const profileId = parsed?.id;
+        if (profileId) {
+          const res = await fetch(`/api/member/profile?id=${profileId}`);
+          if (res.ok) {
+            const result = await res.json();
+            if (result.success && result.member) {
+              setMemberData(result.member);
+              localStorage.setItem("h_supabase_session_mock", JSON.stringify(result.member));
+              console.log("Synchronized from local JSON database:", result.member);
             }
           }
-        } catch (autoErr) {
-          console.error("Auto-creation has failed inside refreshMemberData", autoErr);
         }
       }
-
-      const isPaid = 
-        dbMembers?.payment_status === "paid" || 
-        dbMembers?.paiement === "payé";
-
-      const isAuthorized = 
-        dbMembers?.statut === "actif" ||
-        dbMembers?.access_status === "active" || 
-        dbMembers?.access_status === "actif" || 
-        dbMembers?.acces_membre === true;
-
-      const merged = {
-        id: userId,
-        nom: dbMembers?.nom || dbMembers?.last_name || session.user.user_metadata?.nom || "",
-        prenom: dbMembers?.prenom || dbMembers?.first_name || session.user.user_metadata?.prenom || "",
-        email: dbMembers?.email || session.user.email,
-        telephone: dbMembers?.phone || dbMembers?.telephone || session.user.user_metadata?.telephone || "",
-        ville: dbMembers?.city || dbMembers?.ville || session.user.user_metadata?.ville || "",
-        pseudo: dbMembers?.pseudo || session.user.user_metadata?.pseudo || "",
-        abonnement: dbMembers?.abonnement || (isAuthorized ? "actif" : "non payé"),
-        acces_membre: isAuthorized,
-        paiement: dbMembers?.paiement || (isPaid ? "payé" : "en attente"),
-        date_inscription: dbMembers?.created_at || new Date().toLocaleDateString("fr-FR"),
-        payment_status: dbMembers?.payment_status || (isPaid ? "paid" : "pending"),
-        access_status: dbMembers?.access_status || (isAuthorized ? "active" : "pending"),
-        statut: dbMembers?.statut || "en_attente"
-      };
-
-      setMemberData(merged);
-      localStorage.setItem("h_supabase_session_mock", JSON.stringify(merged));
-      console.log("Synchronized from Supabase 'membrehcon' table:", merged);
-    } catch (err) {
-      console.error("Critical error in refreshMemberData:", err);
+    } catch (e) {
+      console.error("Critical error in refreshMemberData:", e);
     }
   };
 
@@ -263,7 +187,10 @@ export default function App() {
     e.preventDefault();
     setLoginError("");
 
-    if (pseudo.trim().toLowerCase() === "layi" && password === "agency") {
+    const cleanPseudo = pseudo.trim().toLowerCase();
+
+    // Check pre-coded accounts directly on client for instant login
+    if (cleanPseudo === "layi" && password === "agency") {
       setIsLoggedIn(true);
       const customData = {
         id: "layi-profile-active",
@@ -292,7 +219,7 @@ export default function App() {
       return;
     }
 
-    if (pseudo.trim().toLowerCase() === "karim" && password === "comores") {
+    if (cleanPseudo === "karim" && password === "comores") {
       setIsLoggedIn(true);
       const customData = {
         id: "karim-profile-active",
@@ -321,158 +248,70 @@ export default function App() {
       return;
     }
 
-    if (pseudo.trim() === "membre" && password === "h2026") {
+    if (cleanPseudo === "membre" && password === "h2026") {
       setIsLoggedIn(true);
-      setMemberData(null); // legacy VIP active login bypasses Supabase rules
+      const customData = {
+        id: "legacy-vip",
+        nom: "Membre VIP",
+        prenom: "VIP",
+        email: "membre@example.com",
+        telephone: "",
+        ville: "",
+        pseudo: "membre",
+        abonnement: "actif",
+        acces_membre: true,
+        paiement: "payé",
+        date_inscription: new Date().toLocaleDateString("fr-FR"),
+        payment_status: "paid",
+        access_status: "active",
+        statut: "actif"
+      };
+      setMemberData(customData);
       setShowLoginModal(false);
       setPseudo("");
       setPassword("");
       localStorage.setItem("h_session_auth", "true");
+      localStorage.setItem("h_supabase_session_mock", JSON.stringify(customData));
       setView("espace-membre");
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
-    // Try simulated accounts if Supabase is not configured yet
-    if (!isSupabaseConfigured()) {
-      const savedMock = localStorage.getItem("h_supabase_session_mock");
-      if (savedMock) {
-        try {
-          const parsed = JSON.parse(savedMock);
-          if (parsed.email === pseudo.trim()) {
-            setMemberData(parsed);
-            setIsLoggedIn(true);
-            setShowLoginModal(false);
-            setPseudo("");
-            setPassword("");
-            localStorage.setItem("h_session_auth", "true");
-            setView("espace-membre");
-            window.scrollTo({ top: 0, behavior: "smooth" });
-            return;
-          }
-        } catch (err) {}
-      }
-      setLoginError("Identifiants de démonstration : pseudo 'membre' et mot de passe 'h2026'.");
-      return;
-    }
-
-    // Try Supabase Auth
+    // Hit our self-contained node JSON database authentication endpoint
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: pseudo.trim(),
-        password,
+      const res = await fetch("/api/member/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pseudo, password })
       });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || "Identifiants de connexion invalides.");
+      }
 
-      if (data?.user) {
-        // Fetch from table `membrehcon` by id directly
-        let dbData: any = null;
-        
-        const { data: memberData, error: memberErr } = await supabase
-          .from("membrehcon")
-          .select("*")
-          .eq("id", data.user.id)
-          .maybeSingle();
-
-        if (!memberErr && memberData) {
-          dbData = memberData;
-        }
-
-        if (!dbData) {
-          console.log("No profile in 'membrehcon' table for logged-in user on login submit. Syncing...");
-          try {
-            const registerUrl = window.location.hostname.includes("netlify.app")
-              ? "/.netlify/functions/register-unpaid"
-              : "/api/register-unpaid";
-
-            const registerRes = await fetch(registerUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                userId: data.user.id,
-                memberDetails: {
-                  pseudo: data.user.user_metadata?.pseudo || data.user.email?.split("@")[0] || "membre",
-                  prenom: data.user.user_metadata?.prenom || data.user.user_metadata?.first_name || "",
-                  nom: data.user.user_metadata?.nom || data.user.user_metadata?.last_name || "",
-                  email: data.user.email || "",
-                  telephone: data.user.user_metadata?.telephone || data.user.user_metadata?.phone || "",
-                  ville: data.user.user_metadata?.ville || data.user.user_metadata?.city || "",
-                  date_inscription: data.user.created_at || new Date().toISOString()
-                }
-              })
-            });
-
-            if (registerRes.ok) {
-              const resJson = await registerRes.json();
-              if (resJson?.success && resJson?.member) {
-                dbData = resJson.member;
-              }
-            }
-          } catch (err) {
-            console.error("Auto creation failure in login submit:", err);
-          }
-        }
-
-        if (dbData) {
-          setMemberData({
-            id: dbData.id || dbData.auth_user_id || data.user.id,
-            nom: dbData.nom || dbData.last_name || data.user.user_metadata?.nom || "",
-            prenom: dbData.prenom || dbData.first_name || data.user.user_metadata?.prenom || "",
-            email: dbData.email || data.user.email,
-            telephone: dbData.telephone || dbData.phone || data.user.user_metadata?.telephone || "",
-            ville: dbData.ville || dbData.city || data.user.user_metadata?.ville || "",
-            pseudo: dbData.pseudo || data.user.user_metadata?.pseudo || "",
-            abonnement: dbData.abonnement || "non payé",
-            acces_membre: dbData.acces_membre ?? false,
-            paiement: dbData.paiement || "en attente",
-            date_inscription: dbData.created_at || new Date().toLocaleDateString("fr-FR"),
-            payment_status: dbData.payment_status || "pending",
-            access_status: dbData.access_status || "pending",
-            statut: dbData.statut || "en_attente"
-          });
-        } else {
-          setMemberData({
-            id: data.user.id,
-            nom: data.user.user_metadata?.nom || "",
-            prenom: data.user.user_metadata?.prenom || "",
-            email: data.user.email,
-            telephone: data.user.user_metadata?.telephone || "",
-            ville: data.user.user_metadata?.ville || "",
-            pseudo: data.user.user_metadata?.pseudo || "",
-            abonnement: "non payé",
-            acces_membre: false,
-            paiement: "en attente",
-            date_inscription: new Date().toLocaleDateString("fr-FR"),
-            payment_status: "pending",
-            access_status: "pending",
-            statut: "en_attente"
-          });
-        }
-
+      const data = await res.json();
+      if (data?.success && data?.member) {
+        setMemberData(data.member);
         setIsLoggedIn(true);
         setShowLoginModal(false);
         setPseudo("");
         setPassword("");
         localStorage.setItem("h_session_auth", "true");
+        localStorage.setItem("h_supabase_session_mock", JSON.stringify(data.member));
         setView("espace-membre");
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (err: any) {
-      setLoginError(err.message || "Identifiants incorrects.");
+      setLoginError(err.message || "Identifiants de connexion invalides.");
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setIsLoggedIn(false);
     setMemberData(null);
     localStorage.removeItem("h_session_auth");
     localStorage.removeItem("h_supabase_session_mock");
-    if (isSupabaseConfigured()) {
-      try {
-        await supabase.auth.signOut();
-      } catch (err) {}
-    }
     setView("home");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

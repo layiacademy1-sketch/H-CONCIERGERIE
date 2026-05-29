@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { 
   Compass, Zap, Lock, LogOut, Ticket, Star, Calendar, 
   Clock, ShoppingBag, MapPin, ChevronRight, Share2, Sparkles, Award, PlayCircle,
-  CreditCard, ShieldCheck, RefreshCw, X
+  CreditCard, ShieldCheck, RefreshCw, X, Phone
 } from "lucide-react";
-import StripePaymentForm from "./StripePaymentForm";
+
 
 interface MemberDashboardProps {
   onLogout: () => void;
@@ -279,15 +279,13 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-            <a 
-              href="https://buy.stripe.com/3cIeVe9P715h9PLc7T7Re09"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-1.5 px-5 py-3 bg-[#D4AF37] text-slate-950 text-xs font-black tracking-widest uppercase rounded-xl hover:bg-yellow-500 hover:scale-[1.01] transition-all cursor-pointer shadow-[0_3px_12px_rgba(212,175,55,0.2)] text-center font-bold"
+            <button 
+              onClick={() => window.open(`https://wa.me/33756832263?text=Bonjour,%20mon%20compte%20est%20créé%20et%20j'aimerais%20activer%20mon%20accès%20membre%20H-Conciergerie.`, "_blank")}
+              className="flex items-center justify-center gap-1.5 px-5 py-3 bg-[#D4AF37] text-slate-950 text-xs font-black tracking-widest uppercase rounded-xl hover:bg-yellow-500 hover:scale-[1.01] transition-all cursor-pointer shadow-[0_3px_12px_rgba(212,175,55,0.2)] text-center font-bold font-sans"
             >
-              <CreditCard size={13} />
-              <span>passer au paiement</span>
-            </a>
+              <Phone size={13} />
+              <span>Contacter l'administrateur</span>
+            </button>
             
             <button 
               type="button"
@@ -324,15 +322,13 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
               <p className="text-sm text-white font-serif">365,00 €</p>
             </div>
 
-            <a 
-              href="https://buy.stripe.com/3cIeVe9P715h9PLc7T7Re09"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full bg-gradient-to-r from-gold via-yellow-400 to-amber-500 hover:from-yellow-400 hover:to-gold text-slate-950 font-black tracking-widest uppercase text-xs rounded-xl py-3.5 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_15px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2"
+            <button 
+              onClick={() => window.open(`https://wa.me/33756832263?text=Bonjour,%20mon%20abonnement%20membre%20H-Conciergerie%20est%20expiré%20et%20j'aimerais%20procéder%20au%20renouvellement.`, "_blank")}
+              className="w-full bg-gradient-to-r from-gold via-yellow-400 to-amber-500 hover:from-yellow-400 hover:to-gold text-slate-950 font-black tracking-widest uppercase text-xs rounded-xl py-3.5 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_15px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2 font-sans"
             >
-              <CreditCard size={14} className="shrink-0" />
-              <span>Renouveler ma cotisation (365 €)</span>
-            </a>
+              <Phone size={14} className="shrink-0" />
+              <span>Contacter l'administrateur pour renouveler</span>
+            </button>
           </div>
 
           <div className="flex gap-3 justify-center pt-4">
@@ -485,23 +481,21 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
               {/* COMPACT SECURE PORTAL PAYMENT LINK */}
               <div className="bg-slate-950/80 border border-gold/20 p-4 rounded-xl space-y-3 text-center">
                 <div className="space-y-0.5">
-                  <span className="text-[9px] uppercase font-bold tracking-widest text-gold text-center block">Réglement Sécurisé</span>
+                  <span className="text-[9px] uppercase font-bold tracking-widest text-gold text-center block">Assistance Club Privé</span>
                   <p className="text-[11px] text-slate-400 font-light font-mono">Souscription annuelle de 365,00 €</p>
                 </div>
 
-                <a 
-                  href="https://buy.stripe.com/3cIeVe9P715h9PLc7T7Re09"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full bg-gradient-to-r from-gold via-yellow-400 to-amber-500 hover:from-yellow-400 hover:to-gold text-slate-950 font-bold tracking-widest uppercase text-[10px] rounded-lg py-3 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_15px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2 animate-pulse"
+                <button 
+                  onClick={() => window.open(`https://wa.me/33756832263?text=Bonjour,%20j'aimerais%20procéder%20au%20règlement%20ou%20renouvellement%20de%20ma%20souscription%20H-Conciergerie.`, "_blank")}
+                  className="w-full bg-gradient-to-r from-gold via-yellow-400 to-amber-500 hover:from-yellow-400 hover:to-gold text-slate-950 font-bold tracking-widest uppercase text-[10px] rounded-lg py-3 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_15px_rgba(212,175,55,0.25)] flex items-center justify-center gap-2 font-sans"
                 >
-                  <CreditCard size={13} className="shrink-0" />
-                  <span>Cliquer ici pour renouveler / cotiser (365 €)</span>
-                </a>
+                  <Phone size={13} className="shrink-0" />
+                  <span>Contacter le conseiller</span>
+                </button>
 
                 <div className="flex gap-2 items-center justify-center text-[8px] text-slate-500 font-medium pt-1">
                   <ShieldCheck size={11} className="text-gold" />
-                  <span>Stripe sécurisé crypté SSL • Apple Pay & Cartes</span>
+                  <span>Assistance direct 24/7 de bout en bout</span>
                 </div>
               </div>
 

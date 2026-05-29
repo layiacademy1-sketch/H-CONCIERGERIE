@@ -4,7 +4,7 @@ import {
   Users, Search, ShieldAlert, Award, Calendar, 
   MapPin, Briefcase, Filter, RefreshCw, Star, Trash2, Phone, Mail, CheckCircle2, XCircle, ShieldCheck, Clock
 } from "lucide-react";
-import { supabase, isSupabaseConfigured } from "../lib/supabase";
+
 
 interface Member {
   id: string;
@@ -57,31 +57,15 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     setLoading(true);
     setErrorMsg("");
     try {
-      let dbData: any[] = [];
-      if (isSupabaseConfigured()) {
-        const { data, error } = await supabase
-          .from("membrehcon")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (error) {
-          console.error(error);
-          setErrorMsg(`Erreur Supabase : ${error.message || JSON.stringify(error)}`);
-          setLoading(false);
-          return;
-        }
-        dbData = data || [];
-      } else {
-        const res = await fetch("/api/admin/members");
-        if (!res.ok) {
-          throw new Error(`Erreur serveur de récupération: HTTP ${res.status}`);
-        }
-        const result = await res.json();
-        if (result.error) {
-          throw new Error(result.error);
-        }
-        dbData = result.data || [];
+      const res = await fetch("/api/admin/members");
+      if (!res.ok) {
+        throw new Error(`Erreur serveur de récupération: HTTP ${res.status}`);
       }
+      const result = await res.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      const dbData = result.data || [];
 
       const normalized = dbData.map((item: any) => {
         const namePart = item.full_name || `${item.prenom || ""} ${item.nom || ""}`.trim() || item.name || "Nom non spécifié";
@@ -115,25 +99,6 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
 
   useEffect(() => {
     fetchMembers();
-
-    if (isSupabaseConfigured()) {
-      console.log("Setting up Supabase real-time subscription for membrehcon table...");
-      const channel = supabase
-        .channel("membrehcon-realtime")
-        .on(
-          "postgres_changes",
-          { event: "*", schema: "public", table: "membrehcon" },
-          (payload) => {
-            console.log("Real-time change detected inside AdminDashboard.tsx:", payload);
-            fetchMembers();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
   }, [additionalMembers]);
 
   const handleVerifyPhone = () => {
@@ -240,64 +205,20 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       };
     }
 
-    if (!isSupabaseConfigured() || id.startsWith("local-custom-") || id === "local-session") {
-      // Simulation update
-      setMembers(prev => prev.map(m => {
-        if (m.id === id) {
-          return {
-            ...m,
-            ...payload
-          };
-        }
-        return m;
-      }));
-      return;
-    }
-
     try {
       setErrorMsg("");
-      
-      // Filter payload to contain only existing columns in the table 'membrehcon'
-      const cleanPayload: any = {};
-      const allowedColumns = ["id", "email", "nom", "prenom", "telephone", "ville", "statut", "created_at"];
-      for (const col of allowedColumns) {
-        if (payload[col] !== undefined) {
-          cleanPayload[col] = payload[col];
-        }
-      }
-
-      const { error } = await supabase
-        .from("membrehcon")
-        .update(cleanPayload)
-        .eq("id", id);
-
-      if (error) {
-        console.error(error);
-        setErrorMsg(`Erreur Supabase : ${error.message || JSON.stringify(error)}`);
-        
-        // Attempt fallback safeUpdateMember via server-side session to bypass client-side RLS rules
-        const fallbackErr = await safeUpdateMember(id, cleanPayload);
-        if (fallbackErr) {
-          console.error("Critique fallback: Échec de mise à jour: ", fallbackErr);
-        } else {
-          setErrorMsg("");
-        }
-      } else {
-        setErrorMsg("");
+      const fallbackErr = await safeUpdateMember(id, payload);
+      if (fallbackErr) {
+        throw new Error(fallbackErr.message || JSON.stringify(fallbackErr));
       }
       await fetchMembers();
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(`Erreur réseau / Supabase inattendue : ${err.message || err}`);
+      setErrorMsg(`Erreur lors de la mise à jour : ${err.message || err}`);
     }
   };
 
   const handleDeleteMember = async (id: string) => {
-    if (!isSupabaseConfigured() || id.startsWith("local-custom-") || id === "local-session") {
-      setMembers(prev => prev.filter(m => m.id !== id));
-      return;
-    }
-
     try {
       const res = await fetch("/api/admin/delete-member", {
         method: "POST",
@@ -314,8 +235,9 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
         throw new Error(result.error);
       }
       await fetchMembers();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setErrorMsg(`Erreur lors de la suppression : ${err.message || err}`);
     }
   };
 
