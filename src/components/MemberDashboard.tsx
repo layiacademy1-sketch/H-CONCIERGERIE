@@ -666,16 +666,7 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
                     <p className="text-slate-400 text-xs font-light">Retrouvez le relevé complet de vos demandes de réservations et privilèges.</p>
                   </div>
 
-                  {/* RESERVATION POINTS */}
-                  <div className="bg-gradient-to-r from-[#B8860B]/10 to-slate-900 border border-gold/20 rounded-2xl px-5 py-4 flex items-center gap-4 shrink-0 shadow-lg">
-                    <div className="w-10 h-10 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37]">
-                      <Award size={20} />
-                    </div>
-                    <div>
-                      <span className="text-[9px] uppercase tracking-widest font-black text-[#D4AF37] block">Points Fidélité</span>
-                      <span className="text-xl font-bold text-white">120 pts</span>
-                    </div>
-                  </div>
+
                 </div>
 
                 <div className="space-y-4 max-w-4xl">
