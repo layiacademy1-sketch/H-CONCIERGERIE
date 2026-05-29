@@ -370,30 +370,6 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-slate-900/55 rounded-full filter blur-[80px] pointer-events-none" />
 
             <div className="space-y-6 text-left flex-1">
-              <p className="text-slate-300 font-light text-sm md:text-base leading-relaxed mb-1">
-                Rejoignez un cercle prestigieux et profitez d'expériences uniques de voyage, de conciergerie haut de gamme et d'avantages financiers sans précédent partout à travers le monde.
-              </p>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gold/10 border border-gold/20 rounded-md text-[10px] text-gold font-black uppercase tracking-widest">
-                <CreditCard size={12} /> TARIF ABONNEMENT UNIQUE
-              </div>
-              
-              <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 pt-1">
-                <div>
-                  <div className="text-4xl md:text-5xl font-serif text-gold-gradient font-bold tracking-tight">
-                    365 € <span className="text-sm text-slate-400 font-light">/ an</span>
-                  </div>
-                  <div className="text-xs text-slate-400 font-mono tracking-wider mt-0.5">
-                    soit 1€ par jour
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowForm(true)}
-                  className="bg-gold hover:bg-gold-light text-[#0A0D14] font-black uppercase text-[10px] tracking-widest rounded-xl px-6 py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 text-center cursor-pointer font-sans self-start sm:self-auto"
-                >
-                  DEVENIR MEMBRE
-                </button>
-              </div>
-
               <p className="text-slate-400 font-light text-sm md:text-base leading-relaxed">
                 Bénéficiez d'une accréditation annuelle complète auprès de notre service de conciergerie privée. Un accès direct sans intermédiaire, conçu pour répondre instantanément à vos exigences d'exception.
               </p>
