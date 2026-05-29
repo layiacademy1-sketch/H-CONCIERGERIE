@@ -588,14 +588,14 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
               </div>
               
               <div className="pt-2">
-                <button 
-                  onClick={() => {
-                    window.location.href = "https://buy.stripe.com/bJe5kD6htcmW5fR9GT7ss01";
-                  }}
-                  className="w-full bg-gold hover:bg-gold-light text-slate-950 font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 cursor-pointer"
+                <a 
+                  href="https://buy.stripe.com/bJe5kD6htcmW5fR9GT7ss01"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full bg-gold hover:bg-gold-light text-slate-950 font-black uppercase text-[10px] tracking-widest rounded-xl py-3.5 transition-all shadow-[0_4px_20px_rgba(212,175,55,0.2)] hover:scale-[1.03] active:scale-95 text-center cursor-pointer font-bold font-sans"
                 >
                   DEVENIR MEMBRE
-                </button>
+                </a>
               </div>
             </div>
           </div>
