@@ -16,7 +16,7 @@ import { Lock, X, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 
 export default function App() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [view, setView] = useState<"home" | "hotels" | "cars" | "devenir-membre" | "espace-membre" | "admin">("home");
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
@@ -147,12 +147,7 @@ export default function App() {
     window.history.replaceState(null, '', newRelativePathQuery);
   }, [view]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, []);
+  // Loading state is disabled to avoid any blank transition screen
 
   // Form submission callback for new members
   const handleRegisterMember = (newMem: { name: string; city: string; job: string; phone?: string; email?: string }) => {
@@ -365,14 +360,14 @@ export default function App() {
       />
       
       <main className="overflow-x-hidden">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {view === "home" ? (
             <motion.div
               key="home"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
             >
               <Hero onDevenirMembre={() => {
                 setView("devenir-membre");
@@ -394,10 +389,10 @@ export default function App() {
           ) : view === "hotels" ? (
             <motion.div
               key="hotels"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
             >
               <LuxuryHotelsPage onBack={() => {
                 setView("home");
@@ -407,10 +402,10 @@ export default function App() {
           ) : view === "cars" ? (
             <motion.div
               key="cars"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
             >
               <CarRentalPage onBack={() => {
                 setView("home");
@@ -423,7 +418,7 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.15 }}
             >
               <MemberPresentation 
                 onBack={() => {
@@ -445,7 +440,7 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.15 }}
             >
               {isLoggedIn ? (
                 <MemberDashboard 
@@ -541,7 +536,7 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.15 }}
             >
               {isAdminLoggedIn ? (
                 <AdminDashboard 

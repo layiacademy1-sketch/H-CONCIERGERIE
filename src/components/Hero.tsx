@@ -10,7 +10,7 @@ export default function Hero({ onDevenirMembre }: { onDevenirMembre: () => void 
   const arrowY = useTransform(scrollY, [0, 400], [0, 100]);
 
   return (
-    <section className="relative min-h-screen flex flex-col items-center pt-32 pb-20 overflow-hidden">
+    <section className="relative min-h-screen flex flex-col items-center pt-36 sm:pt-32 pb-20 overflow-hidden">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img
@@ -33,12 +33,12 @@ export default function Hero({ onDevenirMembre }: { onDevenirMembre: () => void 
             transition={{ duration: 0.8 }}
             className="flex flex-col items-center gap-4 mb-4"
           >
-            <div className="flex items-center gap-4">
-              <div className="h-px w-8 bg-gold" />
-              <span className="text-gold tracking-[0.4em] uppercase text-xs font-bold font-sans">
+            <div className="flex items-center gap-3 sm:gap-4 max-w-full">
+              <div className="h-px w-6 sm:w-8 bg-gold shrink-0" />
+              <span className="text-gold tracking-[0.3em] sm:tracking-[0.4em] uppercase text-[10px] sm:text-xs font-bold font-sans text-center">
                 L'Excellence à votre service
               </span>
-              <div className="h-px w-8 bg-gold" />
+              <div className="h-px w-6 sm:w-8 bg-gold shrink-0" />
             </div>
             <motion.img 
               initial={{ opacity: 0, scale: 0.8 }}
@@ -46,7 +46,7 @@ export default function Hero({ onDevenirMembre }: { onDevenirMembre: () => void 
               transition={{ delay: 0.3 }}
               src="https://image.noelshack.com/fichiers/2026/16/2/1776179004-taxi-12.png" 
               alt="Logo" 
-              className="h-41 md:h-64 w-auto object-contain drop-shadow-[0_0_25px_rgba(212,175,55,0.6)]"
+              className="h-28 sm:h-40 md:h-48 lg:h-64 w-auto object-contain drop-shadow-[0_0_25px_rgba(212,175,55,0.6)]"
               referrerPolicy="no-referrer"
             />
           </motion.div>
