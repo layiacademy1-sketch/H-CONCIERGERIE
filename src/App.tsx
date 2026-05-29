@@ -84,13 +84,13 @@ export default function App() {
 
   // Synchronise member state to keep data completely up-to-date from local JSON database
   const refreshMemberData = async () => {
-    // Keep 'layi' and 'karim' special profile status intact
-    if (memberData?.pseudo === "layi" || memberData?.pseudo === "karim") return;
+    // Keep 'layi', 'karim' and 'moeva' special profile status intact
+    if (memberData?.pseudo === "layi" || memberData?.pseudo === "karim" || memberData?.pseudo === "moeva") return;
     try {
       const savedMockStr = localStorage.getItem("h_supabase_session_mock");
       if (savedMockStr) {
         const parsed = JSON.parse(savedMockStr);
-        if (parsed?.pseudo === "layi" || parsed?.pseudo === "karim") {
+        if (parsed?.pseudo === "layi" || parsed?.pseudo === "karim" || parsed?.pseudo === "moeva") {
           setMemberData(parsed);
           return;
         }
@@ -219,16 +219,16 @@ export default function App() {
       return;
     }
 
-    if (cleanPseudo === "karim" && password === "comores") {
+    if ((cleanPseudo === "karim" || cleanPseudo === "moeva") && password === "comores") {
       setIsLoggedIn(true);
       const customData = {
         id: "karim-profile-active",
-        nom: "Karim",
-        prenom: "Karim",
-        email: "karim@example.com",
-        telephone: "+33 6 00 00 00 00",
-        ville: "Paris",
-        pseudo: "karim",
+        nom: "",
+        prenom: "Moeva",
+        email: "tymoeva@gmail.com",
+        telephone: "0659057528",
+        ville: "",
+        pseudo: "moeva",
         abonnement: "actif",
         acces_membre: true,
         paiement: "payé",
@@ -338,7 +338,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen bg-white selection:bg-gold selection:text-slate-900">
+    <div className="relative min-h-screen bg-[#050817] text-white selection:bg-gold selection:text-slate-900">
       <AnimatePresence>
         {isLoading && <Preloader />}
       </AnimatePresence>

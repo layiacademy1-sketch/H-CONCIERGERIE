@@ -3,7 +3,7 @@ import { CheckCircle2, ChevronRight } from "lucide-react";
 
 export default function About() {
   return (
-    <section id="propos" className="py-24 bg-white overflow-hidden">
+    <section id="propos" className="py-24 bg-[#050817] overflow-hidden">
       <div className="container mx-auto px-6">
         <div className="flex flex-col lg:flex-row items-center gap-16 mb-16">
           <motion.div
@@ -44,11 +44,11 @@ export default function About() {
             <span className="text-gold tracking-[0.3em] uppercase text-xs font-bold mb-4 block">
               Pourquoi nous choisir
             </span>
-            <h2 className="text-4xl md:text-5xl font-serif mb-8 leading-tight text-slate-900">
+            <h2 className="text-4xl md:text-5xl font-serif mb-8 leading-tight text-white">
               L'Art de vivre sans <br />
               <span className="italic text-gold-gradient">aucune concession</span>
             </h2>
-            <p className="text-slate-600 font-light leading-relaxed mb-8 text-lg">
+            <p className="text-slate-300 font-light leading-relaxed mb-8 text-lg">
               H-CONCIERGERIE n'est pas seulement un service, c'est un passeport pour un monde d'exception. Nous avons négocié pour vous les conditions les plus avantageuses auprès des acteurs majeurs du luxe mondial.
             </p>
             
@@ -67,7 +67,7 @@ export default function About() {
                   className="flex items-center gap-4"
                 >
                   <CheckCircle2 className="text-gold" size={24} />
-                  <span className="text-slate-800 font-medium">{item}</span>
+                  <span className="text-slate-300 font-medium">{item}</span>
                 </motion.div>
               ))}
             </div>
@@ -97,7 +97,7 @@ export default function About() {
               Nous suivre sur Snapchat
             </a>
             <div className="mt-8 text-xs font-sans font-light tracking-wide text-slate-500">
-              Contact : <a href="mailto:support@h-conciergerie.fr" className="text-slate-800 hover:text-gold transition-colors font-medium underline underline-offset-4 decoration-slate-300 hover:decoration-gold">support@h-conciergerie.fr</a>
+              Contact : <a href="mailto:support@h-conciergerie.fr" className="text-slate-300 hover:text-gold transition-colors font-medium underline underline-offset-4 decoration-slate-600 hover:decoration-gold">support@h-conciergerie.fr</a>
             </div>
           </motion.div>
 

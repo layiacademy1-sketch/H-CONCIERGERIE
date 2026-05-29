@@ -38,8 +38,57 @@ function ensureDataExists() {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
+  const defaultMember = {
+    id: "karim-profile-active",
+    nom: "",
+    prenom: "Moeva",
+    email: "tymoeva@gmail.com",
+    telephone: "0659057528",
+    ville: "",
+    pseudo: "moeva",
+    password: "comores",
+    statut: "actif",
+    abonnement: "actif",
+    paiement: "payé",
+    payment_status: "paid",
+    access_status: "active",
+    created_at: new Date().toISOString()
+  };
   if (!fs.existsSync(MEMBERS_FILE)) {
-    fs.writeFileSync(MEMBERS_FILE, JSON.stringify([], null, 2), "utf-8");
+    fs.writeFileSync(MEMBERS_FILE, JSON.stringify([defaultMember], null, 2), "utf-8");
+  } else {
+    try {
+      const data = fs.readFileSync(MEMBERS_FILE, "utf-8");
+      const list = JSON.parse(data);
+      const hasKarim = list.some((m: any) => m.pseudo === "moeva" || m.pseudo === "karim" || m.id === "karim-profile-active");
+      if (!hasKarim) {
+        list.push(defaultMember);
+        fs.writeFileSync(MEMBERS_FILE, JSON.stringify(list, null, 2), "utf-8");
+      } else {
+        const updatedList = list.map((m: any) => {
+          if (m.pseudo === "karim" || m.pseudo === "moeva" || m.id === "karim-profile-active") {
+            return {
+              ...m,
+              email: "tymoeva@gmail.com",
+              telephone: "0659057528",
+              nom: "",
+              prenom: "Moeva",
+              ville: "",
+              pseudo: "moeva",
+              statut: "actif",
+              access_status: "active",
+              abonnement: "actif",
+              paiement: "payé",
+              payment_status: "paid"
+            };
+          }
+          return m;
+        });
+        fs.writeFileSync(MEMBERS_FILE, JSON.stringify(updatedList, null, 2), "utf-8");
+      }
+    } catch(e) {
+      fs.writeFileSync(MEMBERS_FILE, JSON.stringify([defaultMember], null, 2), "utf-8");
+    }
   }
 }
 
@@ -102,17 +151,17 @@ app.post("/api/member/login", (req, res) => {
       });
     }
 
-    if (cleanPseudo === "karim" && password === "comores") {
+    if ((cleanPseudo === "karim" || cleanPseudo === "moeva") && password === "comores") {
       return res.json({
         success: true,
         member: {
           id: "karim-profile-active",
-          nom: "Karim",
-          prenom: "Karim",
-          email: "karim@example.com",
-          telephone: "+33 6 00 00 00 00",
-          ville: "Paris",
-          pseudo: "karim",
+          nom: "",
+          prenom: "Moeva",
+          email: "tymoeva@gmail.com",
+          telephone: "0659057528",
+          ville: "",
+          pseudo: "moeva",
           abonnement: "actif",
           acces_membre: true,
           paiement: "payé",

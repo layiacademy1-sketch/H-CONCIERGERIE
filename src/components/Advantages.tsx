@@ -47,7 +47,7 @@ export default function Advantages({ onExploreHotels, onExploreCars }: { onExplo
   };
 
   return (
-    <section id="avantages" className="py-24 bg-slate-50/70 relative overflow-hidden">
+    <section id="avantages" className="py-24 bg-[#050817] relative overflow-hidden">
       <div className="container mx-auto px-6">
         <div className="text-center max-w-3xl mx-auto mb-20">
           <motion.span
@@ -60,7 +60,7 @@ export default function Advantages({ onExploreHotels, onExploreCars }: { onExplo
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-5xl font-serif mb-6 text-slate-900"
+            className="text-4xl md:text-5xl font-serif mb-6 text-white"
           >
             L'Excellence dans chaque détail
           </motion.h2>
@@ -68,7 +68,7 @@ export default function Advantages({ onExploreHotels, onExploreCars }: { onExplo
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-slate-600 font-light leading-relaxed"
+            className="text-slate-300 font-light leading-relaxed"
           >
             H-CONCIERGERIE redéfinit les standards du service haut de gamme. En tant que membre, vous bénéficiez d'un accès privilégié à un réseau mondial de partenaires d'exception.
           </motion.p>
@@ -82,7 +82,7 @@ export default function Advantages({ onExploreHotels, onExploreCars }: { onExplo
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -10 }}
-              className="group bg-white border border-slate-100/80 rounded-3xl overflow-hidden flex flex-col h-full shadow-[0_15px_45px_rgba(0,0,0,0.03)] hover:shadow-2xl hover:border-gold/30 transition-all duration-300"
+              className="group bg-slate-900/80 border border-white/10 rounded-3xl overflow-hidden flex flex-col h-full shadow-2xl hover:border-gold/30 transition-all duration-300"
             >
               <div className="h-64 overflow-hidden relative">
                 <img
@@ -97,10 +97,10 @@ export default function Advantages({ onExploreHotels, onExploreCars }: { onExplo
                 </div>
               </div>
               <div className="p-8 flex-grow flex flex-col">
-                <h3 className="text-2xl font-serif mb-4 text-slate-800 group-hover:text-gold transition-colors">
+                <h3 className="text-2xl font-serif mb-4 text-white group-hover:text-gold transition-colors">
                   {adv.title}
                 </h3>
-                <p className="text-slate-600 font-light leading-relaxed mb-6">
+                <p className="text-slate-300 font-light leading-relaxed mb-6">
                   {adv.description}
                 </p>
                  <div className="mt-auto">

@@ -12,9 +12,27 @@
   --color-luxury-gray: #0D1630;
 }
 
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: #050817;
+  overflow-x: hidden;
+}
+
+main, section, .page, .member-page, .content {
+  background: #050817;
+}
+
+.loading, .loader-container {
+  background: #050817;
+  min-height: 100vh;
+  color: white;
+}
+
 @layer base {
   body {
-    @apply bg-white text-slate-900 font-sans antialiased;
+    @apply text-slate-300 font-sans antialiased;
   }
   
   h1, h2, h3, h4, h5, h6 {

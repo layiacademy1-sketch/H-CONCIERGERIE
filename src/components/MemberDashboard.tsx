@@ -28,7 +28,7 @@ interface MemberDashboardProps {
 }
 
 export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess, onRefresh }: MemberDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"flash" | "ventes" | "events">("flash");
+  const [activeTab, setActiveTab] = useState<"flash" | "ventes" | "events" | "history">("flash");
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [isActivating, setIsActivating] = useState(false);
   const [activationError, setActivationError] = useState("");
@@ -387,7 +387,7 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
         </div>
 
         <div className="flex items-center gap-3">
-          {memberData?.pseudo?.trim().toLowerCase() === "layi" || memberData?.pseudo?.trim().toLowerCase() === "karim" ? (
+          {memberData?.pseudo?.trim().toLowerCase() === "layi" || memberData?.pseudo?.trim().toLowerCase() === "karim" || memberData?.pseudo?.trim().toLowerCase() === "moeva" ? (
             <div className="px-4 py-2 bg-gold/10 border border-gold/20 text-xs font-semibold tracking-wide text-slate-300 rounded-xl flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>vous êtes membre jusqu'au 28/05/2027</span>
@@ -442,6 +442,13 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
                 className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-left cursor-pointer ${activeTab === "events" ? "bg-gold text-slate-950 shadow-lg font-black" : "text-slate-300 hover:bg-white/5"}`}
               >
                 <Calendar size={14} /> Évènements VIP
+              </button>
+
+              <button
+                onClick={() => setActiveTab("history")}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-left cursor-pointer ${activeTab === "history" ? "bg-gold text-slate-950 shadow-lg font-black" : "text-slate-300 hover:bg-white/5"}`}
+              >
+                <Clock size={14} /> Historique de réservation
               </button>
             </div>
           </div>
@@ -638,6 +645,64 @@ export default function MemberDashboard({ onLogout, memberData, onPaymentSuccess
                   <h3 className="font-serif text-3xl text-white tracking-wide">Bientôt disponible</h3>
                   <div className="pt-2 text-[10px] text-gold uppercase tracking-widest font-bold bg-gold/15 border border-gold/20 px-4 py-1.5 rounded-full">
                     Réservé aux Membres
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* TABS: HISTORIQUE DES RÉSERVATIONS */}
+            {activeTab === "history" && (
+              <motion.div
+                key="history"
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -15 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <h2 className="text-3xl font-serif text-white tracking-widest uppercase">Historique de réservation</h2>
+                    <p className="text-slate-400 text-xs font-light">Retrouvez le relevé complet de vos demandes de réservations et privilèges.</p>
+                  </div>
+
+                  {/* RESERVATION POINTS */}
+                  <div className="bg-gradient-to-r from-[#B8860B]/10 to-slate-900 border border-gold/20 rounded-2xl px-5 py-4 flex items-center gap-4 shrink-0 shadow-lg">
+                    <div className="w-10 h-10 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/20 flex items-center justify-center text-[#D4AF37]">
+                      <Award size={20} />
+                    </div>
+                    <div>
+                      <span className="text-[9px] uppercase tracking-widest font-black text-[#D4AF37] block">Points Fidélité</span>
+                      <span className="text-xl font-bold text-white">120 pts</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 max-w-4xl">
+                  <div className="bg-slate-900/40 border border-white/5 rounded-3xl p-6 sm:p-8 space-y-6">
+                    {/* Reservation 1 */}
+                    <div className="bg-slate-950/80 border border-white/5 rounded-2xl p-5 hover:border-[#D4AF37]/20 transition-all space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                        <div>
+                          <span className="inline-block text-[10px] font-black uppercase text-[#D4AF37] bg-[#D4AF37]/10 px-2.5 py-1 rounded-md tracking-wider">
+                            🏨 Séjour de prestige
+                          </span>
+                          <h4 className="text-lg font-serif text-white font-semibold mt-1.5">
+                            Raffles Doha 5★
+                          </h4>
+                        </div>
+                        <span className="bg-emerald-400/15 text-emerald-400 text-[10px] font-black tracking-widest uppercase px-3 py-1 rounded-full border border-emerald-500/10 self-start">
+                          Confirmé
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 font-light leading-relaxed">
+                        Pour 6 personnes - Tarif exceptionnel : 456€ (au lieu de 1976€)
+                      </p>
+                      <div className="text-[10px] text-slate-500 font-mono pt-1">
+                        Date de réservation : 18 au 25 Décembre 2026
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               </motion.div>

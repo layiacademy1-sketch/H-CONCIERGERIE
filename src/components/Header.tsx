@@ -59,7 +59,7 @@ export default function Header({
   return (
     <header
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
-        scrolled ? "bg-white/95 backdrop-blur-lg py-4 border-b border-slate-100 shadow-md" : "bg-transparent py-5"
+        scrolled ? "bg-slate-950/90 backdrop-blur-lg py-4 border-b border-white/5 shadow-md" : "bg-transparent py-5"
       }`}
     >
 
@@ -92,9 +92,7 @@ export default function Header({
               className={`text-xs font-bold tracking-widest uppercase transition-colors duration-300 cursor-pointer ${
                 view === link.action && link.href === "#"
                   ? "text-gold"
-                  : scrolled 
-                    ? "text-slate-800 hover:text-gold" 
-                    : "text-white/90 hover:text-gold"
+                  : "text-white/90 hover:text-gold"
               }`}
             >
               {link.name}
@@ -156,9 +154,7 @@ export default function Header({
           )}
 
           <button 
-            className={`transition-colors duration-300 ${
-              scrolled ? "text-slate-800" : "text-white"
-            }`} 
+            className="text-white transition-colors duration-300" 
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -171,14 +167,14 @@ export default function Header({
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-full left-0 w-full bg-white border-t border-slate-100 py-8 px-6 xl:hidden flex flex-col gap-6 shadow-2xl"
+          className="absolute top-full left-0 w-full bg-slate-950/95 backdrop-blur-lg border-t border-white/10 py-8 px-6 xl:hidden flex flex-col gap-6 shadow-2xl"
         >
           {navLinks.map((link) => (
             <button
               key={link.name}
               onClick={() => handleLinkClick(link)}
               className={`text-lg font-serif tracking-wide text-left transition-colors cursor-pointer py-1 ${
-                view === link.action && link.href === "#" ? "text-gold font-bold" : "text-slate-800 hover:text-gold"
+                view === link.action && link.href === "#" ? "text-gold font-bold" : "text-slate-200 hover:text-gold"
               }`}
             >
               {link.name}
@@ -191,7 +187,7 @@ export default function Header({
                 setView?.("espace-membre");
                 setIsOpen(false);
               }}
-              className="text-lg font-serif tracking-wide text-left text-[#D4AF37] font-semibold cursor-pointer py-1 border-t border-slate-100 pt-4"
+              className="text-lg font-serif tracking-wide text-left text-[#D4AF37] font-semibold cursor-pointer py-1 border-t border-white/10 pt-4"
             >
               🪐 Mon Espace Membre (Actif)
             </button>

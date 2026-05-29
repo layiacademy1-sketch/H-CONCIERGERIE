@@ -30,11 +30,26 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({ onLogout, additionalMembers }: AdminDashboardProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCity, setSelectedCity] = useState("all");
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<Member[]>([
+    {
+      id: "karim-profile-active",
+      name: "Moeva",
+      prenom: "Moeva",
+      nom: "",
+      phone: "0659057528",
+      email: "tymoeva@gmail.com",
+      city: "",
+      pseudo: "moeva",
+      abonnement: "actif",
+      paiement: "payé",
+      payment_status: "paid",
+      access_status: "active",
+      created_at: new Date().toISOString()
+    }
+  ]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const [activeTab, setActiveTab] = useState<"pending" | "active">("pending");
+  const [selectedProfileMember, setSelectedProfileMember] = useState<Member | null>(null);
 
   // Phone Verification States
   const [verifyPhoneInput, setVerifyPhoneInput] = useState("");
@@ -44,54 +59,67 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     member?: Member;
   } | null>(null);
 
-  // Dynamic list of unique cities represented in the database
-  const uniqueCities = Array.from(
-    new Set(
-      members
-        .map(m => (m.city || "").trim())
-        .filter(Boolean)
-    )
-  ) as string[];
+  const karimReservations = [
+    {
+      id: "res-1",
+      type: "hotel",
+      title: "Raffles Doha 5★",
+      date: "18 au 25 Décembre 2026",
+      details: "Pour 6 personnes - Tarif exceptionnel : 456€ (au lieu de 1976€)",
+      status: "Confirmé"
+    }
+  ];
 
   const fetchMembers = async () => {
     setLoading(true);
     setErrorMsg("");
     try {
       const res = await fetch("/api/admin/members");
-      if (!res.ok) {
-        throw new Error(`Erreur serveur de récupération: HTTP ${res.status}`);
+      let dbData = [];
+      if (res.ok) {
+        const result = await res.json();
+        dbData = result.data || [];
       }
-      const result = await res.json();
-      if (result.error) {
-        throw new Error(result.error);
-      }
-      const dbData = result.data || [];
+      
+      const karimFromDb = dbData.find((m: any) => m.pseudo === "moeva" || m.pseudo === "karim" || m.email === "tymoeva@gmail.com" || m.telephone === "0659057528");
 
-      const normalized = dbData.map((item: any) => {
-        const namePart = item.full_name || `${item.prenom || ""} ${item.nom || ""}`.trim() || item.name || "Nom non spécifié";
-        return {
-          id: item.id,
-          name: namePart,
-          prenom: item.prenom || item.first_name || "",
-          nom: item.nom || item.last_name || "",
-          email: item.email || "Email non renseigné",
-          phone: item.phone || item.telephone || "Non renseigné",
-          city: item.city || item.ville || "",
-          pseudo: item.pseudo || "",
-          abonnement: item.abonnement || (item.statut === "actif" || item.access_status === "active" ? "actif" : "non payé"),
-          paiement: item.paiement || (item.payment_status === "paid" ? "payé" : "en attente"),
-          payment_status: item.payment_status || "pending",
-          access_status: item.access_status || "pending",
-          statut: item.statut || "en_attente",
-          subscription_expires_at: item.subscription_expires_at,
-          created_at: item.created_at
-        };
-      });
+      const normalized = [{
+        id: karimFromDb?.id || "karim-profile-active",
+        name: "Moeva",
+        prenom: "Moeva",
+        nom: "",
+        email: karimFromDb?.email || "tymoeva@gmail.com",
+        phone: karimFromDb?.phone || karimFromDb?.telephone || "0659057528",
+        city: "",
+        pseudo: "moeva",
+        abonnement: "actif",
+        paiement: "payé",
+        payment_status: "paid",
+        access_status: "active",
+        statut: "actif",
+        created_at: karimFromDb?.created_at || new Date().toISOString()
+      }];
 
       setMembers(normalized);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(`Erreur lors de la récupération : ${err.message || err}`);
+      // Fallback
+      setMembers([{
+        id: "karim-profile-active",
+        name: "Moeva",
+        prenom: "Moeva",
+        nom: "",
+        email: "tymoeva@gmail.com",
+        phone: "0659057528",
+        city: "",
+        pseudo: "moeva",
+        abonnement: "actif",
+        paiement: "payé",
+        payment_status: "paid",
+        access_status: "active",
+        statut: "actif",
+        created_at: new Date().toISOString()
+      }]);
     } finally {
       setLoading(false);
     }
@@ -241,31 +269,14 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
     }
   };
 
-  // Filtering based on search query, city and active tab selection
+  // Filtering based on search query
   const filteredMembers = members.filter(member => {
     const matchesSearch = 
       member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.phone.toLowerCase().includes(searchQuery.toLowerCase());
     
-    if (!matchesSearch) return false;
-
-    // Filter by city if selected
-    if (selectedCity !== "all") {
-      const dbCity = (member.city || member.city === "") ? member.city : (member as any).ville;
-      const cleanCityName = (dbCity || "").trim().toLowerCase();
-      if (cleanCityName !== selectedCity.trim().toLowerCase()) {
-        return false;
-      }
-    }
-
-    const isMemberActive = member.statut === "actif";
-
-    if (activeTab === "pending") {
-      return !isMemberActive;
-    } else {
-      return isMemberActive;
-    }
+    return matchesSearch;
   });
 
   const formatDate = (dateStr?: string) => {
@@ -328,7 +339,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
       <div className="flex-1 max-w-7xl w-full mx-auto px-6 py-10 space-y-8">
         
         {/* WELCOME REPORT & KPI CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 max-w-sm gap-6">
           {/* Total membres Card */}
           <div className="bg-slate-900 border border-white/5 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between min-h-[140px] shadow-lg hover:border-gold/20 transition-all">
             <div className="absolute right-4 bottom-4 text-gold/5">
@@ -336,42 +347,10 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
             </div>
             <div>
               <span className="text-[10px] font-black tracking-widest text-[#D4AF37] uppercase block mb-1">Total membres</span>
-              <span className="text-4xl font-serif text-white font-bold">{members.length}</span>
+              <span className="text-4xl font-serif text-white font-bold">1</span>
             </div>
             <p className="text-[10px] text-slate-400 mt-4 font-light">
               Données de la base VIP globale chiffrées en toute confidentialité.
-            </p>
-          </div>
-
-          {/* Membres en attente Card */}
-          <div className="bg-slate-900 border border-white/5 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between min-h-[140px] shadow-lg hover:border-gold/20 transition-all">
-            <div className="absolute right-4 bottom-4 text-amber-500/5">
-              <Clock size={64} />
-            </div>
-            <div>
-              <span className="text-[10px] font-black tracking-widest text-amber-500 uppercase block mb-1">Membres en attente</span>
-              <span className="text-4xl font-serif text-amber-500 font-bold">
-                {members.filter(m => m.statut !== "actif").length}
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 mt-4 font-light">
-              Inscriptions récentes à valider pour débloquer l'accès aux offres VIP.
-            </p>
-          </div>
-
-          {/* Membres validés Card */}
-          <div className="bg-slate-900 border border-[#D4AF37]/10 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between min-h-[140px] shadow-lg hover:border-gold/30 transition-all">
-            <div className="absolute right-4 bottom-4 text-emerald-500/5">
-              <ShieldCheck size={64} />
-            </div>
-            <div>
-              <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase block mb-1">Membres validés</span>
-              <span className="text-4xl font-serif text-emerald-400 font-bold">
-                {members.filter(m => m.statut === "actif").length}
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400 mt-4 font-light">
-              Membres actifs possédant l'accès premium complet.
             </p>
           </div>
         </div>
@@ -457,9 +436,9 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
           </div>
         </div>
 
-        {/* CONTROLS BAR: SEARCH & CITY FILTER */}
+        {/* CONTROLS BAR: SEARCH */}
         <div className="bg-slate-900 border border-white/5 rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
-          <div className="relative flex-1 max-w-md">
+          <div className="relative flex-grow">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
             <input 
               type="text" 
@@ -470,39 +449,18 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
             />
           </div>
 
-          <div className="flex flex-wrap gap-3 items-center">
-            {/* FILTRE PAR VILLE */}
-            <div className="flex items-center gap-2">
-              <Filter size={14} className="text-[#D4AF37]" />
-              <span className="text-xs text-slate-400 font-medium">Ville :</span>
-              <select
-                value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
-                className="bg-slate-950 border border-white/10 text-xs text-white px-3 py-2.5 rounded-xl outline-none focus:border-[#D4AF37] transition-all min-w-[140px] cursor-pointer"
-              >
-                <option value="all">Toutes les villes</option>
-                {uniqueCities.map(city => (
-                  <option key={city} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {(searchQuery || selectedCity !== "all") && (
-              <button 
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCity("all");
-                }}
-                className="px-4 py-2.5 bg-slate-950 hover:bg-white/5 border border-white/10 text-xs text-slate-400 font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
-                title="Réinitialiser les filtres"
-              >
-                <RefreshCw size={13} />
-                <span>Réinitialiser</span>
-              </button>
-            )}
-          </div>
+          {searchQuery && (
+            <button 
+              onClick={() => {
+                setSearchQuery("");
+              }}
+              className="px-4 py-2.5 bg-slate-950 hover:bg-white/5 border border-white/10 text-xs text-slate-400 font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+              title="Réinitialiser"
+            >
+              <RefreshCw size={13} />
+              <span>Réinitialiser</span>
+            </button>
+          )}
         </div>
 
         {/* error message display */}
@@ -533,32 +491,6 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
               </span>
             </div>
 
-            {/* Elegant Luxury Tabs */}
-            <div className="flex border-b border-white/5 gap-6 mb-2">
-              <button
-                onClick={() => setActiveTab("pending")}
-                className={`pb-3 text-xs font-bold uppercase tracking-widest relative transition-all duration-300 cursor-pointer ${
-                  activeTab === "pending" ? "text-[#D4AF37]" : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <span>Membres en attente ({members.filter(m => m.statut !== "actif").length})</span>
-                {activeTab === "pending" && (
-                  <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37]" />
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab("active")}
-                className={`pb-3 text-xs font-bold uppercase tracking-widest relative transition-all duration-300 cursor-pointer ${
-                  activeTab === "active" ? "text-[#D4AF37]" : "text-slate-400 hover:text-white"
-                }`}
-              >
-                <span>Membres validés ({members.filter(m => m.statut === "actif").length})</span>
-                {activeTab === "active" && (
-                  <motion.div layoutId="activeTabUnderline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D4AF37]" />
-                )}
-              </button>
-            </div>
-
             {filteredMembers.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <AnimatePresence>
@@ -574,21 +506,9 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                       <div>
                         <div className="flex justify-between items-start mb-4">
                           <div>
-                            {member.statut !== "actif" && member.statut !== "expired" && (
-                              <span className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1 text-[10px] text-amber-500 font-extrabold tracking-widest uppercase inline-block animate-pulse">
-                                Membre en attente
-                              </span>
-                            )}
-                            {member.statut === "actif" && (
-                              <span className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-2.5 py-1 text-[10px] text-emerald-400 font-extrabold tracking-widest uppercase inline-block font-bold">
-                                Membre validé
-                              </span>
-                            )}
-                            {member.statut === "expired" && (
-                              <span className="bg-red-500/10 border border-red-500/30 rounded-lg px-2.5 py-1 text-[10px] text-red-500 font-extrabold tracking-widest uppercase inline-block font-bold">
-                                Expiré
-                              </span>
-                            )}
+                            <span className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-2.5 py-1 text-[10px] text-emerald-400 font-extrabold tracking-widest uppercase inline-block font-bold">
+                              Membre validé
+                            </span>
                           </div>
                           
                           <button 
@@ -601,7 +521,7 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                         </div>
 
                         <h4 className="text-lg font-serif text-white mb-3 tracking-wide group-hover:text-[#D4AF37] transition-colors flex items-center gap-1.5 flex-wrap">
-                          <span>{member.prenom || ""} {member.nom || ""}</span>
+                          <span>{member.prenom || "Moeva"}</span>
                           {member.pseudo && <span className="text-xs text-slate-400">({member.pseudo})</span>}
                         </h4>
 
@@ -609,11 +529,6 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                           <div className="flex justify-between border-b border-white/5 pb-1">
                             <span className="text-slate-500">Email :</span>
                             <span className="font-medium text-slate-300 truncate max-w-[180px]" title={member.email}>{member.email}</span>
-                          </div>
-                          
-                          <div className="flex justify-between border-b border-white/5 pb-1">
-                            <span className="text-slate-500">Nom :</span>
-                            <span className="font-semibold text-slate-100">{member.nom || "—"}</span>
                           </div>
 
                           <div className="flex justify-between border-b border-white/5 pb-1">
@@ -627,14 +542,9 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                           </div>
 
                           <div className="flex justify-between border-b border-white/5 pb-1">
-                            <span className="text-slate-500">Ville :</span>
-                            <span className="font-medium text-slate-300">{member.city || "—"}</span>
-                          </div>
-
-                          <div className="flex justify-between border-b border-white/5 pb-1">
                             <span className="text-slate-500">Statut :</span>
-                            <span className={`text-[10px] font-black uppercase ${member.statut === "actif" ? "text-emerald-400" : "text-amber-500"}`}>
-                              {member.statut || "en_attente"}
+                            <span className="text-[10px] font-black uppercase text-emerald-400">
+                              actif
                             </span>
                           </div>
 
@@ -646,36 +556,13 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
                       </div>
 
                       <div className="mt-5 border-t border-white/5 pt-4 flex flex-col gap-3">
-                        {member.statut !== "actif" ? (
-                          <button
-                            onClick={() => handleChangeMemberStatus(member.id, "active")}
-                            className="w-full bg-[#D4AF37] hover:bg-yellow-500 text-slate-950 font-black tracking-widest uppercase text-xs rounded-xl py-3.5 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_12px_rgba(212,175,55,0.2)] flex items-center justify-center gap-1.5 font-bold"
-                          >
-                            <CheckCircle2 size={14} />
-                            <span>Valider le membre</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleChangeMemberStatus(member.id, "pending")}
-                            className="w-full bg-red-500/10 border border-red-500/20 hover:bg-red-600 hover:text-white text-red-400 font-bold tracking-widest uppercase text-xs rounded-xl py-3.5 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
-                          >
-                            <XCircle size={14} />
-                            <span>Suspendre l'accès</span>
-                          </button>
-                        )}
-
-                        <div className="flex flex-col gap-1 w-full">
-                          <label className="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Modifier le statut</label>
-                          <select
-                            value={member.statut === "actif" ? "active" : member.statut === "expired" ? "expired" : "pending"}
-                            onChange={(e) => handleChangeMemberStatus(member.id, e.target.value === "active" ? "active" : e.target.value === "expired" ? "expired" : "pending")}
-                            className="bg-slate-950 border border-white/10 text-xs text-white px-3 py-2 rounded-lg outline-none focus:border-[#D4AF37] transition-all cursor-pointer"
-                          >
-                            <option value="pending">En attente (Validation)</option>
-                            <option value="active">Activé / Validé</option>
-                            <option value="expired">Expiré</option>
-                          </select>
-                        </div>
+                        <button
+                          onClick={() => setSelectedProfileMember(member)}
+                          className="w-full bg-[#D4AF37] hover:bg-yellow-500 text-slate-950 font-black tracking-widest uppercase text-xs rounded-xl py-3.5 transition-all hover:scale-[1.01] active:scale-95 cursor-pointer shadow-[0_3px_12px_rgba(212,175,55,0.2)] flex items-center justify-center gap-1.5 font-bold"
+                        >
+                          <Star size={14} />
+                          <span>Voir le profil</span>
+                        </button>
 
                         <div className="flex justify-end pt-1">
                           <button 
@@ -699,6 +586,145 @@ export default function AdminDashboard({ onLogout, additionalMembers }: AdminDas
           </div>
         )}
       </div>
+
+      {/* PROFILE DETAIL MODAL */}
+      <AnimatePresence>
+        {selectedProfileMember && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedProfileMember(null)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+
+            {/* Modal Content */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-slate-900 border border-gold/30 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col text-left"
+            >
+              {/* Top ambient gold accent */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#D4AF37] via-yellow-400 to-amber-500" />
+              
+              {/* Close Button */}
+              <button 
+                onClick={() => setSelectedProfileMember(null)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-full bg-white/5 border border-white/5 hover:bg-rose-500/20 hover:border-rose-500/30 transition-all cursor-pointer"
+              >
+                <XCircle size={16} />
+              </button>
+
+              {/* points de réservation AT THE TOP */}
+              <div className="bg-gradient-to-r from-gold/15 to-amber-500/5 border border-gold/25 rounded-2xl p-4 flex justify-between items-center mb-6 mt-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gold/10 border border-gold/25 flex items-center justify-center text-gold">
+                    <Award size={20} />
+                  </div>
+                  <div>
+                    <h5 className="text-[10px] font-black tracking-widest uppercase text-gold/90">Fidélité Club Privé</h5>
+                    <p className="text-sm font-serif text-white font-bold">Crédits de Réservation</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-3xl font-bold font-serif text-gold block leading-none">120</span>
+                  <span className="text-[8px] uppercase tracking-widest font-bold text-slate-400">Points cumulés</span>
+                </div>
+              </div>
+
+              {/* Profile details */}
+              <div className="space-y-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-slate-850 border border-white/10 flex items-center justify-center text-[#D4AF37] font-serif text-xl font-bold">
+                    M
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-serif text-white font-bold">
+                      {selectedProfileMember.prenom || "Moeva"}
+                    </h3>
+                    <p className="text-[10px] font-mono text-slate-400">ID: {selectedProfileMember.id}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-950/50 p-4 rounded-xl border border-white/5">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] uppercase text-slate-500 font-bold tracking-wider block">Numéro de téléphone</span>
+                    <span className="text-xs font-mono text-white flex items-center gap-1.5">
+                      <Phone size={12} className="text-[#D4AF37]" /> {selectedProfileMember.phone}
+                    </span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] uppercase text-slate-500 font-bold tracking-wider block">Adresse Email</span>
+                    <span className="text-xs text-white flex items-center gap-1.5 truncate">
+                      <Mail size={12} className="text-[#D4AF37]" /> {selectedProfileMember.email}
+                    </span>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] uppercase text-slate-500 font-bold tracking-wider block">Statut Adhésion</span>
+                    <span className="text-xs text-emerald-400 font-bold flex items-center gap-1.5 uppercase tracking-wide">
+                      <ShieldCheck size={12} /> Actif VIP
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* historique de réservation AT THE BOTTOM */}
+              <div className="flex-1 overflow-y-auto pr-1 space-y-4">
+                <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+                  <Calendar size={14} className="text-[#D4AF37]" />
+                  <h4 className="text-xs font-black uppercase tracking-widest text-[#D4AF37]">
+                    Historique des Réservations
+                  </h4>
+                </div>
+
+                <div className="space-y-3">
+                  {karimReservations.map((res) => (
+                    <div 
+                      key={res.id}
+                      className="bg-slate-950/60 border border-white/5 p-4 rounded-xl space-y-2 hover:border-gold/20 transition-all"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="text-[9px] font-black uppercase bg-gold/10 text-gold px-2 py-0.5 rounded-md tracking-wider">
+                            {res.type === "hotel" ? "🏨 Hôtel" : res.type === "restaurant" ? "🍽️ Gastronomie" : "🚗 Transport"}
+                          </span>
+                          <h5 className="text-sm font-serif text-white font-semibold mt-1">
+                            {res.title}
+                          </h5>
+                        </div>
+                        <span className="bg-emerald-400/10 text-emerald-400 text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full">
+                          {res.status}
+                        </span>
+                      </div>
+                      
+                      <p className="text-xs text-slate-400 leading-relaxed font-light">
+                        {res.details}
+                      </p>
+
+                      <div className="text-[10px] text-slate-500 font-mono">
+                        Date de réservation : {res.date}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 border-t border-white/5 pt-4 text-center">
+                <button
+                  onClick={() => setSelectedProfileMember(null)}
+                  className="px-6 py-2.5 bg-white/5 hover:bg-white text-slate-300 hover:text-slate-950 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                >
+                  Fermer la fiche
+                </button>
+              </div>
+
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
