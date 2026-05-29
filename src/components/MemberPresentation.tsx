@@ -370,12 +370,12 @@ export default function MemberPresentation({ onBack, onSubmitMember, onSignUpSuc
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-slate-900/55 rounded-full filter blur-[80px] pointer-events-none" />
 
             <div className="space-y-6 text-left flex-1">
+              <p className="text-slate-300 font-light text-sm md:text-base leading-relaxed mb-1">
+                Rejoignez un cercle prestigieux et profitez d'expériences uniques de voyage, de conciergerie haut de gamme et d'avantages financiers sans précédent partout à travers le monde.
+              </p>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-gold/10 border border-gold/20 rounded-md text-[10px] text-gold font-black uppercase tracking-widest">
                 <CreditCard size={12} /> TARIF ABONNEMENT UNIQUE
               </div>
-              <h3 className="text-3xl md:text-4xl font-serif text-white tracking-wide">
-                L'excellence au quotidien
-              </h3>
               <p className="text-slate-400 font-light text-sm md:text-base leading-relaxed">
                 Bénéficiez d'une accréditation annuelle complète auprès de notre service de conciergerie privée. Un accès direct sans intermédiaire, conçu pour répondre instantanément à vos exigences d'exception.
               </p>
