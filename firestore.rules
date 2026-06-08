@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Great Wall default safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Helper Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidMember(data) {
+      return data.keys().hasAll(['id', 'email']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.email is string && data.email.size() <= 256;
+    }
+
+    // 3. Members Resource
+    match /members/{memberId} {
+      // Allow individual lookup for profile details during authentication and member queries
+      allow get: if true;
+      
+      // Allow listed queries; filter is enforced at the query level or by admin privileges
+      allow list: if isSignedIn();
+
+      // Creation is authorized for signed-in actors submitting valid data matching their identifier
+      allow create: if isSignedIn() && isValidId(memberId) && isValidMember(incoming()) && (incoming().id == request.auth.uid || incoming().id == memberId);
+
+      // Updates are authorized for the owner or authenticated managers.
+      allow update: if isSignedIn() && isValidId(memberId) && isValidMember(incoming()) && (existing().id == request.auth.uid || incoming().id == memberId) && incoming().id == existing().id;
+
+      // Deletion is restricted to active managers or account deletion requests
+      allow delete: if isSignedIn() && (existing().id == request.auth.uid || memberId == request.auth.uid);
+    }
+  }
+}

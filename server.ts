@@ -3,6 +3,8 @@ import path from "path";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import fs from "fs";
+import { initializeApp, getApp, getApps } from "firebase/app";
+import { initializeFirestore, terminate, collection, doc, setDoc, getDocs, deleteDoc } from "firebase/firestore";
 
 // Load local environment variables
 dotenv.config();
@@ -32,6 +34,94 @@ interface MemberRecord {
   access_status?: string; // 'active' or 'pending'
   created_at?: string;
   subscription_expires_at?: string;
+}
+
+// Firebase Firestore Integration Utility
+function getFirestoreInstance() {
+  try {
+    const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+    if (fs.existsSync(configPath)) {
+      const configData = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+      let firebaseApp;
+      if (getApps().length === 0) {
+        firebaseApp = initializeApp(configData);
+      } else {
+        firebaseApp = getApp();
+      }
+      return initializeFirestore(firebaseApp, {
+        experimentalForceLongPolling: true,
+      }, configData.firestoreDatabaseId);
+    }
+  } catch (error) {
+    console.error("Failed to get Firestore instance:", error);
+  }
+  return null;
+}
+
+// Helper to load raw local members
+function getLocalMembers(): MemberRecord[] {
+  if (!fs.existsSync(MEMBERS_FILE)) {
+    return [];
+  }
+  try {
+    const data = fs.readFileSync(MEMBERS_FILE, "utf-8");
+    return JSON.parse(data);
+  } catch (err) {
+    return [];
+  }
+}
+
+// Helper to save raw local members
+function saveLocalMembers(members: MemberRecord[]) {
+  try {
+    fs.writeFileSync(MEMBERS_FILE, JSON.stringify(members, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Error writing members local file:", err);
+  }
+}
+
+// Synchronize all Firestore records to local cache on initial system startup
+async function syncFromFirestore() {
+  const db = getFirestoreInstance();
+  if (!db) {
+    console.log("Firestore configuration not found. Skipping Firestore sync.");
+    return;
+  }
+  try {
+    console.log("Syncing members from Google Firestore...");
+    const querySnapshot = await getDocs(collection(db, "members"));
+    const firestoreMembers: MemberRecord[] = [];
+    querySnapshot.forEach((docSnap) => {
+      firestoreMembers.push(docSnap.data() as MemberRecord);
+    });
+
+    if (firestoreMembers.length > 0) {
+      const localMembers = getLocalMembers();
+      const localMap = new Map(localMembers.map(m => [m.id, m]));
+      firestoreMembers.forEach(fm => {
+        localMap.set(fm.id, fm);
+      });
+      const merged = Array.from(localMap.values());
+      saveLocalMembers(merged);
+      console.log(`Successfully imported ${firestoreMembers.length} records from Firestore.`);
+    } else {
+      // First-time seeding Firestore from existing local database
+      const localMembers = getLocalMembers();
+      for (const lm of localMembers) {
+        await setDoc(doc(db, "members", lm.id), lm);
+      }
+      console.log(`Seeded Firestore with ${localMembers.length} existing members.`);
+    }
+  } catch (error) {
+    console.error("Failed to sync members with Firestore:", error);
+  } finally {
+    try {
+      await terminate(db);
+      console.log("Firestore connection terminated cleanly after synchronization.");
+    } catch (e) {
+      console.error("Error terminating Firestore:", e);
+    }
+  }
 }
 
 function ensureDataExists() {
@@ -94,21 +184,35 @@ function ensureDataExists() {
 
 function getMembers(): MemberRecord[] {
   ensureDataExists();
-  try {
-    const data = fs.readFileSync(MEMBERS_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("Error reading members file, returning empty array:", err);
-    return [];
-  }
+  return getLocalMembers();
 }
 
 function saveMembers(members: MemberRecord[]) {
   ensureDataExists();
-  try {
-    fs.writeFileSync(MEMBERS_FILE, JSON.stringify(members, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Error writing members file:", err);
+  saveLocalMembers(members);
+  
+  // Simultaneously write to Google Firestore in background with dynamic connection termination
+  const db = getFirestoreInstance();
+  if (db) {
+    Promise.all(
+      members.map((member) => 
+        setDoc(doc(db, "members", member.id), member)
+      )
+    )
+      .then(async () => {
+        console.log("Synchronized members batch to Google Firestore.");
+        try {
+          await terminate(db);
+        } catch (e) {
+          console.error("Error terminating connection in saveMembers:", e);
+        }
+      })
+      .catch(async (err) => {
+        console.error("Error uploading members batch to Google Firestore:", err);
+        try {
+          await terminate(db);
+        } catch (e) {}
+      });
   }
 }
 
@@ -425,6 +529,9 @@ app.post("/api/verify-payment", (req, res) => {
 });
 
 async function run() {
+  // Sync from firestore first if available before starting server endpoints
+  await syncFromFirestore();
+
   // Vite setup for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
